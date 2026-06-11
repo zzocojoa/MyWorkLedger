@@ -3,3 +3,17 @@
 
 # bkit-codex 로컬 설치
 .bkit-codex
+
+# Flutter/Dart 생성물
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# IDE 로컬 설정
+.idea/
+*.iml
+
+# Android 로컬 설정
+local.properties
