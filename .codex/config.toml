@@ -1,0 +1,7 @@
+# bkit-codex MCP server (PDCA methodology automation)
+[mcp_servers.bkit]
+command = "node"
+args = ["./.bkit-codex/packages/mcp-server/index.js"]
+startup_timeout_sec = 10
+tool_timeout_sec = 60
+required = true
