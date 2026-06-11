@@ -2,4 +2,4 @@
 .DS_Store
 
 # bkit-codex 로컬 설치
-.bkit-codex/
+.bkit-codex
