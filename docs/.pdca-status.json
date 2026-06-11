@@ -1,0 +1,41 @@
+{
+  "version": "2.0",
+  "lastUpdated": "2026-06-11T15:06:13.918Z",
+  "activeFeatures": [
+    "workledger-mvp"
+  ],
+  "primaryFeature": "workledger-mvp",
+  "features": {
+    "workledger-mvp": {
+      "phase": "design",
+      "matchRate": null,
+      "iterationCount": 0,
+      "documents": {}
+    }
+  },
+  "pipeline": {
+    "currentPhase": 1,
+    "level": "Starter",
+    "phaseHistory": []
+  },
+  "session": {
+    "startedAt": "2026-06-11T15:06:13.913Z",
+    "onboardingCompleted": false,
+    "lastActivity": "2026-06-11T15:06:13.918Z"
+  },
+  "history": [
+    {
+      "feature": "workledger-mvp",
+      "from": "plan",
+      "to": "design",
+      "timestamp": "2026-06-11T15:06:13.915Z"
+    },
+    {
+      "feature": "workledger-mvp",
+      "action": "phase_complete",
+      "phase": "plan",
+      "nextPhase": "design",
+      "timestamp": "2026-06-11T15:06:13.918Z"
+    }
+  ]
+}
