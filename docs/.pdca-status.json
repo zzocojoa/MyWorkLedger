@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-06-11T15:06:13.918Z",
+  "lastUpdated": "2026-06-11T15:16:12.829Z",
   "activeFeatures": [
     "workledger-mvp"
   ],
@@ -21,7 +21,7 @@
   "session": {
     "startedAt": "2026-06-11T15:06:13.913Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-06-11T15:06:13.918Z"
+    "lastActivity": "2026-06-11T15:16:12.829Z"
   },
   "history": [
     {
@@ -36,6 +36,12 @@
       "phase": "plan",
       "nextPhase": "design",
       "timestamp": "2026-06-11T15:06:13.918Z"
+    },
+    {
+      "feature": "workledger-mvp",
+      "from": "design",
+      "to": "design",
+      "timestamp": "2026-06-11T15:16:12.829Z"
     }
   ]
 }
