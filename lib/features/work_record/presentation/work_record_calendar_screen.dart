@@ -5,7 +5,7 @@ import '../../monthly_summary/domain/calculate_monthly_summary.dart';
 import '../../monthly_summary/domain/monthly_summary.dart';
 import '../domain/work_record_repository.dart';
 import 'edit_today_work_record_screen.dart';
-import 'work_record_home_screen.dart';
+import 'work_record_formatters.dart';
 
 final class WorkRecordCalendarScreen extends StatefulWidget {
   const WorkRecordCalendarScreen({
@@ -647,7 +647,7 @@ List<String> _buildSelectedDateDetailLines({
       '총 ${formatDurationForKorean(duration: workedDuration)}',
     ];
     if (value.tags.isNotEmpty) {
-      lines.add('태그: ${_formatWorkRecordTags(tags: value.tags)}');
+      lines.add('태그: ${formatWorkRecordTags(tags: value.tags)}');
     }
     final String? memo = value.memo;
     if (memo != null && memo.isNotEmpty) {
@@ -668,16 +668,4 @@ List<String> _buildSelectedDateDetailLines({
     ];
   }
   return <String>['시간이 비어 있음'];
-}
-
-String _formatWorkRecordTags({required List<WorkRecordTag> tags}) {
-  return tags.map(_formatWorkRecordTag).join(' · ');
-}
-
-String _formatWorkRecordTag(WorkRecordTag tag) {
-  return switch (tag) {
-    WorkRecordTag.overtime => '야근',
-    WorkRecordTag.delayedCheckout => '퇴근 지연',
-    WorkRecordTag.holidayWork => '휴일근무',
-  };
 }

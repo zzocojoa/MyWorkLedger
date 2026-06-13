@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/work_record.dart';
 import '../domain/update_today_work_record.dart';
 import '../domain/work_record_repository.dart';
-import 'work_record_home_screen.dart';
+import 'work_record_formatters.dart';
 
 final class EditTodayWorkRecordScreen extends StatefulWidget {
   const EditTodayWorkRecordScreen({
@@ -240,7 +240,7 @@ final class _EditTodayWorkRecordScreenState
                   children: WorkRecordTag.values
                       .map(
                         (WorkRecordTag tag) => FilterChip(
-                          label: Text(tagLabel(tag: tag)),
+                          label: Text(formatWorkRecordTag(tag)),
                           selected: _selectedTags.contains(tag),
                           onSelected: (bool selected) => _toggleTag(tag),
                         ),
@@ -438,26 +438,4 @@ DateTime? parseClockInput({
     int.parse(match.group(1)!),
     int.parse(match.group(2)!),
   );
-}
-
-String formatNullableClockTime({required DateTime? value}) {
-  if (value == null) {
-    return '';
-  }
-  return formatClockTime(value: value);
-}
-
-String formatDateOnly(DateTime value) {
-  final String year = value.year.toString().padLeft(4, '0');
-  final String month = value.month.toString().padLeft(2, '0');
-  final String day = value.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
-}
-
-String tagLabel({required WorkRecordTag tag}) {
-  return switch (tag) {
-    WorkRecordTag.overtime => '야근',
-    WorkRecordTag.delayedCheckout => '퇴근 지연',
-    WorkRecordTag.holidayWork => '휴일근무',
-  };
 }
