@@ -11,7 +11,6 @@ import 'package:workledger/features/pricing/domain/pricing_intent_repository.dar
 import 'package:workledger/features/pricing/presentation/pricing_fake_door_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
-import 'package:workledger/features/work_rule/presentation/work_rule_settings_screen.dart';
 
 void main() {
   testWidgets('shows empty monthly summary state', (WidgetTester tester) async {
@@ -35,9 +34,9 @@ void main() {
     expect(find.text('이번 달 총 근무'), findsOneWidget);
     expect(find.text('0분'), findsOneWidget);
     expect(find.text('0일'), findsOneWidget);
-    expect(find.text('근무 태그'), findsWidgets);
+    expect(find.text('근무 태그'), findsOneWidget);
     expect(find.text('기준 미설정'), findsOneWidget);
-    expect(find.text('근무 기준 설정'), findsOneWidget);
+    expect(find.text('근무 기준 설정'), findsNothing);
     expect(find.text('연차 요약'), findsOneWidget);
     expect(find.text('남은 연차'), findsOneWidget);
     expect(find.text('총 연차를 입력해 주세요'), findsOneWidget);
@@ -119,6 +118,40 @@ void main() {
     expect(find.text('06-03 09:10-18:20'), findsOneWidget);
   });
 
+  testWidgets('hides fixed included comparison section from monthly summary', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: _FakeWorkRecordRepository(
+          monthlyRecords: <WorkRecord>[
+            _completedRecord(
+              id: 'work-1',
+              clockInAt: DateTime(2026, 6, 1, 9, 0),
+              clockOutAt: DateTime(2026, 6, 1, 21, 30),
+              tags: <WorkRecordTag>[],
+            ),
+          ],
+          findByMonthError: null,
+        ),
+        leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: _FakeWorkRuleRepository(
+          rule: _workRule(),
+          findActiveError: null,
+        ),
+        now: DateTime(2026, 6, 12, 9),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('고정 포함 시간 비교'), findsNothing);
+    expect(find.text('실제 기록'), findsNothing);
+    expect(find.text('고정 포함'), findsNothing);
+    expect(find.text('초과 참고'), findsNothing);
+    expect(find.text('고정 포함 시간 비교 설정'), findsNothing);
+  });
+
   testWidgets(
     'shows candidate duration by work rule instead of whole-day tags',
     (WidgetTester tester) async {
@@ -174,7 +207,7 @@ void main() {
     },
   );
 
-  testWidgets('shows quiet empty state when work rule has no active tags', (
+  testWidgets('hides work tag result card when work rule has no active tags', (
     WidgetTester tester,
   ) async {
     final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
@@ -206,42 +239,12 @@ void main() {
     expect(find.text('8시간'), findsOneWidget);
     expect(find.text('1일'), findsOneWidget);
     expect(find.text('0개'), findsOneWidget);
-    expect(find.text('정시 기준 외 근무 없음'), findsOneWidget);
-    expect(find.text('이번 달 기록은 설정한 근무 기준 안에 있습니다.'), findsOneWidget);
+    expect(find.text('정시 기준 외 근무 없음'), findsNothing);
+    expect(find.text('이번 달 기록은 설정한 근무 기준 안에 있습니다.'), findsNothing);
     expect(find.text('휴무일 근무'), findsNothing);
     expect(find.text('정시 전 근무'), findsNothing);
     expect(find.text('연장 근무'), findsNothing);
     expect(find.text('야간 근무'), findsNothing);
-  });
-
-  testWidgets('opens work rule settings from missing rule prompt', (
-    WidgetTester tester,
-  ) async {
-    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
-      rule: null,
-      findActiveError: null,
-    );
-
-    await tester.pumpWidget(
-      _buildScreen(
-        repository: _FakeWorkRecordRepository(
-          monthlyRecords: <WorkRecord>[],
-          findByMonthError: null,
-        ),
-        leaveRepository: _emptyLeaveRepository(),
-        workRuleRepository: workRuleRepository,
-        now: DateTime(2026, 6, 12, 9, 0),
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-
-    await tester.tap(find.text('근무 기준 설정'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
-    expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
-    expect(find.text('정시 근무 기준'), findsNothing);
   });
 
   testWidgets('shows exceeded leave state clearly', (

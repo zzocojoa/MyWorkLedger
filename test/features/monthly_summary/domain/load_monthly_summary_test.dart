@@ -80,7 +80,45 @@ void main() {
         viewData.workTimeCandidateSummary.overtimeDuration,
         const Duration(hours: 2, minutes: 30),
       );
+      expect(viewData.compensationReferenceSummary.isVisible, isFalse);
     });
+
+    test(
+      'keeps fixed included comparison hidden from monthly summary',
+      () async {
+        final MonthlySummaryViewData viewData = await loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[
+              _record(
+                id: 'late-work',
+                clockInAt: DateTime(2026, 6, 1, 9, 0),
+                clockOutAt: DateTime(2026, 6, 1, 21, 30),
+                tags: <WorkRecordTag>[],
+              ),
+            ],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        );
+
+        expect(
+          viewData.workSummary.totalWorkedDuration,
+          const Duration(hours: 12, minutes: 30),
+        );
+        expect(viewData.compensationReferenceSummary.isVisible, isFalse);
+        expect(viewData.compensationReferenceSummary.rows, isEmpty);
+      },
+    );
 
     test(
       'separates non-workday and time candidates with break excluded total',
