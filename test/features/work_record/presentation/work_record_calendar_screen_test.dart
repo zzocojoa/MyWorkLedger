@@ -143,6 +143,50 @@ void main() {
     expect(find.textContaining('달력 기록을 불러올 수 없습니다.'), findsOneWidget);
     expect(find.textContaining('action=findByMonth'), findsOneWidget);
   });
+
+  testWidgets(
+    'returns modified result after editing today and using app bar back',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 20, 0);
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        records: <WorkRecord>[
+          _workRecord(
+            id: 'work-2026-06-12',
+            workDate: DateTime(2026, 6, 12),
+            clockInAt: DateTime(2026, 6, 12, 9, 0),
+            clockOutAt: DateTime(2026, 6, 12, 18, 0),
+            tags: <WorkRecordTag>[],
+            memo: null,
+          ),
+        ],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(_buildHost(repository: repository, now: now));
+      await tester.pump();
+
+      await tester.tap(find.text('달력 열기'));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('오늘 기록 수정'));
+      await tester.pump();
+      await tester.tap(find.text('오늘 기록 수정'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('clockOutTimeField')),
+        '19:10',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, '저장'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('총 10시간 10분'), findsOneWidget);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('달력 수정됨'), findsOneWidget);
+    },
+  );
 }
 
 Widget _buildScreen({
@@ -152,6 +196,57 @@ Widget _buildScreen({
   return MaterialApp(
     home: WorkRecordCalendarScreen(repository: repository, now: () => now),
   );
+}
+
+Widget _buildHost({
+  required _FakeWorkRecordRepository repository,
+  required DateTime now,
+}) {
+  return MaterialApp(
+    home: _CalendarResultHost(repository: repository, now: now),
+  );
+}
+
+final class _CalendarResultHost extends StatefulWidget {
+  const _CalendarResultHost({required this.repository, required this.now});
+
+  final _FakeWorkRecordRepository repository;
+  final DateTime now;
+
+  @override
+  State<_CalendarResultHost> createState() => _CalendarResultHostState();
+}
+
+final class _CalendarResultHostState extends State<_CalendarResultHost> {
+  bool _didModify = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: <Widget>[
+          Text(_didModify ? '달력 수정됨' : '달력 변경 없음'),
+          FilledButton(onPressed: _openCalendar, child: const Text('달력 열기')),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openCalendar() async {
+    final Object? result = await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (BuildContext context) => WorkRecordCalendarScreen(
+          repository: widget.repository,
+          now: () => widget.now,
+        ),
+      ),
+    );
+    if (result == true) {
+      setState(() {
+        _didModify = true;
+      });
+    }
+  }
 }
 
 WorkRecord _workRecord({

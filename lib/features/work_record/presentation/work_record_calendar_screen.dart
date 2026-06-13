@@ -117,6 +117,10 @@ final class _WorkRecordCalendarScreenState
     }
   }
 
+  void _closeScreen() {
+    Navigator.of(context).pop(_didModifyToday);
+  }
+
   @override
   Widget build(BuildContext context) {
     final MonthlySummary? summary = _summary;
@@ -127,57 +131,69 @@ final class _WorkRecordCalendarScreenState
     final bool canEditToday =
         _isSameDate(left: _selectedDate, right: today) && selectedEntry != null;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('달력 보기')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              _CalendarMonthHeader(
-                targetMonth: _targetMonth,
-                onPrevious: _isLoading ? null : () => _moveMonth(-1),
-                onNext: _isLoading ? null : () => _moveMonth(1),
-              ),
-              const SizedBox(height: 18),
-              if (_isLoading && summary == null)
-                const Center(child: CircularProgressIndicator())
-              else if (_errorMessage != null)
-                _CalendarMessage(message: _errorMessage!)
-              else ...<Widget>[
-                _CalendarGrid(
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, bool? result) {
+        if (didPop) {
+          return;
+        }
+        _closeScreen();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('달력 보기'),
+          leading: BackButton(onPressed: _closeScreen),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _CalendarMonthHeader(
                   targetMonth: _targetMonth,
-                  entriesByDate: entriesByDate,
-                  selectedDate: _selectedDate,
-                  today: today,
-                  onSelectDate: (DateTime date) {
-                    setState(() {
-                      _selectedDate = date;
-                    });
-                  },
+                  onPrevious: _isLoading ? null : () => _moveMonth(-1),
+                  onNext: _isLoading ? null : () => _moveMonth(1),
                 ),
                 const SizedBox(height: 18),
-                _CalendarLegend(),
-                const SizedBox(height: 18),
-                _SelectedDateDetail(
-                  selectedDate: _selectedDate,
-                  entry: selectedEntry,
-                ),
-                const SizedBox(height: 18),
-                if (canEditToday) ...<Widget>[
-                  FilledButton(
-                    onPressed: _openEditTodayRecord,
-                    child: const Text('오늘 기록 수정'),
+                if (_isLoading && summary == null)
+                  const Center(child: CircularProgressIndicator())
+                else if (_errorMessage != null)
+                  _CalendarMessage(message: _errorMessage!)
+                else ...<Widget>[
+                  _CalendarGrid(
+                    targetMonth: _targetMonth,
+                    entriesByDate: entriesByDate,
+                    selectedDate: _selectedDate,
+                    today: today,
+                    onSelectDate: (DateTime date) {
+                      setState(() {
+                        _selectedDate = date;
+                      });
+                    },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 18),
+                  _CalendarLegend(),
+                  const SizedBox(height: 18),
+                  _SelectedDateDetail(
+                    selectedDate: _selectedDate,
+                    entry: selectedEntry,
+                  ),
+                  const SizedBox(height: 18),
+                  if (canEditToday) ...<Widget>[
+                    FilledButton(
+                      onPressed: _openEditTodayRecord,
+                      child: const Text('오늘 기록 수정'),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  OutlinedButton(
+                    onPressed: _closeScreen,
+                    child: const Text('닫기'),
+                  ),
                 ],
-                OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(_didModifyToday),
-                  child: const Text('닫기'),
-                ),
               ],
-            ],
+            ),
           ),
         ),
       ),
