@@ -140,6 +140,23 @@ matchRate = 34 / 34 = 100%
 - `WorkRecordTag` enum은 기존 저장 데이터 호환과 기록 사유 표시를 위해 남아 있다.
 - 근무 태그는 개인 참고용 요약이며 급여나 법정 수당 계산 결과가 아니다.
 
+## Post-MVP Follow-up Candidate
+
+`fixed-included-work-time`은 고정 포함 시간을 따로 기록해야 하는 사용자를 위한 후속 개선 후보로 문서화한다. 기존 MVP Match Rate 100%에는 포함하지 않는다.
+
+| Candidate | Status | Reason |
+|---|---|---|
+| 고정 포함 시간 설정 | Planned follow-up | 사용자가 입력한 고정 포함 연장/야간/휴무일 시간을 월간 실제 기록과 비교 |
+| 월간 요약 비교 표시 | Planned follow-up | `실제 기록`, `고정 포함`, `초과 참고`만 표시 |
+| 잘 모르겠음 안내 | Planned follow-up | 실제 근무 시간만 보여주고 계약서/급여명세서 확인 안내 |
+
+설계 원칙은 다음과 같다.
+
+- `WorkRecord`에는 고정 포함 시간 여부를 저장하지 않는다.
+- 별도 `CompensationReferenceSetting`을 월간 요약 계산 시점에만 참조한다.
+- 설정 변경은 기존 기록을 수정하거나 마이그레이션하지 않는다.
+- 확정값, 분쟁 판단, 청구 안내, 전문 자문은 범위 밖이다.
+
 ## Recommendation
 
 Match Rate가 100%이고 PR #5까지 `main`에 반영됐으므로 구현 gap은 닫힌 상태다. 다음 단계는 새 기능 구현이 아니라 PDCA report 정리와 release readiness 기록 최신화다.

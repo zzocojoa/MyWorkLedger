@@ -168,7 +168,7 @@ Rules:
 
 - 기본 추천값을 제공할 수 있지만 저장은 사용자가 명시적으로 선택해야 한다.
 - 설정이 없으면 근무 태그를 계산하지 않는다.
-- 이 설정은 회사 근태 규칙, 급여 계산, 법정 수당 정확성을 보장하지 않는다.
+- 이 설정은 회사 근태 규칙이나 확정 기준의 정확성을 보장하지 않는다.
 
 ### Non-Workday, Early, Overtime And Night Work Tag Rules
 
@@ -197,6 +197,44 @@ Rules:
 - 근무 기준과 완료 기록이 있지만 모든 근무 태그가 0분이면 `정시 기준 외 근무 없음`을 근무 태그 카드 안의 빈 상태로 표시한다.
 - 근무 기준은 있지만 완료 기록이 없으면 `완료된 근무 기록이 없습니다`를 표시한다.
 - MVP 현재 구현의 `WorkRecordTag`는 기존 저장 데이터 호환과 기록 사유 표시를 위해 유지하고, 월간 요약의 근무 태그 계산 근거로는 사용하지 않는다.
+
+### Post-MVP Follow-up: Fixed Included Work Time Reference
+
+고정 포함 시간 비교는 `workledger-mvp` 완료 범위가 아니라 후속 개선 후보로 둔다. 목적은 계약 형태를 판단하는 것이 아니라 사용자가 입력한 월 고정 포함 시간을 실제 근무 태그와 비교하는 개인 참고용 화면을 제공하는 것이다.
+
+Data boundary:
+
+| Item | Design |
+|---|---|
+| 저장 모델 | `CompensationReferenceSetting` |
+| 설정 모드 | `none`, `fixedIncluded`, `unknown` |
+| 포함 시간 | `fixedIncludedOvertimeMinutes`, `fixedIncludedNightMinutes`, `fixedIncludedHolidayMinutes` |
+| 적용 시작 | `effectiveFromMonth` |
+| 기록 연결 | `WorkRecord`에는 고정 포함 시간 여부를 저장하지 않음 |
+
+Calculation policy:
+
+```text
+월간 요약 로드
+  -> 선택 월 WorkRecord 목록 조회
+  -> 활성 WorkRule 조회
+  -> 선택 월에 적용 가능한 CompensationReferenceSetting 최신 1건 조회
+  -> 기존 WorkRecord + WorkRule 기반 근무 태그 시간 계산
+  -> mode=fixedIncluded이면 실제 기록과 고정 포함 시간을 비교
+  -> 초과 참고 = max(실제 기록 - 고정 포함, 0)
+  -> mode=none 또는 unknown이면 비교 카드를 숨김
+```
+
+Rules:
+
+- 사용자가 근무 기록을 먼저 남긴 뒤 나중에 `고정 포함 시간 있음`을 켜도 기존 `WorkRecord`는 수정하지 않는다.
+- 설정 변경은 월간 요약 계산 시점에만 반영한다. 기록 마이그레이션은 하지 않는다.
+- `mode != fixedIncluded`이면 고정 포함 시간 비교는 비활성화한다.
+- 고정 포함 시간 입력값은 0 이상이어야 하며 30분 단위를 권장한다.
+- `effectiveFromMonth`는 월 단위 날짜로 저장한다.
+- 월간 요약 문구는 `실제 기록`, `고정 포함`, `초과 참고`만 사용한다.
+- `unknown` 상태에서는 실제 근무 시간만 보여주고 `계약서나 급여명세서를 확인하면 고정 포함 시간 비교를 설정할 수 있습니다.`를 안내한다.
+- 확정값, 분쟁 판단, 청구 안내, 전문 자문, 회사 근태 정확성 보장은 하지 않는다.
 
 ## 8. Persistent Notification Action Design
 
@@ -270,6 +308,8 @@ Summary values:
 | 잔여연차 | 연도 총량에서 연도 사용량 합계 차감 |
 
 근무 기준이 설정되지 않은 경우에는 총 근무시간만 표시하고 근무 태그를 계산하지 않는다. 홈의 이번 달 preview도 월간 요약과 같은 휴게시간 제외 표시용 총 근무시간을 사용한다.
+
+post-MVP에서 `CompensationReferenceSetting`이 추가되면 월간 요약은 같은 `WorkRecord + WorkRule` 계산 결과를 재사용해 고정 포함 시간 비교만 덧붙인다. 이 비교는 기존 MVP의 근무시간 합계나 근무 태그 계산 규칙을 바꾸지 않는다.
 
 ## 11. Pricing Fake-Door Flow
 
@@ -395,3 +435,14 @@ Validation messages must include `field`, `value`, and `rule` when possible.
 - 알림 액션과 권한 거부 대응이 문서화되어 있다.
 - MVP 제외 범위가 설계에 반영되어 있다.
 - 테스트 계획이 구현 순서와 연결되어 있다.
+
+## 19. Post-MVP Design Notes
+
+`fixed-included-work-time`은 후속 feature 후보로 분리한다. 구현 전에는 별도 plan/design/check를 만들고, 기존 `workledger-mvp` Match Rate 100% 기준에 섞지 않는다.
+
+후속 구현 시 지켜야 할 제한은 다음과 같다.
+
+- 새 설정은 로컬 저장소에만 저장한다.
+- 서버, 로그인, 클라우드 동기화, GPS는 추가하지 않는다.
+- 실제 PDF/CSV, 실제 결제, 확정값 계산, 전문 자문은 추가하지 않는다.
+- 기존 `WorkRecord` 데이터를 변경하지 않고 월간 요약 계산 시점에만 비교한다.

@@ -12,6 +12,7 @@
 - 잔여연차는 저장하지 않고 `LeaveBalance.totalLeaveMinutes - sum(LeaveUsage.usedLeaveMinutes)`로 계산한다.
 - 연차량은 부동소수점 오차를 피하기 위해 분 단위 정수로 저장한다. 표시 시 1일을 480분으로 환산한다.
 - 가격 의향 이벤트는 실제 결제 이벤트가 아니라 fake-door 클릭 로그다.
+- 고정 포함 시간 비교 설정은 근무 기록과 분리한다. 설정 변경은 기존 `WorkRecord`를 수정하지 않고 월간 요약 계산 시점에만 반영한다.
 
 ## Entity Summary
 
@@ -21,6 +22,7 @@
 | `LeaveBalance` | 연도별 총 연차 수동 입력값 | 연도 1개당 최대 1개 |
 | `LeaveUsage` | 날짜별 연차 사용 기록 | 연도별 0개 이상 |
 | `PricingIntentEvent` | 가격표/fake-door 클릭 로그 | 제한 없음 |
+| `CompensationReferenceSetting` | 고정 포함 시간 비교용 후속 설정 | 적용 시작 월 1개당 최대 1개 |
 
 ## Enum Definitions
 
@@ -48,6 +50,14 @@
 |---|---|
 | `reportPass` | 단건 월간 리포트 fake-door 선택지 |
 | `pro` | 구독형 Pro fake-door 선택지 |
+
+### CompensationReferenceMode
+
+| Value | Korean Label | Meaning |
+|---|---|---|
+| `none` | 고정 포함 시간 없음 | 실제 기록만 표시하고 고정 포함 시간 비교는 숨김 |
+| `fixedIncluded` | 고정 포함 시간 있음 | 실제 기록과 사용자가 입력한 고정 포함 시간을 비교 |
+| `unknown` | 잘 모르겠음 | 실제 기록만 표시하고 설정 안내 문구를 표시 |
 
 ## WorkRecord
 
@@ -154,6 +164,45 @@
 - `sourceScreen`은 비어 있지 않아야 하며 100자 이하 문자열이어야 한다.
 - 실제 결제 성공, 구독 활성화, 리포트 생성 완료를 의미하는 이벤트 타입은 MVP에 추가하지 않는다.
 
+## CompensationReferenceSetting
+
+계약 형태를 판단하지 않고 사용자가 직접 입력한 고정 포함 시간을 실제 기록과 비교하는 후속 설정이다. 이 모델은 post-MVP 후보이며 기존 `workledger-mvp` 완료율에는 포함하지 않는다.
+
+| Field | Type | Required | Unique | Default | Description |
+|---|---|---:|---:|---|---|
+| `id` | String | Yes | Yes | generated | 로컬 고유 ID |
+| `mode` | CompensationReferenceMode | Yes | No | `unknown` | 비교 방식 선택값 |
+| `fixedIncludedOvertimeMinutes` | int | Yes | No | 0 | 월 고정 포함 연장 근무 시간 |
+| `fixedIncludedNightMinutes` | int | Yes | No | 0 | 월 고정 포함 야간 근무 시간 |
+| `fixedIncludedHolidayMinutes` | int | Yes | No | 0 | 월 고정 포함 휴무일 근무 시간 |
+| `effectiveFromMonth` | Date | Yes | Yes | none | 적용 시작 월. 저장 시 해당 월의 1일로 정규화 |
+| `memo` | String? | No | No | null | 계약서/급여명세서 확인 메모 |
+| `createdAt` | DateTime | Yes | No | now | 생성 시각 |
+| `updatedAt` | DateTime | Yes | No | now | 마지막 수정 시각 |
+
+### CompensationReferenceSetting Validation
+
+- `mode`는 `none`, `fixedIncluded`, `unknown` 중 하나여야 한다.
+- `fixedIncludedOvertimeMinutes`, `fixedIncludedNightMinutes`, `fixedIncludedHolidayMinutes`는 0 이상이어야 한다.
+- 고정 포함 시간 값은 30분 단위 입력을 권장한다.
+- `effectiveFromMonth`는 월 단위 날짜이며, 저장 시 `YYYY-MM-01` 형태로 정규화한다.
+- 같은 `effectiveFromMonth`의 `CompensationReferenceSetting`은 1개만 허용한다.
+- `mode != fixedIncluded`이면 고정 포함 시간 비교는 비활성화하고 시간 필드는 계산에 사용하지 않는다.
+- `memo`는 비어 있거나 500자 이하 문자열이어야 한다.
+- 이 설정은 확정값, 분쟁 판단, 청구 안내, 전문 자문을 의미하지 않는다.
+
+### CompensationReferenceSetting Derived Values
+
+| Value | Rule | Stored |
+|---|---|---|
+| `applicableSetting` | 월간 요약 대상 월보다 같거나 이전인 최신 `effectiveFromMonth` 설정 | No |
+| `actualOvertimeMinutes` | 기존 `WorkRecord + WorkRule` 기반 연장 근무 후보 시간 | No |
+| `actualNightMinutes` | 기존 `WorkRecord + WorkRule` 기반 야간 근무 후보 시간 | No |
+| `actualHolidayMinutes` | 기존 `WorkRecord + WorkRule` 기반 휴무일 근무 후보 시간 | No |
+| `overtimeExcessReferenceMinutes` | `max(actualOvertimeMinutes - fixedIncludedOvertimeMinutes, 0)` | No |
+| `nightExcessReferenceMinutes` | `max(actualNightMinutes - fixedIncludedNightMinutes, 0)` | No |
+| `holidayExcessReferenceMinutes` | `max(actualHolidayMinutes - fixedIncludedHolidayMinutes, 0)` | No |
+
 ## Query Patterns
 
 | Screen/Flow | Query |
@@ -162,6 +211,7 @@
 | 기록 수정 | 선택한 `WorkRecord.id` 조회 후 수정 |
 | 연차 관리 | 현재 연도 `LeaveBalance`와 해당 연도 `LeaveUsage` 목록 조회 |
 | 월간 요약 | 월 범위의 `WorkRecord`, `LeaveUsage` 목록 조회 |
+| 월간 고정 포함 시간 비교 | 월간 요약 대상 월에 적용 가능한 `CompensationReferenceSetting` 최신 1건 조회 |
 | 가격표/fake-door | `PricingIntentEvent` 생성 및 최근 이벤트 목록 조회 |
 
 ## Initial Index Plan
@@ -172,11 +222,13 @@
 | `leave_balances` | unique `year` | 연도별 총 연차 기준 조회 |
 | `leave_usages` | `used_on` | 월간/연간 연차 사용 조회 |
 | `pricing_intent_events` | `occurred_at` | 클릭 이벤트 시계열 확인 |
+| `compensation_reference_settings` | unique `effective_from_month` | 월간 요약의 고정 포함 시간 비교 기준 조회 |
 
 ## Non-Goals
 
 - 사용자 계정 ID를 모델에 넣지 않는다.
 - 회사 ID, 회사명, 위치 좌표를 필수 필드로 넣지 않는다.
 - 법률 증거 상태, 소송 상태, 노무 자문 상태를 모델에 넣지 않는다.
+- 확정값, 분쟁 판단 결과, 청구 안내 값을 모델에 넣지 않는다.
 - 실제 결제 상태, 구독 상태, 영수증 검증 필드를 넣지 않는다.
 - 실제 PDF/CSV 생성 결과 파일 경로를 MVP 필수 모델에 넣지 않는다.
