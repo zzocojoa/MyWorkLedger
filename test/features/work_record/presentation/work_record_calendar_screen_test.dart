@@ -46,7 +46,7 @@ void main() {
     expect(find.text('총 9시간 39분'), findsOneWidget);
     expect(find.text('기록 사유: 퇴근 기록 지연'), findsOneWidget);
     expect(find.text('메모: 배포 대응 후 퇴근'), findsOneWidget);
-    expect(find.text('오늘 기록 수정'), findsOneWidget);
+    expect(find.text('기록 수정'), findsOneWidget);
     expect(find.text('닫기'), findsNothing);
     expect(repository.requestedMonths, <String>['2026-06']);
   });
@@ -136,7 +136,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('8월 1일 토요일'), findsOneWidget);
-    expect(find.text('오늘 기록 수정'), findsNothing);
+    expect(find.text('기록 추가'), findsOneWidget);
     expect(nonTodayMaxScrollExtent, greaterThan(0));
     expect(nonTodayMaxScrollExtent, lessThan(todayMaxScrollExtent));
     expect(nonTodayPosition.pixels, greaterThan(0));
@@ -171,14 +171,134 @@ void main() {
     expect(find.text('6월 10일 수요일'), findsOneWidget);
     expect(find.text('출근만 기록됨'), findsOneWidget);
     expect(find.text('출근 09:00'), findsOneWidget);
-    expect(find.text('오늘 기록 수정'), findsNothing);
+    expect(find.text('기록 수정'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('calendar-day-2026-06-11')));
     await tester.pump();
 
     expect(find.text('6월 11일 목요일'), findsOneWidget);
     expect(find.text('기록 없음'), findsOneWidget);
-    expect(find.text('오늘 기록 수정'), findsNothing);
+    expect(find.text('기록 추가'), findsOneWidget);
+  });
+
+  testWidgets('shows add action for an empty previous date', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('calendar-day-2026-06-11')));
+    await tester.pump();
+
+    expect(find.text('6월 11일 목요일'), findsOneWidget);
+    expect(find.text('기록 없음'), findsOneWidget);
+    expect(find.text('기록 추가'), findsOneWidget);
+    expect(find.text('기록 수정'), findsNothing);
+  });
+
+  testWidgets('adds previous record and refreshes selected date detail', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('calendar-day-2026-06-11')));
+    await tester.pump();
+    await tester.ensureVisible(find.text('기록 추가'));
+    await tester.pump();
+    await tester.tap(find.text('기록 추가'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('기록 추가'), findsOneWidget);
+    expect(find.text('2026-06-11'), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('clockInTimeField')), '09:00');
+    await tester.enterText(find.byKey(const Key('clockOutTimeField')), '17:30');
+    await tester.enterText(find.byType(TextField).last, '어제 누락 기록');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('6월 11일 목요일'), findsOneWidget);
+    expect(find.text('09:00 - 17:30'), findsOneWidget);
+    expect(find.text('총 8시간 30분'), findsOneWidget);
+    expect(find.text('메모: 어제 누락 기록'), findsOneWidget);
+    expect(find.text('기록 수정'), findsOneWidget);
+    expect(repository.requestedMonths, <String>['2026-06', '2026-06']);
+  });
+
+  testWidgets('shows edit action for an existing previous record', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[
+        _workRecord(
+          id: 'work-2026-06-11',
+          workDate: DateTime(2026, 6, 11),
+          clockInAt: DateTime(2026, 6, 11, 9, 0),
+          clockOutAt: DateTime(2026, 6, 11, 18, 0),
+          tags: <WorkRecordTag>[],
+          memo: null,
+        ),
+      ],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('calendar-day-2026-06-11')));
+    await tester.pump();
+
+    expect(find.text('6월 11일 목요일'), findsOneWidget);
+    expect(find.text('09:00 - 18:00'), findsOneWidget);
+    expect(find.text('기록 수정'), findsOneWidget);
+    expect(find.text('기록 추가'), findsNothing);
+  });
+
+  testWidgets('keeps previous record input when clock-out is before clock-in', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('calendar-day-2026-06-11')));
+    await tester.pump();
+    await tester.ensureVisible(find.text('기록 추가'));
+    await tester.pump();
+    await tester.tap(find.text('기록 추가'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('clockInTimeField')), '18:00');
+    await tester.enterText(find.byKey(const Key('clockOutTimeField')), '09:00');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pump();
+
+    expect(find.text('저장할 수 없습니다. 퇴근 시각은 출근 시각보다 빠를 수 없습니다.'), findsOneWidget);
+    expect(find.text('18:00'), findsOneWidget);
+    expect(find.text('09:00'), findsOneWidget);
   });
 
   testWidgets('moves between months and reloads repository query', (
@@ -261,9 +381,9 @@ void main() {
       await tester.tap(find.text('달력 열기'));
       await tester.pumpAndSettle();
 
-      await tester.ensureVisible(find.text('오늘 기록 수정'));
+      await tester.ensureVisible(find.text('기록 수정'));
       await tester.pump();
-      await tester.tap(find.text('오늘 기록 수정'));
+      await tester.tap(find.text('기록 수정'));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('clockOutTimeField')),
@@ -386,8 +506,18 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<WorkRecord?> findToday() async {
     final DateTime today = DateTime(now().year, now().month, now().day);
+    return findByDate(workDate: today);
+  }
+
+  @override
+  Future<WorkRecord?> findByDate({required DateTime workDate}) async {
+    final DateTime targetDate = DateTime(
+      workDate.year,
+      workDate.month,
+      workDate.day,
+    );
     for (final WorkRecord record in _records) {
-      if (record.workDate == today) {
+      if (record.workDate == targetDate) {
         return record;
       }
     }
@@ -448,6 +578,46 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
     _records.removeWhere((WorkRecord item) => item.workDate == record.workDate);
     _records.add(updatedRecord);
     return updatedRecord;
+  }
+
+  @override
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    final DateTime targetDate = DateTime(
+      workDate.year,
+      workDate.month,
+      workDate.day,
+    );
+    final WorkRecord? existingRecord = await findByDate(workDate: targetDate);
+    final WorkRecord savedRecord = existingRecord == null
+        ? WorkRecord(
+            id: 'work-${targetDate.toIso8601String()}',
+            workDate: targetDate,
+            clockInAt: clockInAt,
+            clockOutAt: clockOutAt,
+            tags: tags,
+            memo: memo,
+            createdAt: now(),
+            updatedAt: now(),
+          )
+        : existingRecord.copyWith(
+            id: existingRecord.id,
+            workDate: existingRecord.workDate,
+            clockInAt: clockInAt,
+            clockOutAt: clockOutAt,
+            tags: tags,
+            memo: memo,
+            createdAt: existingRecord.createdAt,
+            updatedAt: now(),
+          );
+    _records.removeWhere((WorkRecord item) => item.workDate == targetDate);
+    _records.add(savedRecord);
+    return savedRecord;
   }
 
   @override

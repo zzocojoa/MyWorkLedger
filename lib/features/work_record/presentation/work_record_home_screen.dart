@@ -163,6 +163,11 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
         builder: (BuildContext context) => EditTodayWorkRecordScreen(
           repository: widget.repository,
           now: widget.now,
+          workDate: DateTime(
+            widget.now().year,
+            widget.now().month,
+            widget.now().day,
+          ),
         ),
       ),
     );

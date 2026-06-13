@@ -54,6 +54,11 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   }
 
   @override
+  Future<WorkRecord?> findByDate({required DateTime workDate}) async {
+    return null;
+  }
+
+  @override
   Future<List<WorkRecord>> findByMonth({
     required int year,
     required int month,
@@ -89,6 +94,17 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
       createdAt: DateTime.parse('2026-06-12T09:00:00'),
       updatedAt: DateTime.parse('2026-06-12T20:00:00'),
     );
+  }
+
+  @override
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    throw const WorkRecordRepositoryException('unexpected upsertByDate call');
   }
 
   @override

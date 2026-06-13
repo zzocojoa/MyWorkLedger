@@ -9,8 +9,8 @@
 | ID | Screen | Route | Purpose | Primary Data |
 |---|---|---|---|---|
 | S-01 | 홈/오늘 기록 | `/` | 오늘 출근/퇴근 1탭 기록 | `WorkRecord` |
-| S-02 | 기록 수정 | `/work-record/edit` | 출근/퇴근 시각, 기록 사유, 메모 보정 | `WorkRecord` |
-| S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무와 완료/미완료 상태 확인 | `WorkRecord` |
+| S-02 | 기록 추가/수정 | `/work-record/edit` | 선택 날짜의 출근/퇴근 시각, 기록 사유, 메모 보정 | `WorkRecord` |
+| S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무 확인과 누락 기록 추가/수정 | `WorkRecord` |
 | S-04 | 연차 관리 | `/leave` | 연차 사용 기록 추가/삭제 | `LeaveUsage`, `LeaveBalance` |
 | S-05 | 월간 요약 | `/summary` | 월간 근무시간, 선택형 근무 태그, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance` |
 | S-06 | 근무 기준 설정 | `/settings/work-rules` | 선택형 정시 출근/퇴근, 휴게시간, 평일 요일 설정 | work rule settings |
@@ -47,7 +47,7 @@
 | 설정 | 비교 방식 | `비교 방식` 항목 |
 | 설정 | 총 연차 설정 | `총 연차` 항목 |
 | 설정 | 알림 설정 | `알림` 항목 |
-| 달력 보기 | 기록 수정 | 선택 날짜가 오늘인 경우 `오늘 기록 수정` 버튼 |
+| 달력 보기 | 기록 추가/수정 | 선택 날짜에 기록이 없으면 `기록 추가`, 기존 기록이 있으면 `기록 수정` |
 | 월간 요약 | 가격표/fake-door | 월간 리포트 만들기 버튼 |
 | 설정 | 홈/오늘 기록 | 뒤로가기 |
 

@@ -22,7 +22,13 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
   Future<WorkRecord?> findToday() async {
     final DateTime now = clock();
     final DateTime today = _dateOnly(now);
-    return _readByDate(today);
+    return findByDate(workDate: today);
+  }
+
+  @override
+  Future<WorkRecord?> findByDate({required DateTime workDate}) async {
+    final DateTime targetDate = _dateOnly(workDate);
+    return _readByDate(targetDate);
   }
 
   @override
@@ -138,6 +144,12 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
         'action=updateToday table=$workRecordsTable workDate=${_formatDateOnly(today)} rule=missing work record',
       );
     }
+    _validateRecordTimesForDate(
+      action: 'updateToday',
+      workDate: today,
+      clockInAt: clockInAt,
+      clockOutAt: clockOutAt,
+    );
 
     final WorkRecord record = existingRecord.copyWith(
       id: existingRecord.id,
@@ -149,6 +161,49 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
       createdAt: existingRecord.createdAt,
       updatedAt: now,
     );
+
+    await _write(record);
+    return record;
+  }
+
+  @override
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    final DateTime now = clock();
+    final DateTime targetDate = _dateOnly(workDate);
+    _validateRecordTimesForDate(
+      action: 'upsertByDate',
+      workDate: targetDate,
+      clockInAt: clockInAt,
+      clockOutAt: clockOutAt,
+    );
+    final WorkRecord? existingRecord = await _readByDate(targetDate);
+    final WorkRecord record = existingRecord == null
+        ? WorkRecord(
+            id: idGenerator(),
+            workDate: targetDate,
+            clockInAt: clockInAt,
+            clockOutAt: clockOutAt,
+            tags: tags,
+            memo: memo,
+            createdAt: now,
+            updatedAt: now,
+          )
+        : existingRecord.copyWith(
+            id: existingRecord.id,
+            workDate: existingRecord.workDate,
+            clockInAt: clockInAt,
+            clockOutAt: clockOutAt,
+            tags: tags,
+            memo: memo,
+            createdAt: existingRecord.createdAt,
+            updatedAt: now,
+          );
 
     await _write(record);
     return record;
@@ -250,6 +305,30 @@ void _validateYearMonth({required int year, required int month}) {
 
 DateTime _dateOnly(DateTime value) {
   return DateTime(value.year, value.month, value.day);
+}
+
+bool _isSameDate({required DateTime left, required DateTime right}) {
+  return left.year == right.year &&
+      left.month == right.month &&
+      left.day == right.day;
+}
+
+void _validateRecordTimesForDate({
+  required String action,
+  required DateTime workDate,
+  required DateTime? clockInAt,
+  required DateTime? clockOutAt,
+}) {
+  if (clockInAt != null && !_isSameDate(left: workDate, right: clockInAt)) {
+    throw WorkRecordRepositoryException(
+      'action=$action table=${LocalStorageWorkRecordRepository.workRecordsTable} workDate=${_formatDateOnly(workDate)} clockInAt=${clockInAt.toIso8601String()} rule=clock-in date must match workDate',
+    );
+  }
+  if (clockOutAt != null && !_isSameDate(left: workDate, right: clockOutAt)) {
+    throw WorkRecordRepositoryException(
+      'action=$action table=${LocalStorageWorkRecordRepository.workRecordsTable} workDate=${_formatDateOnly(workDate)} clockOutAt=${clockOutAt.toIso8601String()} rule=clock-out date must match workDate',
+    );
+  }
 }
 
 String _formatDateOnly(DateTime value) {
