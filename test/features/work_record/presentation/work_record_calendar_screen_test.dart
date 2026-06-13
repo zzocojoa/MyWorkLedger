@@ -44,7 +44,7 @@ void main() {
     expect(find.text('6월 12일 금요일'), findsOneWidget);
     expect(find.text('09:03 - 18:42'), findsOneWidget);
     expect(find.text('총 9시간 39분'), findsOneWidget);
-    expect(find.text('태그: 퇴근 지연'), findsOneWidget);
+    expect(find.text('기록 사유: 퇴근 기록 지연'), findsOneWidget);
     expect(find.text('메모: 배포 대응 후 퇴근'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
     expect(repository.requestedMonths, <String>['2026-06']);

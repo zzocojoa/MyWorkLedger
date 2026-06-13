@@ -5,10 +5,12 @@ import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
+import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
 import 'package:workledger/l10n/app_localizations.dart';
 
 void main() {
@@ -17,6 +19,7 @@ void main() {
       WorkLedgerApp(
         workRecordRepository: _WidgetTestWorkRecordRepository(),
         leaveRepository: _WidgetTestLeaveRepository(),
+        workRuleRepository: _WidgetTestWorkRuleRepository(),
         pricingIntentRepository: _WidgetTestPricingIntentRepository(),
         now: () => DateTime(2026, 6, 12, 9, 0),
         navigatorKey: GlobalKey<NavigatorState>(),
@@ -87,6 +90,23 @@ final class _WidgetTestPricingIntentRepository
   @override
   Future<List<PricingIntentEvent>> findAll() async {
     return <PricingIntentEvent>[];
+  }
+}
+
+final class _WidgetTestWorkRuleRepository implements WorkRuleRepository {
+  @override
+  Future<WorkRule?> findActive() async {
+    return null;
+  }
+
+  @override
+  Future<WorkRule> save({
+    required int regularStartTimeMinutes,
+    required int regularEndTimeMinutes,
+    required int breakMinutes,
+    required List<int> workWeekdays,
+  }) async {
+    throw const WorkRuleRepositoryException('test=widget action=saveWorkRule');
   }
 }
 

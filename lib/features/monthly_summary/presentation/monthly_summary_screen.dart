@@ -8,6 +8,9 @@ import '../../pricing/domain/pricing_intent_repository.dart';
 import '../../pricing/domain/record_pricing_intent.dart';
 import '../../pricing/presentation/pricing_fake_door_screen.dart';
 import '../../work_record/domain/work_record_repository.dart';
+import '../../work_rule/domain/work_rule_repository.dart';
+import '../../work_rule/presentation/work_rule_settings_screen.dart';
+import '../../work_time/domain/work_time_candidate.dart';
 import '../domain/load_monthly_summary.dart';
 import '../domain/monthly_summary.dart';
 
@@ -15,6 +18,7 @@ final class MonthlySummaryScreen extends StatefulWidget {
   const MonthlySummaryScreen({
     required this.repository,
     required this.leaveRepository,
+    required this.workRuleRepository,
     required this.pricingIntentRepository,
     required this.now,
     super.key,
@@ -22,6 +26,7 @@ final class MonthlySummaryScreen extends StatefulWidget {
 
   final WorkRecordRepository repository;
   final LeaveRepository leaveRepository;
+  final WorkRuleRepository workRuleRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
 
@@ -56,6 +61,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       final MonthlySummaryViewData viewData = await loadMonthlySummary(
         workRecordRepository: widget.repository,
         leaveRepository: widget.leaveRepository,
+        workRuleRepository: widget.workRuleRepository,
         targetMonth: _targetMonth,
       );
       if (!mounted) {
@@ -69,6 +75,8 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       _showError('월간 요약을 불러올 수 없습니다. ${error.toString()}');
     } on LeaveRepositoryException catch (error) {
       _showError('연차 요약을 불러올 수 없습니다. ${error.toString()}');
+    } on WorkRuleRepositoryException catch (error) {
+      _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
     } on MonthlySummaryException catch (error) {
       _showError('월간 요약을 계산할 수 없습니다. ${error.toString()}');
     } on LeaveSummaryException catch (error) {
@@ -153,6 +161,18 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     }
   }
 
+  Future<void> _openWorkRuleSettings() async {
+    final Object? result = await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (BuildContext context) =>
+            WorkRuleSettingsScreen(repository: widget.workRuleRepository),
+      ),
+    );
+    if (result == true) {
+      await _loadSummary();
+    }
+  }
+
   void _closeScreen() {
     Navigator.of(context).pop(_didDeleteWorkRecord);
   }
@@ -193,11 +213,14 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                 else if (_errorMessage != null)
                   _MonthlySummaryMessage(message: _errorMessage!)
                 else if (viewData != null) ...<Widget>[
-                  _TotalWorkCard(summary: viewData.workSummary),
+                  _TotalWorkCard(viewData: viewData),
                   const SizedBox(height: 14),
-                  _MonthlyStats(summary: viewData.workSummary),
+                  _MonthlyStats(viewData: viewData),
                   const SizedBox(height: 14),
-                  _TagReferenceSummary(summary: viewData.workSummary),
+                  _WorkTimeCandidateSummaryCard(
+                    viewData: viewData,
+                    onOpenWorkRuleSettings: _openWorkRuleSettings,
+                  ),
                   const SizedBox(height: 14),
                   _MonthlyLeaveSummaryCard(viewData: viewData),
                   const SizedBox(height: 24),
@@ -212,11 +235,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                         : _openPricingFakeDoor,
                     child: const Text('월간 리포트 만들기'),
                   ),
-                  const SizedBox(height: 10),
-                  OutlinedButton(
-                    onPressed: _closeScreen,
-                    child: const Text('홈으로'),
-                  ),
                 ],
               ],
             ),
@@ -228,9 +246,9 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 }
 
 final class _TotalWorkCard extends StatelessWidget {
-  const _TotalWorkCard({required this.summary});
+  const _TotalWorkCard({required this.viewData});
 
-  final MonthlySummary summary;
+  final MonthlySummaryViewData viewData;
 
   @override
   Widget build(BuildContext context) {
@@ -254,19 +272,11 @@ final class _TotalWorkCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               formatMonthlySummaryDuration(
-                duration: summary.totalWorkedDuration,
+                duration: viewData.displayTotalWorkedDuration,
               ),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              '개인 참고용 기록입니다',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.72),
                 letterSpacing: 0,
               ),
             ),
@@ -278,12 +288,13 @@ final class _TotalWorkCard extends StatelessWidget {
 }
 
 final class _MonthlyStats extends StatelessWidget {
-  const _MonthlyStats({required this.summary});
+  const _MonthlyStats({required this.viewData});
 
-  final MonthlySummary summary;
+  final MonthlySummaryViewData viewData;
 
   @override
   Widget build(BuildContext context) {
+    final MonthlySummary summary = viewData.workSummary;
     return Row(
       children: <Widget>[
         Expanded(
@@ -295,10 +306,10 @@ final class _MonthlyStats extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _StatTile(
-            label: '초과 참고',
-            value: formatMonthlySummaryDuration(
-              duration: summary.overtimeReferenceDuration,
-            ),
+            label: '근무 태그',
+            value: viewData.workRule == null
+                ? '기준 미설정'
+                : '${viewData.workTimeCandidateSummary.activeTagCount}개',
           ),
         ),
       ],
@@ -389,13 +400,18 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
   }
 }
 
-final class _TagReferenceSummary extends StatelessWidget {
-  const _TagReferenceSummary({required this.summary});
+final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
+  const _WorkTimeCandidateSummaryCard({
+    required this.viewData,
+    required this.onOpenWorkRuleSettings,
+  });
 
-  final MonthlySummary summary;
+  final MonthlySummaryViewData viewData;
+  final VoidCallback onOpenWorkRuleSettings;
 
   @override
   Widget build(BuildContext context) {
+    final bool hasWorkRule = viewData.workRule != null;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -408,7 +424,7 @@ final class _TagReferenceSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              '태그별 참고',
+              '근무 태그',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: const Color(0xFF181D26),
                 fontWeight: FontWeight.w600,
@@ -416,26 +432,52 @@ final class _TagReferenceSummary extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _TagReferenceRow(
-              label: '야근',
-              value: formatMonthlySummaryDuration(
-                duration: summary.overtimeDuration,
+            if (!hasWorkRule) ...<Widget>[
+              Text(
+                '근무 기준을 설정하면 휴무일 근무, 정시 전 근무, 연장 근무, 야간 근무를 분리해 보여줍니다.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF41454D),
+                  letterSpacing: 0,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            _TagReferenceRow(
-              label: '퇴근 지연',
-              value: formatMonthlySummaryDuration(
-                duration: summary.delayedCheckoutDuration,
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: onOpenWorkRuleSettings,
+                child: const Text('근무 기준 설정'),
               ),
-            ),
-            const SizedBox(height: 10),
-            _TagReferenceRow(
-              label: '휴일근무',
-              value: formatMonthlySummaryDuration(
-                duration: summary.holidayWorkDuration,
+            ] else if (viewData.workSummary.completedWorkDayCount ==
+                0) ...<Widget>[
+              Text(
+                '완료된 근무 기록이 없습니다',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF41454D),
+                  letterSpacing: 0,
+                ),
               ),
-            ),
+            ] else if (!viewData
+                .workTimeCandidateSummary
+                .hasActiveTags) ...<Widget>[
+              Text(
+                '정시 기준 외 근무 없음',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF181D26),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '이번 달 기록은 설정한 근무 기준 안에 있습니다.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF6F737A),
+                  letterSpacing: 0,
+                ),
+              ),
+            ] else ...<Widget>[
+              _CandidateReferenceRows(
+                summary: viewData.workTimeCandidateSummary,
+              ),
+            ],
           ],
         ),
       ),
@@ -443,8 +485,62 @@ final class _TagReferenceSummary extends StatelessWidget {
   }
 }
 
-final class _TagReferenceRow extends StatelessWidget {
-  const _TagReferenceRow({required this.label, required this.value});
+final class _CandidateReferenceRows extends StatelessWidget {
+  const _CandidateReferenceRows({required this.summary});
+
+  final WorkTimeCandidateSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_CandidateReferenceData> rows = _visibleCandidateRows(
+      summary: summary,
+    );
+    return Column(
+      children: <Widget>[
+        for (int index = 0; index < rows.length; index += 1) ...<Widget>[
+          if (index > 0) const SizedBox(height: 10),
+          _CandidateReferenceRow(
+            label: rows[index].label,
+            value: formatMonthlySummaryDuration(duration: rows[index].duration),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+final class _CandidateReferenceData {
+  const _CandidateReferenceData({required this.label, required this.duration});
+
+  final String label;
+  final Duration duration;
+}
+
+List<_CandidateReferenceData> _visibleCandidateRows({
+  required WorkTimeCandidateSummary summary,
+}) {
+  final List<_CandidateReferenceData> rows = <_CandidateReferenceData>[
+    _CandidateReferenceData(
+      label: '휴무일 근무',
+      duration: summary.nonWorkdayDuration,
+    ),
+    _CandidateReferenceData(
+      label: '정시 전 근무',
+      duration: summary.earlyWorkDuration,
+    ),
+    _CandidateReferenceData(label: '연장 근무', duration: summary.overtimeDuration),
+    _CandidateReferenceData(
+      label: '야간 근무',
+      duration: summary.nightWorkDuration,
+    ),
+  ];
+  return rows
+      .where((_CandidateReferenceData row) => row.duration > Duration.zero)
+      .toList(growable: false);
+}
+
+final class _CandidateReferenceRow extends StatelessWidget {
+  const _CandidateReferenceRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -680,10 +776,13 @@ final class _MonthlyRecordRow extends StatelessWidget {
                       letterSpacing: 0,
                     ),
                   ),
-                  if (entry.isCompleted && entry.tags.isNotEmpty) ...<Widget>[
+                  if (entry.isCompleted &&
+                      formatMonthlySummaryRecordReasons(
+                        tags: entry.tags,
+                      ).isNotEmpty) ...<Widget>[
                     const SizedBox(height: 6),
                     Text(
-                      formatMonthlySummaryTags(tags: entry.tags),
+                      '기록 사유: ${formatMonthlySummaryRecordReasons(tags: entry.tags)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: const Color(0xFF41454D),
                         letterSpacing: 0,
@@ -863,14 +962,21 @@ String formatMonthlySummaryLeaveMinutes({required int minutes}) {
   return parts.join(' ');
 }
 
-String formatMonthlySummaryTags({required List<WorkRecordTag> tags}) {
-  return tags.map(formatMonthlySummaryTag).join(' · ');
+String formatMonthlySummaryRecordReasons({required List<WorkRecordTag> tags}) {
+  return tags
+      .where((WorkRecordTag tag) => tag == WorkRecordTag.delayedCheckout)
+      .map(formatMonthlySummaryRecordReason)
+      .join(' · ');
 }
 
-String formatMonthlySummaryTag(WorkRecordTag tag) {
+String formatMonthlySummaryRecordReason(WorkRecordTag tag) {
   return switch (tag) {
-    WorkRecordTag.overtime => '야근',
-    WorkRecordTag.delayedCheckout => '퇴근 지연',
-    WorkRecordTag.holidayWork => '휴일근무',
+    WorkRecordTag.delayedCheckout => '퇴근 기록 지연',
+    WorkRecordTag.overtime ||
+    WorkRecordTag.holidayWork => throw ArgumentError.value(
+      tag,
+      'tag',
+      'must be a monthly summary record reason tag',
+    ),
   };
 }

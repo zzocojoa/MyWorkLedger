@@ -2,10 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/monthly_summary/domain/load_monthly_summary.dart';
 import 'package:workledger/features/monthly_summary/domain/monthly_summary.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
+import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
 
 void main() {
   group('loadMonthlySummary', () {
@@ -38,10 +40,13 @@ void main() {
         findBalanceError: null,
         findUsagesError: null,
       );
+      final _FakeWorkRuleRepository workRuleRepository =
+          _FakeWorkRuleRepository(rule: _workRule(), findActiveError: null);
 
       final MonthlySummaryViewData viewData = await loadMonthlySummary(
         workRecordRepository: repository,
         leaveRepository: leaveRepository,
+        workRuleRepository: workRuleRepository,
         targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
       );
 
@@ -54,11 +59,167 @@ void main() {
         viewData.workSummary.totalWorkedDuration,
         const Duration(hours: 11, minutes: 30),
       );
+      expect(
+        viewData.displayTotalWorkedDuration,
+        const Duration(hours: 10, minutes: 30),
+      );
       expect(viewData.leaveSummary.totalLeaveMinutes, 7200);
       expect(viewData.leaveSummary.usedLeaveMinutes, 720);
       expect(viewData.leaveSummary.remainingLeaveMinutes, 6480);
       expect(viewData.monthlyUsedLeaveMinutes, 240);
+      expect(viewData.workRule, _workRule());
+      expect(
+        viewData.workTimeCandidateSummary.earlyWorkDuration,
+        Duration.zero,
+      );
+      expect(
+        viewData.workTimeCandidateSummary.nonWorkdayDuration,
+        Duration.zero,
+      );
+      expect(
+        viewData.workTimeCandidateSummary.overtimeDuration,
+        const Duration(hours: 2, minutes: 30),
+      );
     });
+
+    test(
+      'separates non-workday and time candidates with break excluded total',
+      () async {
+        final MonthlySummaryViewData viewData = await loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[
+              _record(
+                id: 'saturday-work',
+                clockInAt: DateTime(2026, 6, 13, 7, 26),
+                clockOutAt: DateTime(2026, 6, 13, 21, 26),
+                tags: <WorkRecordTag>[],
+              ),
+            ],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        );
+
+        expect(
+          viewData.workSummary.totalWorkedDuration,
+          const Duration(hours: 14),
+        );
+        expect(viewData.displayTotalWorkedDuration, const Duration(hours: 13));
+        expect(
+          viewData.workTimeCandidateSummary.nonWorkdayDuration,
+          const Duration(hours: 13),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.earlyWorkDuration,
+          const Duration(hours: 1, minutes: 34),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.overtimeDuration,
+          const Duration(hours: 3, minutes: 26),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.nightWorkDuration,
+          Duration.zero,
+        );
+      },
+    );
+
+    test(
+      'combines early work and excludes delayed checkout overtime',
+      () async {
+        final MonthlySummaryViewData viewData = await loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[
+              _record(
+                id: 'early-and-late',
+                clockInAt: DateTime(2026, 6, 1, 7, 26),
+                clockOutAt: DateTime(2026, 6, 1, 21, 26),
+                tags: <WorkRecordTag>[],
+              ),
+              _record(
+                id: 'delayed-checkout',
+                clockInAt: DateTime(2026, 6, 2, 9, 0),
+                clockOutAt: DateTime(2026, 6, 2, 23, 30),
+                tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+              ),
+            ],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        );
+
+        expect(
+          viewData.workTimeCandidateSummary.earlyWorkDuration,
+          const Duration(hours: 1, minutes: 34),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.overtimeDuration,
+          const Duration(hours: 3, minutes: 26),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.nightWorkDuration,
+          Duration.zero,
+        );
+      },
+    );
+
+    test(
+      'returns unavailable work time candidates when work rule is missing',
+      () async {
+        final MonthlySummaryViewData viewData = await loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[
+              _record(
+                id: 'june-1',
+                clockInAt: DateTime(2026, 6, 1, 9, 0),
+                clockOutAt: DateTime(2026, 6, 1, 20, 30),
+                tags: <WorkRecordTag>[],
+              ),
+            ],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: null,
+            findActiveError: null,
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        );
+
+        expect(viewData.workRule, isNull);
+        expect(
+          viewData.displayTotalWorkedDuration,
+          const Duration(hours: 11, minutes: 30),
+        );
+        expect(viewData.workTimeCandidateSummary.isAvailable, isFalse);
+        expect(viewData.workTimeCandidateSummary.reason, 'workRuleMissing');
+      },
+    );
 
     test('raises repository errors without hiding them', () async {
       final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
@@ -76,6 +237,10 @@ void main() {
             usages: <LeaveUsage>[],
             findBalanceError: null,
             findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: null,
+            findActiveError: null,
           ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
@@ -101,9 +266,38 @@ void main() {
         () => loadMonthlySummary(
           workRecordRepository: repository,
           leaveRepository: leaveRepository,
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: null,
+            findActiveError: null,
+          ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
         throwsA(isA<LeaveRepositoryException>()),
+      );
+    });
+
+    test('raises work rule repository errors without hiding them', () async {
+      expect(
+        () => loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: null,
+            findActiveError: const WorkRuleRepositoryException(
+              'action=findActive rule=test failure',
+            ),
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        ),
+        throwsA(isA<WorkRuleRepositoryException>()),
       );
     });
   });
@@ -149,6 +343,18 @@ LeaveUsage _leaveUsage({
     memo: null,
     createdAt: DateTime(2026, 1, 1, 9),
     updatedAt: DateTime(2026, 1, 1, 9),
+  );
+}
+
+WorkRule _workRule() {
+  return WorkRule(
+    id: 'active-rule',
+    regularStartTimeMinutes: 540,
+    regularEndTimeMinutes: 1080,
+    breakMinutes: 60,
+    workWeekdays: <int>[1, 2, 3, 4, 5],
+    createdAt: DateTime(2026, 6, 1, 9),
+    updatedAt: DateTime(2026, 6, 1, 9),
   );
 }
 
@@ -268,5 +474,34 @@ final class _FakeLeaveRepository implements LeaveRepository {
   @override
   Future<void> deleteUsage({required String id}) async {
     throw const LeaveRepositoryException('unexpected deleteUsage call');
+  }
+}
+
+final class _FakeWorkRuleRepository implements WorkRuleRepository {
+  const _FakeWorkRuleRepository({
+    required this.rule,
+    required this.findActiveError,
+  });
+
+  final WorkRule? rule;
+  final WorkRuleRepositoryException? findActiveError;
+
+  @override
+  Future<WorkRule?> findActive() async {
+    final WorkRuleRepositoryException? error = findActiveError;
+    if (error != null) {
+      throw error;
+    }
+    return rule;
+  }
+
+  @override
+  Future<WorkRule> save({
+    required int regularStartTimeMinutes,
+    required int regularEndTimeMinutes,
+    required int breakMinutes,
+    required List<int> workWeekdays,
+  }) async {
+    throw const WorkRuleRepositoryException('unexpected save call');
   }
 }

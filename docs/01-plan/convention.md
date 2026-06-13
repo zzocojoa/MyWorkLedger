@@ -141,7 +141,7 @@ lib/
 
 | Model | Responsibility |
 |---|---|
-| `WorkRecord` | 근무일, 출근/퇴근, 태그, 메모, 생성/수정 시각 보관 |
+| `WorkRecord` | 근무일, 출근/퇴근, 기록 사유, 메모, 생성/수정 시각 보관 |
 | `LeaveBalance` | 연도별 총 연차 수동 입력값 보관 |
 | `LeaveUsage` | 사용일과 사용 연차 분 단위 값 보관 |
 | `PricingIntentEvent` | fake-door 클릭 이벤트 보관 |
@@ -209,7 +209,7 @@ MVP 상태 관리는 단순성을 우선한다.
 
 | Error Type | Use Case |
 |---|---|
-| `WorkRecordValidationException` | 출퇴근 시각, 태그, 메모 검증 실패 |
+| `WorkRecordValidationException` | 출퇴근 시각, 기록 사유, 메모 검증 실패 |
 | `LeaveValidationException` | 연차 연도, 사용 분 단위, 총 연차 검증 실패 |
 | `PricingIntentValidationException` | fake-door 이벤트 타입/요금제 검증 실패 |
 | `LocalStorageException` | 로컬 저장 읽기/쓰기 실패 |
