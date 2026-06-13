@@ -1,0 +1,12 @@
+{
+  "@@locale": "en",
+  "appTitle": "WorkLedger",
+  "appKoreanName": "WorkLedger",
+  "homeLocalRecord": "Personal local record",
+  "homeThisMonth": "This month",
+  "homeTotalWork": "Total work",
+  "homeRemainingLeave": "Remaining leave",
+  "homePreparing": "Preparing",
+  "homeMonthlySummary": "Monthly summary",
+  "homeLeaveManagement": "Leave"
+}

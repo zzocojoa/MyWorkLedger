@@ -1,0 +1,544 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/models/leave_balance.dart';
+import 'package:workledger/core/models/leave_usage.dart';
+import 'package:workledger/core/models/pricing_intent_event.dart';
+import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/features/leave/domain/leave_repository.dart';
+import 'package:workledger/features/leave/presentation/leave_management_screen.dart';
+import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
+import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
+import 'package:workledger/features/work_record/domain/work_record_repository.dart';
+import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
+import 'package:workledger/l10n/app_localizations.dart';
+
+void main() {
+  testWidgets('shows before clock-in state and clocks in', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    expect(find.text('아직 출근 전'), findsOneWidget);
+    expect(find.text('기록된 근무 시간이 없습니다'), findsOneWidget);
+    expect(find.text('출근하기'), findsOneWidget);
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.clockInCallCount, 1);
+    expect(find.text('근무 중'), findsOneWidget);
+    expect(find.text('출근 09:00'), findsOneWidget);
+  });
+
+  testWidgets('shows working state and clocks out', (
+    WidgetTester tester,
+  ) async {
+    final DateTime clockInAt = DateTime(2026, 6, 12, 9, 3);
+    final DateTime now = DateTime(2026, 6, 12, 12, 45);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: clockInAt,
+        clockOutAt: null,
+        now: clockInAt,
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    expect(find.text('근무 중'), findsOneWidget);
+    expect(find.text('출근 09:03'), findsOneWidget);
+    expect(find.text('현재 3시간 42분 기록 중'), findsOneWidget);
+    expect(find.text('퇴근하기'), findsOneWidget);
+
+    await tester.tap(find.text('퇴근하기'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.clockOutCallCount, 1);
+    expect(find.text('오늘 기록 완료'), findsOneWidget);
+    expect(find.text('09:03 - 12:45'), findsOneWidget);
+    expect(find.text('총 3시간 42분'), findsOneWidget);
+  });
+
+  testWidgets('shows after clock-out state', (WidgetTester tester) async {
+    final DateTime now = DateTime(2026, 6, 12, 19, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 3),
+        clockOutAt: DateTime(2026, 6, 12, 18, 42),
+        now: DateTime(2026, 6, 12, 18, 42),
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    expect(find.text('오늘 기록 완료'), findsOneWidget);
+    expect(find.text('09:03 - 18:42'), findsOneWidget);
+    expect(find.text('총 9시간 39분'), findsOneWidget);
+    expect(find.text('오늘 기록 수정'), findsOneWidget);
+    expect(find.text('월간 요약 보기'), findsOneWidget);
+  });
+
+  testWidgets('shows current month preview values', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 19, 0);
+    final WorkRecord firstRecord = _workRecord(
+      clockInAt: DateTime(2026, 6, 12, 9, 0),
+      clockOutAt: DateTime(2026, 6, 12, 18, 0),
+      now: DateTime(2026, 6, 12, 18, 0),
+    );
+    final WorkRecord secondRecord = _workRecordWithId(
+      id: 'record-2',
+      clockInAt: DateTime(2026, 6, 13, 10, 0),
+      clockOutAt: DateTime(2026, 6, 13, 12, 30),
+      now: DateTime(2026, 6, 13, 12, 30),
+    );
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: firstRecord,
+      monthlyRecords: <WorkRecord>[firstRecord, secondRecord],
+      now: () => now,
+    );
+    final _FakeLeaveRepository leaveRepository = _FakeLeaveRepository(
+      balance: _leaveBalance(year: 2026, totalLeaveMinutes: 15 * 480, now: now),
+      usages: <LeaveUsage>[
+        _leaveUsage(
+          id: 'leave-usage-1',
+          usedOn: DateTime(2026, 3, 4),
+          usedLeaveMinutes: 480,
+          now: now,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: leaveRepository,
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('이번 달'), findsOneWidget);
+    expect(find.text('총 근무'), findsOneWidget);
+    expect(find.text('11시간 30분'), findsOneWidget);
+    expect(find.text('남은 연차'), findsOneWidget);
+    expect(find.text('14일'), findsOneWidget);
+    expect(find.text('준비 중'), findsNothing);
+  });
+
+  testWidgets('shows missing leave balance in current month preview', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    expect(find.text('총 근무'), findsOneWidget);
+    expect(find.text('0분'), findsOneWidget);
+    expect(find.text('남은 연차'), findsOneWidget);
+    expect(find.text('총 연차 미입력'), findsOneWidget);
+  });
+
+  testWidgets('opens edit screen and refreshes after save', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 3),
+        clockOutAt: DateTime(2026, 6, 12, 18, 42),
+        now: DateTime(2026, 6, 12, 18, 42),
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.text('오늘 기록 수정'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('clockOutTimeField')), '19:10');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+
+    expect(repository.updateTodayCallCount, 1);
+    expect(find.text('09:03 - 19:10'), findsOneWidget);
+    expect(find.text('총 10시간 7분'), findsOneWidget);
+  });
+
+  testWidgets('shows explicit repository error', (WidgetTester tester) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository =
+        _FakeWorkRecordRepository(
+            initialRecord: null,
+            monthlyRecords: <WorkRecord>[],
+            now: () => now,
+          )
+          ..clockInError = const WorkRecordRepositoryException(
+            'action=clockIn rule=test failure',
+          );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pump();
+
+    expect(
+      find.text(
+        'WorkRecordRepositoryException: action=clockIn rule=test failure',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('opens monthly summary from after clock-out secondary action', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 19, 0);
+    final WorkRecord record = _workRecord(
+      clockInAt: DateTime(2026, 6, 12, 9, 3),
+      clockOutAt: DateTime(2026, 6, 12, 18, 42),
+      now: DateTime(2026, 6, 12, 18, 42),
+    );
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: record,
+      monthlyRecords: <WorkRecord>[record],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.text('월간 요약 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MonthlySummaryScreen), findsOneWidget);
+    expect(find.text('월간 요약'), findsOneWidget);
+    expect(find.text('2026-06'), findsOneWidget);
+    expect(find.text('9시간 39분'), findsOneWidget);
+  });
+
+  testWidgets('opens monthly summary from home monthly link', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.text('월간 요약'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MonthlySummaryScreen), findsOneWidget);
+    expect(find.text('월간 요약'), findsOneWidget);
+    expect(find.text('이 달 기록이 없습니다'), findsOneWidget);
+  });
+
+  testWidgets('opens leave management from home leave link', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.text('연차 관리'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LeaveManagementScreen), findsOneWidget);
+    expect(find.text('연차 관리'), findsOneWidget);
+    expect(find.text('기준 연도'), findsOneWidget);
+  });
+}
+
+Widget _buildScreen({
+  required _FakeWorkRecordRepository repository,
+  required DateTime now,
+  _FakeLeaveRepository? leaveRepository,
+}) {
+  final _FakeLeaveRepository resolvedLeaveRepository =
+      leaveRepository ?? _FakeLeaveRepository.empty();
+
+  return MaterialApp(
+    locale: const Locale('ko'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: WorkRecordHomeScreen(
+      repository: repository,
+      leaveRepository: resolvedLeaveRepository,
+      pricingIntentRepository: _FakePricingIntentRepository(),
+      now: () => now,
+    ),
+  );
+}
+
+WorkRecord _workRecord({
+  required DateTime clockInAt,
+  required DateTime? clockOutAt,
+  required DateTime now,
+}) {
+  return _workRecordWithId(
+    id: 'record-1',
+    clockInAt: clockInAt,
+    clockOutAt: clockOutAt,
+    now: now,
+  );
+}
+
+WorkRecord _workRecordWithId({
+  required String id,
+  required DateTime clockInAt,
+  required DateTime? clockOutAt,
+  required DateTime now,
+}) {
+  return WorkRecord(
+    id: id,
+    workDate: DateTime(clockInAt.year, clockInAt.month, clockInAt.day),
+    clockInAt: clockInAt,
+    clockOutAt: clockOutAt,
+    tags: <WorkRecordTag>[],
+    memo: null,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+LeaveBalance _leaveBalance({
+  required int year,
+  required int totalLeaveMinutes,
+  required DateTime now,
+}) {
+  return LeaveBalance(
+    id: 'leave-balance-$year',
+    year: year,
+    totalLeaveMinutes: totalLeaveMinutes,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+LeaveUsage _leaveUsage({
+  required String id,
+  required DateTime usedOn,
+  required int usedLeaveMinutes,
+  required DateTime now,
+}) {
+  return LeaveUsage(
+    id: id,
+    usedOn: DateTime(usedOn.year, usedOn.month, usedOn.day),
+    usedLeaveMinutes: usedLeaveMinutes,
+    memo: null,
+    createdAt: now,
+    updatedAt: now,
+  );
+}
+
+final class _FakeWorkRecordRepository implements WorkRecordRepository {
+  _FakeWorkRecordRepository({
+    required WorkRecord? initialRecord,
+    required this.monthlyRecords,
+    required this.now,
+  }) : _record = initialRecord;
+
+  WorkRecord? _record;
+  final List<WorkRecord> monthlyRecords;
+  final DateTime Function() now;
+  int clockInCallCount = 0;
+  int clockOutCallCount = 0;
+  int updateTodayCallCount = 0;
+  WorkRecordRepositoryException? clockInError;
+
+  @override
+  Future<WorkRecord?> findToday() async {
+    return _record;
+  }
+
+  @override
+  Future<List<WorkRecord>> findByMonth({
+    required int year,
+    required int month,
+  }) async {
+    return monthlyRecords
+        .where((WorkRecord record) {
+          return record.workDate.year == year && record.workDate.month == month;
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  Future<WorkRecord> clockIn() async {
+    clockInCallCount += 1;
+    final WorkRecordRepositoryException? error = clockInError;
+    if (error != null) {
+      throw error;
+    }
+    final DateTime value = now();
+    _record = WorkRecord(
+      id: 'record-1',
+      workDate: DateTime(value.year, value.month, value.day),
+      clockInAt: value,
+      clockOutAt: null,
+      tags: <WorkRecordTag>[],
+      memo: null,
+      createdAt: value,
+      updatedAt: value,
+    );
+    return _record!;
+  }
+
+  @override
+  Future<WorkRecord> clockOut() async {
+    clockOutCallCount += 1;
+    final WorkRecord? record = _record;
+    if (record == null) {
+      throw const WorkRecordRepositoryException(
+        'action=clockOut rule=missing record',
+      );
+    }
+    final DateTime value = now();
+    _record = record.copyWith(
+      id: record.id,
+      workDate: record.workDate,
+      clockInAt: record.clockInAt,
+      clockOutAt: value,
+      tags: record.tags,
+      memo: record.memo,
+      createdAt: record.createdAt,
+      updatedAt: value,
+    );
+    return _record!;
+  }
+
+  @override
+  Future<WorkRecord> updateToday({
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    updateTodayCallCount += 1;
+    final WorkRecord? record = _record;
+    if (record == null) {
+      throw const WorkRecordRepositoryException(
+        'action=updateToday rule=missing record',
+      );
+    }
+    final DateTime value = now();
+    _record = record.copyWith(
+      id: record.id,
+      workDate: record.workDate,
+      clockInAt: clockInAt,
+      clockOutAt: clockOutAt,
+      tags: tags,
+      memo: memo,
+      createdAt: record.createdAt,
+      updatedAt: value,
+    );
+    return _record!;
+  }
+}
+
+final class _FakePricingIntentRepository implements PricingIntentRepository {
+  @override
+  Future<PricingIntentEvent> save({
+    required PricingIntentEventType eventType,
+    required PricingPlan? selectedPlan,
+    required String sourceScreen,
+  }) async {
+    return PricingIntentEvent(
+      id: 'pricing-event-1',
+      eventType: eventType,
+      selectedPlan: selectedPlan,
+      sourceScreen: sourceScreen,
+      occurredAt: DateTime(2026, 6, 12, 18, 42),
+      createdAt: DateTime(2026, 6, 12, 18, 42),
+    );
+  }
+
+  @override
+  Future<List<PricingIntentEvent>> findAll() async {
+    return <PricingIntentEvent>[];
+  }
+}
+
+final class _FakeLeaveRepository implements LeaveRepository {
+  _FakeLeaveRepository({
+    required this.balance,
+    required List<LeaveUsage> usages,
+  }) : usages = List<LeaveUsage>.unmodifiable(usages);
+
+  factory _FakeLeaveRepository.empty() {
+    return _FakeLeaveRepository(balance: null, usages: <LeaveUsage>[]);
+  }
+
+  final LeaveBalance? balance;
+  final List<LeaveUsage> usages;
+
+  @override
+  Future<LeaveBalance?> findBalanceByYear({required int year}) async {
+    final LeaveBalance? value = balance;
+    if (value == null || value.year != year) {
+      return null;
+    }
+    return value;
+  }
+
+  @override
+  Future<LeaveBalance> saveBalance({
+    required int year,
+    required int totalLeaveMinutes,
+  }) async {
+    throw const LeaveRepositoryException('unexpected saveBalance call');
+  }
+
+  @override
+  Future<List<LeaveUsage>> findUsagesByYear({required int year}) async {
+    return usages
+        .where((LeaveUsage usage) => usage.usedOn.year == year)
+        .toList(growable: false);
+  }
+
+  @override
+  Future<LeaveUsage> addUsage({
+    required DateTime usedOn,
+    required int usedLeaveMinutes,
+    required String? memo,
+  }) async {
+    throw const LeaveRepositoryException('unexpected addUsage call');
+  }
+}

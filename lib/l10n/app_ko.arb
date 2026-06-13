@@ -1,0 +1,39 @@
+{
+  "@@locale": "ko",
+  "appTitle": "WorkLedger",
+  "@appTitle": {
+    "description": "Application title used by the OS and MaterialApp."
+  },
+  "appKoreanName": "내근무장부",
+  "@appKoreanName": {
+    "description": "Primary Korean display name."
+  },
+  "homeLocalRecord": "개인 로컬 기록",
+  "@homeLocalRecord": {
+    "description": "Home subtitle explaining that records are personal and local."
+  },
+  "homeThisMonth": "이번 달",
+  "@homeThisMonth": {
+    "description": "Home monthly preview heading."
+  },
+  "homeTotalWork": "총 근무",
+  "@homeTotalWork": {
+    "description": "Home monthly preview total work label."
+  },
+  "homeRemainingLeave": "남은 연차",
+  "@homeRemainingLeave": {
+    "description": "Home monthly preview remaining leave label."
+  },
+  "homePreparing": "준비 중",
+  "@homePreparing": {
+    "description": "Placeholder text for a value that is not wired yet."
+  },
+  "homeMonthlySummary": "월간 요약",
+  "@homeMonthlySummary": {
+    "description": "Home link to the monthly summary screen."
+  },
+  "homeLeaveManagement": "연차 관리",
+  "@homeLeaveManagement": {
+    "description": "Home link to the leave management screen."
+  }
+}

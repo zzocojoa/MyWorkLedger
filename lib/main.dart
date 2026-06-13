@@ -1,47 +1,63 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
 
-void main() {
-  runApp(const WorkLedgerApp());
-}
+import 'app/workledger_app.dart';
+import 'core/notifications/workledger_notification_service.dart';
+import 'core/storage/persistent_key_value_storage.dart';
+import 'features/leave/data/local_storage_leave_repository.dart';
+import 'features/pricing/data/local_storage_pricing_intent_repository.dart';
+import 'features/work_record/data/local_storage_work_record_repository.dart';
 
-class WorkLedgerApp extends StatelessWidget {
-  const WorkLedgerApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'WorkLedger',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
-      ),
-      home: const WorkLedgerHomeScreen(),
-    );
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final PersistentKeyValueStorage storage = PersistentKeyValueStorage(
+    file: PersistentKeyValueStorage.fileInDirectory(
+      directory: await getApplicationSupportDirectory(),
+    ),
+  );
+  DateTime now() {
+    return DateTime.now();
   }
-}
 
-class WorkLedgerHomeScreen extends StatelessWidget {
-  const WorkLedgerHomeScreen({super.key});
+  final LocalStorageWorkRecordRepository repository =
+      LocalStorageWorkRecordRepository(
+        storage: storage,
+        clock: now,
+        idGenerator: () => 'work-${now().microsecondsSinceEpoch}',
+      );
+  final LocalStorageLeaveRepository leaveRepository =
+      LocalStorageLeaveRepository(
+        storage: storage,
+        clock: now,
+        idGenerator: () => 'leave-${now().microsecondsSinceEpoch}',
+      );
+  final LocalStoragePricingIntentRepository pricingIntentRepository =
+      LocalStoragePricingIntentRepository(
+        storage: storage,
+        clock: now,
+        idGenerator: () => 'pricing-${now().microsecondsSinceEpoch}',
+      );
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  final WorkLedgerNotificationService notificationService =
+      WorkLedgerNotificationService(
+        plugin: FlutterLocalNotificationsPlugin(),
+        repository: repository,
+        openHome: () {
+          navigatorKey.currentState?.popUntil((Route<dynamic> route) {
+            return route.isFirst;
+          });
+        },
+      );
+  await notificationService.initialize();
 
-  @override
-  Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('내근무장부'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('내근무장부', style: textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            Text('WorkLedger', style: textTheme.titleMedium),
-          ],
-        ),
-      ),
-    );
-  }
+  runApp(
+    WorkLedgerApp(
+      workRecordRepository: repository,
+      leaveRepository: leaveRepository,
+      pricingIntentRepository: pricingIntentRepository,
+      now: now,
+      navigatorKey: navigatorKey,
+    ),
+  );
 }
