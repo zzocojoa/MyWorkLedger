@@ -31,7 +31,13 @@ void main() {
       now: () => now,
     );
 
-    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        textScaler: TextScaler.noScaling,
+      ),
+    );
     await tester.pump();
     await tester.pump();
 
@@ -68,7 +74,13 @@ void main() {
       now: () => now,
     );
 
-    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        textScaler: TextScaler.noScaling,
+      ),
+    );
     await tester.pump();
     await tester.pump();
 
@@ -106,7 +118,13 @@ void main() {
       now: () => now,
     );
 
-    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        textScaler: TextScaler.noScaling,
+      ),
+    );
     await tester.pump();
     await tester.pump();
 
@@ -136,13 +154,60 @@ void main() {
             'action=findByMonth rule=test failure',
           );
 
-    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        textScaler: TextScaler.noScaling,
+      ),
+    );
     await tester.pump();
     await tester.pump();
 
     expect(find.textContaining('달력 기록을 불러올 수 없습니다.'), findsOneWidget);
     expect(find.textContaining('action=findByMonth'), findsOneWidget);
   });
+
+  testWidgets(
+    'does not overflow selected today cell on Android-like viewport',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2280);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final DateTime now = DateTime(2026, 6, 13, 20, 0);
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        records: <WorkRecord>[
+          _workRecord(
+            id: 'work-2026-06-13',
+            workDate: DateTime(2026, 6, 13),
+            clockInAt: DateTime(2026, 6, 13, 7, 26),
+            clockOutAt: DateTime(2026, 6, 13, 13, 26),
+            tags: <WorkRecordTag>[],
+            memo: null,
+          ),
+        ],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          now: now,
+          textScaler: const TextScaler.linear(1.1),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('오늘'), findsOneWidget);
+      expect(find.text('총 6시간'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets(
     'returns modified result after editing today and using app bar back',
@@ -192,8 +257,16 @@ void main() {
 Widget _buildScreen({
   required _FakeWorkRecordRepository repository,
   required DateTime now,
+  required TextScaler textScaler,
 }) {
   return MaterialApp(
+    builder: (BuildContext context, Widget? child) {
+      final MediaQueryData mediaQuery = MediaQuery.of(context);
+      return MediaQuery(
+        data: mediaQuery.copyWith(textScaler: textScaler),
+        child: child ?? const SizedBox.shrink(),
+      );
+    },
     home: WorkRecordCalendarScreen(repository: repository, now: () => now),
   );
 }

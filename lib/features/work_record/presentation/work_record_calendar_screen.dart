@@ -281,7 +281,7 @@ final class _CalendarGrid extends StatelessWidget {
                 crossAxisCount: 7,
                 mainAxisSpacing: 6,
                 crossAxisSpacing: 4,
-                childAspectRatio: 0.74,
+                childAspectRatio: 0.68,
               ),
               itemBuilder: (BuildContext context, int index) {
                 final DateTime? date = cells[index];
@@ -372,40 +372,43 @@ final class _CalendarDayCell extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  date.day.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _calendarMarker(entry: entry),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-                if (isToday) ...<Widget>[
-                  const SizedBox(height: 2),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
                   Text(
-                    '오늘',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    date.day.toString(),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: foregroundColor,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0,
                     ),
                   ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _calendarMarker(entry: entry),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: foregroundColor,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  if (isToday) ...<Widget>[
+                    const SizedBox(height: 2),
+                    Text(
+                      '오늘',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
