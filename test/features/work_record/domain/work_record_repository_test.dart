@@ -251,6 +251,132 @@ void main() {
       );
     });
 
+    test('findByDate returns selected previous date record', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final WorkRecord previousRecord = _createRecord(
+        id: 'previous-record',
+        workDate: DateTime(2026, 6, 1),
+        clockInAt: DateTime.parse('2026-06-01T09:00:00'),
+        clockOutAt: DateTime.parse('2026-06-01T18:00:00'),
+        tags: <WorkRecordTag>[],
+      );
+      await _writeRecord(
+        storage: storage,
+        key: '2026-06-01',
+        record: previousRecord,
+      );
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:03:00'),
+        idGenerator: () => 'work-1',
+      );
+
+      final WorkRecord? record = await repository.findByDate(
+        workDate: DateTime(2026, 6, 1, 23, 30),
+      );
+
+      expect(record, previousRecord);
+    });
+
+    test('upsertByDate creates selected previous date record', () async {
+      final DateTime now = DateTime.parse('2026-06-12T20:00:00');
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => now,
+        idGenerator: () => 'work-previous',
+      );
+
+      final WorkRecord record = await repository.upsertByDate(
+        workDate: DateTime(2026, 6, 1, 23, 30),
+        clockInAt: DateTime.parse('2026-06-01T09:00:00'),
+        clockOutAt: DateTime.parse('2026-06-01T18:00:00'),
+        tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+        memo: '누락 기록 보정',
+      );
+      final WorkRecord? savedRecord = await repository.findByDate(
+        workDate: DateTime(2026, 6, 1),
+      );
+
+      expect(record.id, 'work-previous');
+      expect(record.workDate, DateTime(2026, 6, 1));
+      expect(record.clockInAt, DateTime.parse('2026-06-01T09:00:00'));
+      expect(record.clockOutAt, DateTime.parse('2026-06-01T18:00:00'));
+      expect(record.tags, <WorkRecordTag>[WorkRecordTag.delayedCheckout]);
+      expect(record.memo, '누락 기록 보정');
+      expect(record.createdAt, now);
+      expect(record.updatedAt, now);
+      expect(savedRecord, record);
+    });
+
+    test('upsertByDate updates existing selected date record', () async {
+      DateTime now = DateTime.parse('2026-06-12T20:00:00');
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final WorkRecord previousRecord = _createRecord(
+        id: 'previous-record',
+        workDate: DateTime(2026, 6, 1),
+        clockInAt: DateTime.parse('2026-06-01T09:00:00'),
+        clockOutAt: DateTime.parse('2026-06-01T18:00:00'),
+        tags: <WorkRecordTag>[],
+      );
+      await _writeRecord(
+        storage: storage,
+        key: '2026-06-01',
+        record: previousRecord,
+      );
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => now,
+        idGenerator: () => 'unused-id',
+      );
+
+      now = DateTime.parse('2026-06-12T21:00:00');
+      final WorkRecord record = await repository.upsertByDate(
+        workDate: DateTime(2026, 6, 1),
+        clockInAt: DateTime.parse('2026-06-01T09:30:00'),
+        clockOutAt: DateTime.parse('2026-06-01T18:40:00'),
+        tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+        memo: '이전 기록 수정',
+      );
+
+      expect(record.id, 'previous-record');
+      expect(record.createdAt, previousRecord.createdAt);
+      expect(record.updatedAt, DateTime.parse('2026-06-12T21:00:00'));
+      expect(record.clockInAt, DateTime.parse('2026-06-01T09:30:00'));
+      expect(record.clockOutAt, DateTime.parse('2026-06-01T18:40:00'));
+      expect(record.memo, '이전 기록 수정');
+    });
+
+    test('upsertByDate throws when time date differs from workDate', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T20:00:00'),
+        idGenerator: () => 'work-previous',
+      );
+
+      await expectLater(
+        repository.upsertByDate(
+          workDate: DateTime(2026, 6, 1),
+          clockInAt: DateTime.parse('2026-06-02T09:00:00'),
+          clockOutAt: DateTime.parse('2026-06-01T18:00:00'),
+          tags: <WorkRecordTag>[],
+          memo: null,
+        ),
+        throwsA(
+          isA<WorkRecordRepositoryException>().having(
+            (WorkRecordRepositoryException error) => error.message,
+            'message',
+            allOf(
+              contains('action=upsertByDate'),
+              contains('workDate=2026-06-01'),
+              contains('clock-in date must match workDate'),
+            ),
+          ),
+        ),
+      );
+    });
+
     test('deleteToday removes today record', () async {
       final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
       final LocalStorageWorkRecordRepository repository = _createRepository(

@@ -3,6 +3,8 @@ import '../../../core/models/work_record.dart';
 abstract interface class WorkRecordRepository {
   Future<WorkRecord?> findToday();
 
+  Future<WorkRecord?> findByDate({required DateTime workDate});
+
   Future<List<WorkRecord>> findByMonth({required int year, required int month});
 
   Future<WorkRecord> clockIn();
@@ -10,6 +12,14 @@ abstract interface class WorkRecordRepository {
   Future<WorkRecord> clockOut();
 
   Future<WorkRecord> updateToday({
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  });
+
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
     required DateTime? clockInAt,
     required DateTime? clockOutAt,
     required List<WorkRecordTag> tags,

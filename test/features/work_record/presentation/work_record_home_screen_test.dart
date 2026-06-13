@@ -290,7 +290,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '저장'));
     await tester.pumpAndSettle();
 
-    expect(repository.updateTodayCallCount, 1);
+    expect(repository.upsertByDateCallCount, 1);
     expect(find.text('09:03 - 19:10'), findsOneWidget);
     expect(find.text('총 10시간 7분'), findsOneWidget);
   });
@@ -568,6 +568,7 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   int clockInCallCount = 0;
   int clockOutCallCount = 0;
   int updateTodayCallCount = 0;
+  int upsertByDateCallCount = 0;
   int deleteTodayCallCount = 0;
   int deleteByDateCallCount = 0;
   WorkRecordRepositoryException? clockInError;
@@ -575,6 +576,25 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<WorkRecord?> findToday() async {
     return _record;
+  }
+
+  @override
+  Future<WorkRecord?> findByDate({required DateTime workDate}) async {
+    final DateTime targetDate = DateTime(
+      workDate.year,
+      workDate.month,
+      workDate.day,
+    );
+    final WorkRecord? todayRecord = _record;
+    if (todayRecord != null && todayRecord.workDate == targetDate) {
+      return todayRecord;
+    }
+    for (final WorkRecord record in monthlyRecords) {
+      if (record.workDate == targetDate) {
+        return record;
+      }
+    }
+    return null;
   }
 
   @override
@@ -659,6 +679,54 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
       updatedAt: value,
     );
     return _record!;
+  }
+
+  @override
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    upsertByDateCallCount += 1;
+    final DateTime targetDate = DateTime(
+      workDate.year,
+      workDate.month,
+      workDate.day,
+    );
+    final WorkRecord? existingRecord = await findByDate(workDate: targetDate);
+    final DateTime value = now();
+    final WorkRecord savedRecord = existingRecord == null
+        ? WorkRecord(
+            id: 'record-${targetDate.toIso8601String()}',
+            workDate: targetDate,
+            clockInAt: clockInAt,
+            clockOutAt: clockOutAt,
+            tags: tags,
+            memo: memo,
+            createdAt: value,
+            updatedAt: value,
+          )
+        : existingRecord.copyWith(
+            id: existingRecord.id,
+            workDate: existingRecord.workDate,
+            clockInAt: clockInAt,
+            clockOutAt: clockOutAt,
+            tags: tags,
+            memo: memo,
+            createdAt: existingRecord.createdAt,
+            updatedAt: value,
+          );
+    monthlyRecords.removeWhere((WorkRecord record) {
+      return record.workDate == targetDate;
+    });
+    monthlyRecords.add(savedRecord);
+    if (_record?.workDate == targetDate ||
+        targetDate == DateTime(now().year, now().month, now().day)) {
+      _record = savedRecord;
+    }
+    return savedRecord;
   }
 
   @override
