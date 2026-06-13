@@ -117,6 +117,11 @@ final class _WidgetTestWorkRecordRepository implements WorkRecordRepository {
   }
 
   @override
+  Future<WorkRecord?> findByDate({required DateTime workDate}) async {
+    return null;
+  }
+
+  @override
   Future<List<WorkRecord>> findByMonth({
     required int year,
     required int month,
@@ -142,6 +147,19 @@ final class _WidgetTestWorkRecordRepository implements WorkRecordRepository {
     required String? memo,
   }) async {
     throw const WorkRecordRepositoryException('test=widget action=updateToday');
+  }
+
+  @override
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    throw const WorkRecordRepositoryException(
+      'test=widget action=upsertByDate',
+    );
   }
 
   @override

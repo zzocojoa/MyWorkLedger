@@ -29,7 +29,7 @@ final class _WorkRecordCalendarScreenState
   MonthlySummary? _summary;
   String? _errorMessage;
   bool _isLoading = true;
-  bool _didModifyToday = false;
+  bool _didModifyRecord = false;
 
   @override
   void initState() {
@@ -102,23 +102,24 @@ final class _WorkRecordCalendarScreenState
     await _loadMonth();
   }
 
-  Future<void> _openEditTodayRecord() async {
+  Future<void> _openEditWorkRecord() async {
     final Object? result = await Navigator.of(context).push(
       MaterialPageRoute<bool>(
         builder: (BuildContext context) => EditTodayWorkRecordScreen(
           repository: widget.repository,
           now: widget.now,
+          workDate: _selectedDate,
         ),
       ),
     );
     if (result == true) {
-      _didModifyToday = true;
+      _didModifyRecord = true;
       await _loadMonth();
     }
   }
 
   void _closeScreen() {
-    Navigator.of(context).pop(_didModifyToday);
+    Navigator.of(context).pop(_didModifyRecord);
   }
 
   @override
@@ -128,8 +129,7 @@ final class _WorkRecordCalendarScreenState
         _buildEntriesByDate(summary: summary);
     final MonthlyWorkRecordEntry? selectedEntry = entriesByDate[_selectedDate];
     final DateTime today = _dateOnly(widget.now());
-    final bool canEditToday =
-        _isSameDate(left: _selectedDate, right: today) && selectedEntry != null;
+    final String editButtonLabel = selectedEntry == null ? '기록 추가' : '기록 수정';
 
     return PopScope<bool>(
       canPop: false,
@@ -179,13 +179,11 @@ final class _WorkRecordCalendarScreenState
                     selectedDate: _selectedDate,
                     entry: selectedEntry,
                   ),
-                  if (canEditToday) ...<Widget>[
-                    const SizedBox(height: 18),
-                    FilledButton(
-                      onPressed: _openEditTodayRecord,
-                      child: const Text('오늘 기록 수정'),
-                    ),
-                  ],
+                  const SizedBox(height: 18),
+                  FilledButton(
+                    onPressed: _openEditWorkRecord,
+                    child: Text(editButtonLabel),
+                  ),
                 ],
               ],
             ),

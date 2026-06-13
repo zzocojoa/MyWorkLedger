@@ -74,6 +74,44 @@ void main() {
         const Duration(hours: 11, minutes: 30),
       );
     });
+
+    test(
+      'includes record saved by selected date upsert in monthly summary',
+      () async {
+        final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+        final LocalStorageWorkRecordRepository repository =
+            LocalStorageWorkRecordRepository(
+              storage: storage,
+              clock: () => DateTime.parse('2026-06-12T20:00:00'),
+              idGenerator: () => 'manual-previous-record',
+            );
+        await repository.upsertByDate(
+          workDate: DateTime(2026, 6, 1),
+          clockInAt: DateTime.parse('2026-06-01T09:00:00'),
+          clockOutAt: DateTime.parse('2026-06-01T17:30:00'),
+          tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+          memo: '달력에서 추가한 누락 기록',
+        );
+
+        final List<WorkRecord> records = await repository.findByMonth(
+          year: 2026,
+          month: 6,
+        );
+        final MonthlySummary summary = calculateMonthlySummary(
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+          records: records,
+        );
+
+        expect(records.single.id, 'manual-previous-record');
+        expect(records.single.memo, '달력에서 추가한 누락 기록');
+        expect(summary.completedWorkDayCount, 1);
+        expect(
+          summary.totalWorkedDuration,
+          const Duration(hours: 8, minutes: 30),
+        );
+        expect(summary.entries.single.recordId, 'manual-previous-record');
+      },
+    );
   });
 }
 

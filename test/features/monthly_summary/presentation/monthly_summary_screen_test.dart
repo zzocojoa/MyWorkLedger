@@ -784,6 +784,11 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   }
 
   @override
+  Future<WorkRecord?> findByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException('unexpected findByDate call');
+  }
+
+  @override
   Future<List<WorkRecord>> findByMonth({
     required int year,
     required int month,
@@ -815,6 +820,17 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
     required String? memo,
   }) async {
     throw const WorkRecordRepositoryException('unexpected updateToday call');
+  }
+
+  @override
+  Future<WorkRecord> upsertByDate({
+    required DateTime workDate,
+    required DateTime? clockInAt,
+    required DateTime? clockOutAt,
+    required List<WorkRecordTag> tags,
+    required String? memo,
+  }) async {
+    throw const WorkRecordRepositoryException('unexpected upsertByDate call');
   }
 
   @override

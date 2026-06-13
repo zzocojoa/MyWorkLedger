@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/work_record.dart';
-import '../domain/update_today_work_record.dart';
+import '../domain/save_work_record.dart';
 import '../domain/work_record_repository.dart';
 import 'work_record_home_screen.dart';
 
@@ -9,11 +9,13 @@ final class EditTodayWorkRecordScreen extends StatefulWidget {
   const EditTodayWorkRecordScreen({
     required this.repository,
     required this.now,
+    required this.workDate,
     super.key,
   });
 
   final WorkRecordRepository repository;
   final DateTime Function() now;
+  final DateTime workDate;
 
   @override
   State<EditTodayWorkRecordScreen> createState() =>
@@ -54,15 +56,21 @@ final class _EditTodayWorkRecordScreenState
     });
 
     try {
-      final WorkRecord? record = await widget.repository.findToday();
+      final DateTime targetDate = _dateOnly(widget.workDate);
+      final WorkRecord? record = await widget.repository.findByDate(
+        workDate: targetDate,
+      );
       if (!mounted) {
         return;
       }
       if (record == null) {
+        _clockInController.clear();
+        _clockOutController.clear();
+        _memoController.clear();
+        _selectedTags.clear();
         setState(() {
           _record = null;
           _isLoading = false;
-          _errorMessage = '수정할 오늘 기록이 없습니다.';
         });
         return;
       }
@@ -86,32 +94,28 @@ final class _EditTodayWorkRecordScreenState
   }
 
   Future<void> _saveRecord() async {
-    final WorkRecord? record = _record;
-    if (record == null) {
-      _showError('수정할 오늘 기록이 없습니다.');
-      return;
-    }
-
     setState(() {
       _isSaving = true;
       _errorMessage = null;
     });
 
     try {
+      final DateTime targetDate = _dateOnly(widget.workDate);
       final DateTime? clockInAt = parseClockInput(
         value: _clockInController.text,
-        workDate: record.workDate,
+        workDate: targetDate,
         fieldLabel: '출근 시각',
       );
       final DateTime? clockOutAt = parseClockInput(
         value: _clockOutController.text,
-        workDate: record.workDate,
+        workDate: targetDate,
         fieldLabel: '퇴근 시각',
       );
       final String memoText = _memoController.text.trim();
-      await updateTodayWorkRecord(
+      await saveWorkRecord(
         repository: widget.repository,
-        input: UpdateTodayWorkRecordInput(
+        input: SaveWorkRecordInput(
+          workDate: targetDate,
           clockInAt: clockInAt,
           clockOutAt: clockOutAt,
           tags: _selectedTags.toList(),
@@ -124,7 +128,7 @@ final class _EditTodayWorkRecordScreenState
       Navigator.of(context).pop(true);
     } on EditTodayWorkRecordFormException catch (error) {
       _showError(error.message);
-    } on UpdateTodayWorkRecordException {
+    } on SaveWorkRecordException {
       _showError('저장할 수 없습니다. 퇴근 시각은 출근 시각보다 빠를 수 없습니다.');
     } on WorkRecordRepositoryException catch (error) {
       _showError('저장할 수 없습니다. ${error.message}');
@@ -136,11 +140,11 @@ final class _EditTodayWorkRecordScreenState
   Future<void> _deleteRecord() async {
     final WorkRecord? record = _record;
     if (record == null) {
-      _showError('삭제할 오늘 기록이 없습니다.');
+      _showError('삭제할 기록이 없습니다.');
       return;
     }
 
-    final bool confirmed = await _confirmTodayRecordDeletion(context: context);
+    final bool confirmed = await _confirmWorkRecordDeletion(context: context);
     if (!confirmed) {
       return;
     }
@@ -151,7 +155,7 @@ final class _EditTodayWorkRecordScreenState
     });
 
     try {
-      await widget.repository.deleteToday();
+      await widget.repository.deleteByDate(workDate: record.workDate);
       if (!mounted) {
         return;
       }
@@ -186,13 +190,15 @@ final class _EditTodayWorkRecordScreenState
   @override
   Widget build(BuildContext context) {
     final WorkRecord? record = _record;
+    final DateTime targetDate = _dateOnly(widget.workDate);
+    final String title = record == null ? '기록 추가' : '근무 기록 수정';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('오늘 기록 수정'),
+        title: Text(title),
         actions: <Widget>[
           TextButton(
-            onPressed: _isLoading || _isSaving || _isDeleting || record == null
+            onPressed: _isLoading || _isSaving || _isDeleting
                 ? null
                 : _saveRecord,
             child: const Text('저장'),
@@ -207,11 +213,8 @@ final class _EditTodayWorkRecordScreenState
             children: <Widget>[
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
-              else if (record != null) ...<Widget>[
-                _ReadOnlyValue(
-                  label: '근무일',
-                  value: formatDateOnly(record.workDate),
-                ),
+              else ...<Widget>[
+                _ReadOnlyValue(label: '근무일', value: formatDateOnly(targetDate)),
                 const SizedBox(height: 16),
                 _TimeField(
                   key: const Key('clockInTimeField'),
@@ -254,14 +257,16 @@ final class _EditTodayWorkRecordScreenState
                   onPressed: _isSaving || _isDeleting ? null : _saveRecord,
                   child: const Text('저장'),
                 ),
-                const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: _isSaving || _isDeleting ? null : _deleteRecord,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFAA2D00),
+                if (record != null) ...<Widget>[
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: _isSaving || _isDeleting ? null : _deleteRecord,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFAA2D00),
+                    ),
+                    child: const Text('기록 삭제'),
                   ),
-                  child: const Text('오늘 기록 삭제'),
-                ),
+                ],
               ],
               if (_errorMessage != null) ...<Widget>[
                 const SizedBox(height: 16),
@@ -275,15 +280,13 @@ final class _EditTodayWorkRecordScreenState
   }
 }
 
-Future<bool> _confirmTodayRecordDeletion({
-  required BuildContext context,
-}) async {
+Future<bool> _confirmWorkRecordDeletion({required BuildContext context}) async {
   final bool? result = await showDialog<bool>(
     context: context,
     builder: (BuildContext context) {
       return AlertDialog(
-        title: const Text('오늘 기록을 삭제할까요?'),
-        content: const Text('삭제하면 오늘 출근/퇴근 기록과 메모가 없어집니다.'),
+        title: const Text('기록을 삭제할까요?'),
+        content: const Text('삭제하면 선택한 날짜의 출근/퇴근 기록과 메모가 없어집니다.'),
         actions: <Widget>[
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -298,6 +301,10 @@ Future<bool> _confirmTodayRecordDeletion({
     },
   );
   return result ?? false;
+}
+
+DateTime _dateOnly(DateTime value) {
+  return DateTime(value.year, value.month, value.day);
 }
 
 final class _ReadOnlyValue extends StatelessWidget {
