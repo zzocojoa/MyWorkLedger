@@ -8,6 +8,7 @@ import 'core/storage/persistent_key_value_storage.dart';
 import 'features/leave/data/local_storage_leave_repository.dart';
 import 'features/pricing/data/local_storage_pricing_intent_repository.dart';
 import 'features/work_record/data/local_storage_work_record_repository.dart';
+import 'features/work_rule/data/local_storage_work_rule_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,12 @@ Future<void> main() async {
         clock: now,
         idGenerator: () => 'pricing-${now().microsecondsSinceEpoch}',
       );
+  final LocalStorageWorkRuleRepository workRuleRepository =
+      LocalStorageWorkRuleRepository(
+        storage: storage,
+        clock: now,
+        idGenerator: () => 'work-rule-${now().microsecondsSinceEpoch}',
+      );
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   final WorkLedgerNotificationService notificationService =
       WorkLedgerNotificationService(
@@ -55,6 +62,7 @@ Future<void> main() async {
     WorkLedgerApp(
       workRecordRepository: repository,
       leaveRepository: leaveRepository,
+      workRuleRepository: workRuleRepository,
       pricingIntentRepository: pricingIntentRepository,
       now: now,
       navigatorKey: navigatorKey,

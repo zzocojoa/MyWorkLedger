@@ -4,11 +4,14 @@ import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/pricing/presentation/pricing_fake_door_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
+import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
+import 'package:workledger/features/work_rule/presentation/work_rule_settings_screen.dart';
 
 void main() {
   testWidgets('shows empty monthly summary state', (WidgetTester tester) async {
@@ -30,13 +33,12 @@ void main() {
     expect(find.text('월간 요약'), findsOneWidget);
     expect(find.text('2026-06'), findsOneWidget);
     expect(find.text('이번 달 총 근무'), findsOneWidget);
-    expect(find.text('0분'), findsNWidgets(5));
+    expect(find.text('0분'), findsOneWidget);
     expect(find.text('0일'), findsOneWidget);
-    expect(find.text('초과 참고'), findsOneWidget);
-    expect(find.text('태그별 참고'), findsOneWidget);
-    expect(find.text('야근'), findsOneWidget);
-    expect(find.text('퇴근 지연'), findsOneWidget);
-    expect(find.text('휴일근무'), findsOneWidget);
+    expect(find.text('연장 후보'), findsOneWidget);
+    expect(find.text('기준 미설정'), findsOneWidget);
+    expect(find.text('연장·야간 후보'), findsOneWidget);
+    expect(find.text('근무 기준 설정'), findsOneWidget);
     expect(find.text('연차 요약'), findsOneWidget);
     expect(find.text('남은 연차'), findsOneWidget);
     expect(find.text('총 연차를 입력해 주세요'), findsOneWidget);
@@ -90,66 +92,108 @@ void main() {
           findBalanceError: null,
           findUsagesError: null,
         ),
+        workRuleRepository: _FakeWorkRuleRepository(
+          rule: _workRule(),
+          findActiveError: null,
+        ),
         now: DateTime(2026, 6, 12, 9, 0),
       ),
     );
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('20시간 40분'), findsOneWidget);
+    expect(find.text('18시간 40분'), findsOneWidget);
+    expect(find.text('휴게시간을 제외한 개인 참고용 기록입니다'), findsOneWidget);
     expect(find.text('2일'), findsOneWidget);
-    expect(find.text('11시간 30분'), findsNWidgets(2));
+    expect(find.text('2시간 50분'), findsNWidgets(2));
     expect(find.text('13일 4시간'), findsOneWidget);
     expect(find.text('이번 달 사용 연차'), findsOneWidget);
     expect(find.text('4시간'), findsOneWidget);
     expect(find.text('총 15일 · 올해 사용 1일 4시간'), findsOneWidget);
     expect(find.text('이번 달 기록'), findsOneWidget);
     expect(find.text('06-01 09:00-20:30'), findsOneWidget);
-    expect(find.text('야근'), findsNWidgets(2));
+    expect(find.text('야근'), findsNothing);
+    expect(find.textContaining('기록 사유:'), findsNothing);
     expect(find.text('06-03 09:10-18:20'), findsOneWidget);
   });
 
-  testWidgets('shows tag reference duration by work record tag', (
+  testWidgets(
+    'shows candidate duration by work rule instead of whole-day tags',
+    (WidgetTester tester) async {
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        monthlyRecords: <WorkRecord>[
+          _completedRecord(
+            id: 'tag-overtime',
+            clockInAt: DateTime(2026, 6, 1, 18, 0),
+            clockOutAt: DateTime(2026, 6, 1, 20, 0),
+            tags: <WorkRecordTag>[WorkRecordTag.overtime],
+          ),
+          _completedRecord(
+            id: 'tag-delayed',
+            clockInAt: DateTime(2026, 6, 2, 18, 0),
+            clockOutAt: DateTime(2026, 6, 2, 21, 30),
+            tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+          ),
+          _completedRecord(
+            id: 'tag-holiday',
+            clockInAt: DateTime(2026, 6, 6, 10, 0),
+            clockOutAt: DateTime(2026, 6, 6, 14, 15),
+            tags: <WorkRecordTag>[WorkRecordTag.holidayWork],
+          ),
+        ],
+        findByMonthError: null,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          leaveRepository: _emptyLeaveRepository(),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          now: DateTime(2026, 6, 12, 9, 0),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('연장·야간 후보'), findsOneWidget);
+      expect(find.text('연장 후보'), findsNWidgets(2));
+      expect(find.text('5시간 30분'), findsNWidgets(2));
+      expect(find.text('야간 후보'), findsOneWidget);
+      expect(find.text('0분'), findsOneWidget);
+      expect(find.text('기록 사유: 퇴근 기록 지연'), findsOneWidget);
+    },
+  );
+
+  testWidgets('opens work rule settings from missing rule prompt', (
     WidgetTester tester,
   ) async {
-    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
-      monthlyRecords: <WorkRecord>[
-        _completedRecord(
-          id: 'tag-overtime',
-          clockInAt: DateTime(2026, 6, 1, 18, 0),
-          clockOutAt: DateTime(2026, 6, 1, 20, 0),
-          tags: <WorkRecordTag>[WorkRecordTag.overtime],
-        ),
-        _completedRecord(
-          id: 'tag-delayed',
-          clockInAt: DateTime(2026, 6, 2, 18, 0),
-          clockOutAt: DateTime(2026, 6, 2, 21, 30),
-          tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
-        ),
-        _completedRecord(
-          id: 'tag-holiday',
-          clockInAt: DateTime(2026, 6, 6, 10, 0),
-          clockOutAt: DateTime(2026, 6, 6, 14, 15),
-          tags: <WorkRecordTag>[WorkRecordTag.holidayWork],
-        ),
-      ],
-      findByMonthError: null,
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      rule: null,
+      findActiveError: null,
     );
 
     await tester.pumpWidget(
       _buildScreen(
-        repository: repository,
+        repository: _FakeWorkRecordRepository(
+          monthlyRecords: <WorkRecord>[],
+          findByMonthError: null,
+        ),
         leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: workRuleRepository,
         now: DateTime(2026, 6, 12, 9, 0),
       ),
     );
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('태그별 참고'), findsOneWidget);
-    expect(find.text('2시간'), findsOneWidget);
-    expect(find.text('3시간 30분'), findsOneWidget);
-    expect(find.text('4시간 15분'), findsOneWidget);
+    await tester.tap(find.text('근무 기준 설정'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
+    expect(find.text('정시 근무 기준'), findsOneWidget);
   });
 
   testWidgets('shows exceeded leave state clearly', (
@@ -362,6 +406,10 @@ void main() {
       _buildScreenWithPricingRepository(
         repository: repository,
         leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: const _FakeWorkRuleRepository(
+          rule: null,
+          findActiveError: null,
+        ),
         pricingIntentRepository: pricingIntentRepository,
         now: DateTime(2026, 6, 12, 9, 0),
       ),
@@ -409,6 +457,10 @@ void main() {
       _buildScreenWithPricingRepository(
         repository: repository,
         leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: const _FakeWorkRuleRepository(
+          rule: null,
+          findActiveError: null,
+        ),
         pricingIntentRepository: pricingIntentRepository,
         now: DateTime(2026, 6, 12, 9, 0),
       ),
@@ -432,10 +484,14 @@ Widget _buildScreen({
   required _FakeWorkRecordRepository repository,
   required _FakeLeaveRepository leaveRepository,
   required DateTime now,
+  _FakeWorkRuleRepository? workRuleRepository,
 }) {
   return _buildScreenWithPricingRepository(
     repository: repository,
     leaveRepository: leaveRepository,
+    workRuleRepository:
+        workRuleRepository ??
+        const _FakeWorkRuleRepository(rule: null, findActiveError: null),
     pricingIntentRepository: _FakePricingIntentRepository(
       failingEventTypes: <PricingIntentEventType>{},
     ),
@@ -446,6 +502,7 @@ Widget _buildScreen({
 Widget _buildScreenWithPricingRepository({
   required _FakeWorkRecordRepository repository,
   required _FakeLeaveRepository leaveRepository,
+  required _FakeWorkRuleRepository workRuleRepository,
   required _FakePricingIntentRepository pricingIntentRepository,
   required DateTime now,
 }) {
@@ -453,6 +510,7 @@ Widget _buildScreenWithPricingRepository({
     home: MonthlySummaryScreen(
       repository: repository,
       leaveRepository: leaveRepository,
+      workRuleRepository: workRuleRepository,
       pricingIntentRepository: pricingIntentRepository,
       now: () => now,
     ),
@@ -508,6 +566,18 @@ LeaveUsage _leaveUsage({
     memo: null,
     createdAt: DateTime(2026, 1, 1, 9),
     updatedAt: DateTime(2026, 1, 1, 9),
+  );
+}
+
+WorkRule _workRule() {
+  return WorkRule(
+    id: 'active-rule',
+    regularStartTimeMinutes: 540,
+    regularEndTimeMinutes: 1080,
+    breakMinutes: 60,
+    workWeekdays: <int>[1, 2, 3, 4, 5],
+    createdAt: DateTime(2026, 6, 1, 9),
+    updatedAt: DateTime(2026, 6, 1, 9),
   );
 }
 
@@ -615,6 +685,35 @@ final class _FakePricingIntentRepository implements PricingIntentRepository {
   @override
   Future<List<PricingIntentEvent>> findAll() async {
     return List<PricingIntentEvent>.of(savedEvents);
+  }
+}
+
+final class _FakeWorkRuleRepository implements WorkRuleRepository {
+  const _FakeWorkRuleRepository({
+    required this.rule,
+    required this.findActiveError,
+  });
+
+  final WorkRule? rule;
+  final WorkRuleRepositoryException? findActiveError;
+
+  @override
+  Future<WorkRule?> findActive() async {
+    final WorkRuleRepositoryException? error = findActiveError;
+    if (error != null) {
+      throw error;
+    }
+    return rule;
+  }
+
+  @override
+  Future<WorkRule> save({
+    required int regularStartTimeMinutes,
+    required int regularEndTimeMinutes,
+    required int breakMinutes,
+    required List<int> workWeekdays,
+  }) async {
+    throw const WorkRuleRepositoryException('unexpected save call');
   }
 }
 

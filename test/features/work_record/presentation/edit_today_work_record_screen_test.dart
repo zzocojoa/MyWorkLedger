@@ -22,7 +22,12 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('clockInTimeField')), '09:30');
     await tester.enterText(find.byKey(const Key('clockOutTimeField')), '18:40');
-    await tester.tap(find.text('퇴근 지연'));
+    expect(find.text('기록 사유'), findsOneWidget);
+    expect(find.text('퇴근 기록 지연'), findsOneWidget);
+    expect(find.text('야근'), findsNothing);
+    expect(find.text('휴일근무'), findsNothing);
+
+    await tester.tap(find.text('퇴근 기록 지연'));
     await tester.enterText(find.byType(TextField).last, '배포 대응 후 퇴근');
     await tester.tap(find.widgetWithText(FilledButton, '저장'));
     await tester.pump();

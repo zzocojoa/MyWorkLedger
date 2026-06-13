@@ -226,7 +226,7 @@ final class _EditTodayWorkRecordScreenState
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  '태그',
+                  '기록 사유',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: const Color(0xFF181D26),
                     fontWeight: FontWeight.w600,
@@ -237,10 +237,10 @@ final class _EditTodayWorkRecordScreenState
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: WorkRecordTag.values
+                  children: editableWorkRecordReasonTags
                       .map(
                         (WorkRecordTag tag) => FilterChip(
-                          label: Text(tagLabel(tag: tag)),
+                          label: Text(recordReasonLabel(tag: tag)),
                           selected: _selectedTags.contains(tag),
                           onSelected: (bool selected) => _toggleTag(tag),
                         ),
@@ -454,10 +454,18 @@ String formatDateOnly(DateTime value) {
   return '$year-$month-$day';
 }
 
-String tagLabel({required WorkRecordTag tag}) {
+const List<WorkRecordTag> editableWorkRecordReasonTags = <WorkRecordTag>[
+  WorkRecordTag.delayedCheckout,
+];
+
+String recordReasonLabel({required WorkRecordTag tag}) {
   return switch (tag) {
-    WorkRecordTag.overtime => '야근',
-    WorkRecordTag.delayedCheckout => '퇴근 지연',
-    WorkRecordTag.holidayWork => '휴일근무',
+    WorkRecordTag.delayedCheckout => '퇴근 기록 지연',
+    WorkRecordTag.overtime ||
+    WorkRecordTag.holidayWork => throw ArgumentError.value(
+      tag,
+      'tag',
+      'must be an editable work record reason tag',
+    ),
   };
 }

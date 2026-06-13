@@ -4,12 +4,14 @@ import '../features/leave/domain/leave_repository.dart';
 import '../features/pricing/domain/pricing_intent_repository.dart';
 import '../features/work_record/domain/work_record_repository.dart';
 import '../features/work_record/presentation/work_record_home_screen.dart';
+import '../features/work_rule/domain/work_rule_repository.dart';
 import '../l10n/app_localizations.dart';
 
 final class WorkLedgerApp extends StatelessWidget {
   const WorkLedgerApp({
     required this.workRecordRepository,
     required this.leaveRepository,
+    required this.workRuleRepository,
     required this.pricingIntentRepository,
     required this.now,
     required this.navigatorKey,
@@ -18,6 +20,7 @@ final class WorkLedgerApp extends StatelessWidget {
 
   final WorkRecordRepository workRecordRepository;
   final LeaveRepository leaveRepository;
+  final WorkRuleRepository workRuleRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
   final GlobalKey<NavigatorState> navigatorKey;
@@ -81,6 +84,7 @@ final class WorkLedgerApp extends StatelessWidget {
       home: WorkRecordHomeScreen(
         repository: workRecordRepository,
         leaveRepository: leaveRepository,
+        workRuleRepository: workRuleRepository,
         pricingIntentRepository: pricingIntentRepository,
         now: now,
       ),

@@ -646,8 +646,11 @@ List<String> _buildSelectedDateDetailLines({
       '${formatClockTime(value: clockInAt)} - ${formatClockTime(value: clockOutAt)}',
       '총 ${formatDurationForKorean(duration: workedDuration)}',
     ];
-    if (value.tags.isNotEmpty) {
-      lines.add('태그: ${_formatWorkRecordTags(tags: value.tags)}');
+    final String recordReasons = _formatWorkRecordRecordReasons(
+      tags: value.tags,
+    );
+    if (recordReasons.isNotEmpty) {
+      lines.add('기록 사유: $recordReasons');
     }
     final String? memo = value.memo;
     if (memo != null && memo.isNotEmpty) {
@@ -670,14 +673,21 @@ List<String> _buildSelectedDateDetailLines({
   return <String>['시간이 비어 있음'];
 }
 
-String _formatWorkRecordTags({required List<WorkRecordTag> tags}) {
-  return tags.map(_formatWorkRecordTag).join(' · ');
+String _formatWorkRecordRecordReasons({required List<WorkRecordTag> tags}) {
+  return tags
+      .where((WorkRecordTag tag) => tag == WorkRecordTag.delayedCheckout)
+      .map(_formatWorkRecordRecordReason)
+      .join(' · ');
 }
 
-String _formatWorkRecordTag(WorkRecordTag tag) {
+String _formatWorkRecordRecordReason(WorkRecordTag tag) {
   return switch (tag) {
-    WorkRecordTag.overtime => '야근',
-    WorkRecordTag.delayedCheckout => '퇴근 지연',
-    WorkRecordTag.holidayWork => '휴일근무',
+    WorkRecordTag.delayedCheckout => '퇴근 기록 지연',
+    WorkRecordTag.overtime ||
+    WorkRecordTag.holidayWork => throw ArgumentError.value(
+      tag,
+      'tag',
+      'must be a calendar record reason tag',
+    ),
   };
 }

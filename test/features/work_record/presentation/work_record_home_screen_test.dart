@@ -4,6 +4,7 @@ import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/leave/presentation/leave_management_screen.dart';
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
@@ -11,6 +12,8 @@ import 'package:workledger/features/pricing/domain/pricing_intent_repository.dar
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
+import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
+import 'package:workledger/features/work_rule/presentation/work_rule_settings_screen.dart';
 import 'package:workledger/l10n/app_localizations.dart';
 
 void main() {
@@ -93,6 +96,41 @@ void main() {
     expect(find.text('총 9시간 39분'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
     expect(find.text('달력 보기'), findsOneWidget);
+    expect(find.text('연장·야간 후보를 볼까요?'), findsOneWidget);
+    expect(find.text('근무 기준 설정'), findsOneWidget);
+  });
+
+  testWidgets('opens work rule settings from after clock-out prompt', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 19, 0);
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      rule: null,
+    );
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 3),
+        clockOutAt: DateTime(2026, 6, 12, 18, 42),
+        now: DateTime(2026, 6, 12, 18, 42),
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        workRuleRepository: workRuleRepository,
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('근무 기준 설정'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
+    expect(find.text('정시 근무 기준'), findsOneWidget);
   });
 
   testWidgets('shows current month preview values', (
@@ -286,6 +324,8 @@ void main() {
       expect(find.text('오늘 기록 완료'), findsOneWidget);
       expect(find.text('09:00 - 18:00'), findsOneWidget);
 
+      await tester.ensureVisible(find.text('월간 요약'));
+      await tester.pump();
       await tester.tap(find.text('월간 요약'));
       await tester.pumpAndSettle();
 
@@ -347,9 +387,12 @@ Widget _buildScreen({
   required _FakeWorkRecordRepository repository,
   required DateTime now,
   _FakeLeaveRepository? leaveRepository,
+  _FakeWorkRuleRepository? workRuleRepository,
 }) {
   final _FakeLeaveRepository resolvedLeaveRepository =
       leaveRepository ?? _FakeLeaveRepository.empty();
+  final _FakeWorkRuleRepository resolvedWorkRuleRepository =
+      workRuleRepository ?? _FakeWorkRuleRepository(rule: null);
 
   return MaterialApp(
     locale: const Locale('ko'),
@@ -358,6 +401,7 @@ Widget _buildScreen({
     home: WorkRecordHomeScreen(
       repository: repository,
       leaveRepository: resolvedLeaveRepository,
+      workRuleRepository: resolvedWorkRuleRepository,
       pricingIntentRepository: _FakePricingIntentRepository(),
       now: () => now,
     ),
@@ -638,5 +682,36 @@ final class _FakeLeaveRepository implements LeaveRepository {
   @override
   Future<void> deleteUsage({required String id}) async {
     throw const LeaveRepositoryException('unexpected deleteUsage call');
+  }
+}
+
+final class _FakeWorkRuleRepository implements WorkRuleRepository {
+  _FakeWorkRuleRepository({required this.rule});
+
+  WorkRule? rule;
+
+  @override
+  Future<WorkRule?> findActive() async {
+    return rule;
+  }
+
+  @override
+  Future<WorkRule> save({
+    required int regularStartTimeMinutes,
+    required int regularEndTimeMinutes,
+    required int breakMinutes,
+    required List<int> workWeekdays,
+  }) async {
+    final WorkRule savedRule = WorkRule(
+      id: 'active-rule',
+      regularStartTimeMinutes: regularStartTimeMinutes,
+      regularEndTimeMinutes: regularEndTimeMinutes,
+      breakMinutes: breakMinutes,
+      workWeekdays: workWeekdays,
+      createdAt: DateTime(2026, 6, 12, 19),
+      updatedAt: DateTime(2026, 6, 12, 19),
+    );
+    rule = savedRule;
+    return savedRule;
   }
 }

@@ -9,6 +9,8 @@ import '../../monthly_summary/domain/monthly_summary.dart';
 import '../../monthly_summary/presentation/monthly_summary_screen.dart';
 import '../../pricing/domain/pricing_intent_repository.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../work_rule/domain/work_rule_repository.dart';
+import '../../work_rule/presentation/work_rule_settings_screen.dart';
 import '../domain/load_today_work_summary.dart';
 import '../domain/today_work_status.dart';
 import '../domain/today_work_summary.dart';
@@ -20,6 +22,7 @@ final class WorkRecordHomeScreen extends StatefulWidget {
   const WorkRecordHomeScreen({
     required this.repository,
     required this.leaveRepository,
+    required this.workRuleRepository,
     required this.pricingIntentRepository,
     required this.now,
     super.key,
@@ -27,6 +30,7 @@ final class WorkRecordHomeScreen extends StatefulWidget {
 
   final WorkRecordRepository repository;
   final LeaveRepository leaveRepository;
+  final WorkRuleRepository workRuleRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
 
@@ -40,6 +44,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
   String? _errorMessage;
   bool _isLoading = true;
   bool _isPreviewLoading = true;
+  bool _showWorkRulePrompt = false;
 
   @override
   void initState() {
@@ -62,12 +67,16 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       );
       final _HomeMonthlyPreviewData monthlyPreviewData =
           await _loadMonthlyPreviewData(currentTime: currentTime);
+      final bool shouldShowWorkRulePrompt =
+          summary.status == TodayWorkStatus.afterClockOut &&
+          monthlyPreviewData.isWorkRuleMissing;
       if (!mounted) {
         return;
       }
       setState(() {
         _summary = summary;
         _monthlyPreviewData = monthlyPreviewData;
+        _showWorkRulePrompt = shouldShowWorkRulePrompt;
         _isLoading = false;
         _isPreviewLoading = false;
       });
@@ -81,6 +90,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       _showError(error.toString());
     } on LeaveSummaryException catch (error) {
       _showError(error.toString());
+    } on WorkRuleRepositoryException catch (error) {
+      _showError(error.toString());
     }
   }
 
@@ -90,6 +101,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
     final MonthlySummaryViewData viewData = await loadMonthlySummary(
       workRecordRepository: widget.repository,
       leaveRepository: widget.leaveRepository,
+      workRuleRepository: widget.workRuleRepository,
       targetMonth: MonthlySummaryMonth(
         year: currentTime.year,
         month: currentTime.month,
@@ -102,6 +114,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       remainingLeaveText: viewData.leaveSummary.balance == null
           ? '총 연차 미입력'
           : _formatHomeRemainingLeave(viewData: viewData),
+      isWorkRuleMissing: viewData.workRule == null,
     );
   }
 
@@ -190,6 +203,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
         builder: (BuildContext context) => MonthlySummaryScreen(
           repository: widget.repository,
           leaveRepository: widget.leaveRepository,
+          workRuleRepository: widget.workRuleRepository,
           pricingIntentRepository: widget.pricingIntentRepository,
           now: widget.now,
         ),
@@ -209,6 +223,18 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openWorkRuleSettings() async {
+    final Object? result = await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (BuildContext context) =>
+            WorkRuleSettingsScreen(repository: widget.workRuleRepository),
+      ),
+    );
+    if (result == true) {
+      await _loadSummary();
+    }
   }
 
   void _showError(String message) {
@@ -264,6 +290,10 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                   ),
                 ],
               ],
+              if (_showWorkRulePrompt) ...<Widget>[
+                const SizedBox(height: 16),
+                _WorkRulePrompt(onOpenWorkRuleSettings: _openWorkRuleSettings),
+              ],
               if (_errorMessage != null) ...<Widget>[
                 const SizedBox(height: 16),
                 _StatusMessage(message: _errorMessage!),
@@ -290,10 +320,12 @@ final class _HomeMonthlyPreviewData {
   const _HomeMonthlyPreviewData({
     required this.totalWorkedText,
     required this.remainingLeaveText,
+    required this.isWorkRuleMissing,
   });
 
   final String totalWorkedText;
   final String remainingLeaveText;
+  final bool isWorkRuleMissing;
 }
 
 final class _TodayStatusCard extends StatelessWidget {
@@ -362,6 +394,52 @@ final class _StatusMessage extends StatelessWidget {
             color: const Color(0xFF181D26),
             letterSpacing: 0,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+final class _WorkRulePrompt extends StatelessWidget {
+  const _WorkRulePrompt({required this.onOpenWorkRuleSettings});
+
+  final VoidCallback onOpenWorkRuleSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              '연장·야간 후보를 볼까요?',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '정시 출근·퇴근 기준을 한 번만 저장하면 월간 요약에서 후보 시간을 분리해 보여줍니다.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF41454D),
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: onOpenWorkRuleSettings,
+              child: const Text('근무 기준 설정'),
+            ),
+          ],
         ),
       ),
     );

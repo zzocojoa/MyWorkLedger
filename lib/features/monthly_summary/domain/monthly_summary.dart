@@ -1,6 +1,8 @@
 import '../../../core/models/work_record.dart';
 import '../../../core/models/leave_usage.dart';
+import '../../../core/models/work_rule.dart';
 import '../../leave/domain/leave_summary.dart';
+import '../../work_time/domain/work_time_candidate.dart';
 
 final class MonthlySummaryException implements Exception {
   const MonthlySummaryException(this.message);
@@ -156,6 +158,9 @@ final class MonthlySummaryViewData {
     required this.workSummary,
     required this.leaveSummary,
     required this.monthlyUsedLeaveMinutes,
+    required this.workRule,
+    required this.displayTotalWorkedDuration,
+    required this.workTimeCandidateSummary,
   }) {
     _validateViewData(this);
   }
@@ -163,6 +168,9 @@ final class MonthlySummaryViewData {
   final MonthlySummary workSummary;
   final LeaveSummary leaveSummary;
   final int monthlyUsedLeaveMinutes;
+  final WorkRule? workRule;
+  final Duration displayTotalWorkedDuration;
+  final WorkTimeCandidateSummary workTimeCandidateSummary;
 }
 
 void _validateEntry(MonthlyWorkRecordEntry entry) {
@@ -266,6 +274,33 @@ void _validateViewData(MonthlySummaryViewData data) {
   if (data.monthlyUsedLeaveMinutes != actualMonthlyUsedLeaveMinutes) {
     throw MonthlySummaryException(
       'model=MonthlySummaryViewData field=monthlyUsedLeaveMinutes value=${data.monthlyUsedLeaveMinutes} actual=$actualMonthlyUsedLeaveMinutes rule=match selected month leave usages',
+    );
+  }
+  if (data.displayTotalWorkedDuration.isNegative) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=displayTotalWorkedDuration rule=non-negative',
+    );
+  }
+  if (data.displayTotalWorkedDuration > data.workSummary.totalWorkedDuration) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=displayTotalWorkedDuration value=${data.displayTotalWorkedDuration.inMinutes} total=${data.workSummary.totalWorkedDuration.inMinutes} rule=must not exceed raw total worked duration',
+    );
+  }
+  if (data.workTimeCandidateSummary.overtimeDuration.isNegative) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.overtimeDuration rule=non-negative',
+    );
+  }
+  if (data.workTimeCandidateSummary.nightWorkDuration.isNegative) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.nightWorkDuration rule=non-negative',
+    );
+  }
+  if (data.workRule == null &&
+      data.workTimeCandidateSummary.status !=
+          WorkTimeCandidateStatus.unavailable) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.status rule=unavailable when workRule is missing',
     );
   }
 }
