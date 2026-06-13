@@ -47,7 +47,41 @@ void main() {
     expect(find.text('기록 사유: 퇴근 기록 지연'), findsOneWidget);
     expect(find.text('메모: 배포 대응 후 퇴근'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
+    expect(find.text('닫기'), findsNothing);
     expect(repository.requestedMonths, <String>['2026-06']);
+  });
+
+  testWidgets('renders compact calendar without bottom overflow', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final DateTime now = DateTime(2026, 8, 31, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[
+        _workRecord(
+          id: 'work-2026-08-31',
+          workDate: DateTime(2026, 8, 31),
+          clockInAt: DateTime(2026, 8, 31, 9, 0),
+          clockOutAt: DateTime(2026, 8, 31, 18, 0),
+          tags: <WorkRecordTag>[],
+          memo: null,
+        ),
+      ],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('달력 보기'), findsOneWidget);
+    expect(find.text('오늘'), findsOneWidget);
+    expect(find.text('닫기'), findsNothing);
   });
 
   testWidgets('shows incomplete and empty date details after date selection', (
