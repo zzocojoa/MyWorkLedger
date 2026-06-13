@@ -19,6 +19,7 @@ final class LocalStorageCompensationReferenceRepository
 
   static const String compensationReferenceSettingsTable =
       'compensation_reference_settings';
+  static const String currentSettingKey = 'current';
 
   @override
   Future<CompensationReferenceSetting?> findApplicableForMonth({
@@ -26,30 +27,14 @@ final class LocalStorageCompensationReferenceRepository
     required int month,
   }) async {
     _validateYearMonth(year: year, month: month);
-    final DateTime targetMonth = DateTime(year, month);
-    final Map<String, Map<String, Object?>> rows = await storage.readAll(
+    final Map<String, Object?>? map = await storage.read(
       table: compensationReferenceSettingsTable,
+      key: currentSettingKey,
     );
-    final List<CompensationReferenceSetting> settings = rows.entries
-        .map((MapEntry<String, Map<String, Object?>> entry) {
-          return _parseSettingMap(key: entry.key, map: entry.value);
-        })
-        .toList(growable: false);
-    final List<CompensationReferenceSetting> applicableSettings = settings
-        .where((CompensationReferenceSetting setting) {
-          return !setting.effectiveFromMonth.isAfter(targetMonth);
-        })
-        .toList(growable: false);
-    if (applicableSettings.isEmpty) {
+    if (map == null) {
       return null;
     }
-    applicableSettings.sort((
-      CompensationReferenceSetting left,
-      CompensationReferenceSetting right,
-    ) {
-      return right.effectiveFromMonth.compareTo(left.effectiveFromMonth);
-    });
-    return applicableSettings.first;
+    return _parseSettingMap(key: currentSettingKey, map: map);
   }
 
   @override
@@ -64,15 +49,14 @@ final class LocalStorageCompensationReferenceRepository
     final DateTime normalizedMonth = normalizeCompensationReferenceMonth(
       effectiveFromMonth: effectiveFromMonth,
     );
-    final String key = _formatSettingKey(effectiveFromMonth: normalizedMonth);
     final DateTime now = clock();
     final Map<String, Object?>? existingMap = await storage.read(
       table: compensationReferenceSettingsTable,
-      key: key,
+      key: currentSettingKey,
     );
     final CompensationReferenceSetting? existingSetting = existingMap == null
         ? null
-        : _parseSettingMap(key: key, map: existingMap);
+        : _parseSettingMap(key: currentSettingKey, map: existingMap);
     final CompensationReferenceSetting setting = existingSetting == null
         ? CompensationReferenceSetting(
             id: idGenerator(),
@@ -98,7 +82,7 @@ final class LocalStorageCompensationReferenceRepository
           );
     await storage.write(
       table: compensationReferenceSettingsTable,
-      key: key,
+      key: currentSettingKey,
       value: setting.toMap(),
     );
     return setting;
@@ -133,11 +117,6 @@ void _validateYearMonth({required int year, required int month}) {
       'action=findApplicableForMonth field=month value=$month rule=between 1 and 12',
     );
   }
-}
-
-String _formatSettingKey({required DateTime effectiveFromMonth}) {
-  final String month = effectiveFromMonth.month.toString().padLeft(2, '0');
-  return '${effectiveFromMonth.year}-$month';
 }
 
 String? _normalizeMemo({required String? memo}) {

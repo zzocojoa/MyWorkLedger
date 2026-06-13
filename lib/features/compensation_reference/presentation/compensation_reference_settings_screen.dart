@@ -29,8 +29,6 @@ final class _CompensationReferenceSettingsScreenState
   final TextEditingController _holidayMinutesController = TextEditingController(
     text: '0',
   );
-  final TextEditingController _effectiveMonthController =
-      TextEditingController();
   final TextEditingController _memoController = TextEditingController();
 
   CompensationReferenceMode _mode = CompensationReferenceMode.unknown;
@@ -41,11 +39,6 @@ final class _CompensationReferenceSettingsScreenState
   @override
   void initState() {
     super.initState();
-    _effectiveMonthController.text = formatCompensationReferenceMonth(
-      month: normalizeCompensationReferenceMonth(
-        effectiveFromMonth: widget.targetMonth,
-      ),
-    );
     _loadSetting();
   }
 
@@ -54,7 +47,6 @@ final class _CompensationReferenceSettingsScreenState
     _overtimeMinutesController.dispose();
     _nightMinutesController.dispose();
     _holidayMinutesController.dispose();
-    _effectiveMonthController.dispose();
     _memoController.dispose();
     super.dispose();
   }
@@ -81,9 +73,6 @@ final class _CompensationReferenceSettingsScreenState
             .toString();
         _holidayMinutesController.text = setting.fixedIncludedHolidayMinutes
             .toString();
-        _effectiveMonthController.text = formatCompensationReferenceMonth(
-          month: setting.effectiveFromMonth,
-        );
         _memoController.text = setting.memo ?? '';
       }
       setState(() {
@@ -100,9 +89,6 @@ final class _CompensationReferenceSettingsScreenState
       _errorMessage = null;
     });
     try {
-      final DateTime effectiveMonth = parseCompensationReferenceMonth(
-        value: _effectiveMonthController.text,
-      );
       final int overtimeMinutes = _readMinutes(
         controller: _overtimeMinutesController,
         fieldLabel: '연장 근무 포함 시간',
@@ -127,7 +113,7 @@ final class _CompensationReferenceSettingsScreenState
             _mode == CompensationReferenceMode.fixedIncluded
             ? holidayMinutes
             : 0,
-        effectiveFromMonth: effectiveMonth,
+        effectiveFromMonth: _globalEffectiveFromMonth(),
         memo: _memoController.text,
       );
       if (!mounted) {
@@ -182,23 +168,6 @@ final class _CompensationReferenceSettingsScreenState
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
               else ...<Widget>[
-                Text(
-                  '고정 포함 시간 비교',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: const Color(0xFF181D26),
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '입력한 시간은 실제 기록과 비교하는 개인 참고용입니다. 회사 기준이나 전문가 확인을 대신하지 않습니다.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF41454D),
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 18),
                 RadioGroup<CompensationReferenceMode>(
                   groupValue: _mode,
                   onChanged: _changeMode,
@@ -228,16 +197,6 @@ final class _CompensationReferenceSettingsScreenState
                     nightMinutesController: _nightMinutesController,
                     holidayMinutesController: _holidayMinutesController,
                   ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _effectiveMonthController,
-                  decoration: const InputDecoration(
-                    labelText: '적용 시작 월',
-                    helperText: '예: 2026-06',
-                  ),
-                  keyboardType: TextInputType.datetime,
-                ),
-                const SizedBox(height: 14),
                 TextField(
                   controller: _memoController,
                   decoration: const InputDecoration(
@@ -279,6 +238,10 @@ final class _CompensationReferenceSettingsScreenState
       _errorMessage = null;
     });
   }
+}
+
+DateTime _globalEffectiveFromMonth() {
+  return DateTime(2000);
 }
 
 final class _ModeTile extends StatelessWidget {
@@ -355,24 +318,4 @@ final class _MinutesField extends StatelessWidget {
       ],
     );
   }
-}
-
-String formatCompensationReferenceMonth({required DateTime month}) {
-  final String paddedMonth = month.month.toString().padLeft(2, '0');
-  return '${month.year}-$paddedMonth';
-}
-
-DateTime parseCompensationReferenceMonth({required String value}) {
-  final RegExpMatch? match = RegExp(
-    r'^(\d{4})-(\d{2})$',
-  ).firstMatch(value.trim());
-  if (match == null) {
-    throw const FormatException('적용 시작 월은 YYYY-MM 형식으로 입력해 주세요.');
-  }
-  final int year = int.parse(match.group(1)!);
-  final int month = int.parse(match.group(2)!);
-  if (year < 2000 || year > 2100 || month < 1 || month > 12) {
-    throw FormatException('적용 시작 월 값이 올바르지 않습니다. value=$value');
-  }
-  return DateTime(year, month);
 }

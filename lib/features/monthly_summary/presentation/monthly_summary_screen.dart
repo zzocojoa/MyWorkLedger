@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/models/pricing_intent_event.dart';
 import '../../../core/models/work_record.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
-import '../../compensation_reference/domain/compensation_reference_summary.dart';
 import '../../compensation_reference/presentation/compensation_reference_settings_screen.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
@@ -245,7 +244,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                   ),
                   const SizedBox(height: 14),
                   _CompensationReferenceSection(
-                    summary: viewData.compensationReferenceSummary,
                     onOpenSettings: _openCompensationReferenceSettings,
                   ),
                   const SizedBox(height: 14),
@@ -513,12 +511,8 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
 }
 
 final class _CompensationReferenceSection extends StatelessWidget {
-  const _CompensationReferenceSection({
-    required this.summary,
-    required this.onOpenSettings,
-  });
+  const _CompensationReferenceSection({required this.onOpenSettings});
 
-  final CompensationReferenceSummary summary;
   final VoidCallback onOpenSettings;
 
   @override
@@ -526,211 +520,11 @@ final class _CompensationReferenceSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (summary.isVisible) ...<Widget>[
-          _CompensationReferenceCard(summary: summary),
-          const SizedBox(height: 12),
-        ],
         OutlinedButton(
           onPressed: onOpenSettings,
           child: const Text('고정 포함 시간 비교 설정'),
         ),
       ],
-    );
-  }
-}
-
-final class _CompensationReferenceCard extends StatelessWidget {
-  const _CompensationReferenceCard({required this.summary});
-
-  final CompensationReferenceSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              '고정 포함 시간 비교',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (summary.status ==
-                CompensationReferenceSummaryStatus.notConfigured)
-              _CompensationReferenceNotConfigured()
-            else
-              _CompensationReferenceRows(rows: summary.rows),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-final class _CompensationReferenceNotConfigured extends StatelessWidget {
-  const _CompensationReferenceNotConfigured();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          '고정 포함 시간 비교 미설정',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '계약서나 급여명세서를 확인하면 고정 포함 시간 비교를 설정할 수 있습니다.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF6F737A),
-            letterSpacing: 0,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-final class _CompensationReferenceRows extends StatelessWidget {
-  const _CompensationReferenceRows({required this.rows});
-
-  final List<CompensationReferenceComparisonRow> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        const _CompensationReferenceHeader(),
-        const SizedBox(height: 8),
-        for (int index = 0; index < rows.length; index += 1) ...<Widget>[
-          if (index > 0) const SizedBox(height: 8),
-          _CompensationReferenceRow(row: rows[index]),
-        ],
-      ],
-    );
-  }
-}
-
-final class _CompensationReferenceHeader extends StatelessWidget {
-  const _CompensationReferenceHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        const SizedBox(width: 72),
-        Expanded(child: _CompensationReferenceHeaderText(label: '실제 기록')),
-        Expanded(child: _CompensationReferenceHeaderText(label: '고정 포함')),
-        Expanded(child: _CompensationReferenceHeaderText(label: '초과 참고')),
-      ],
-    );
-  }
-}
-
-final class _CompensationReferenceHeaderText extends StatelessWidget {
-  const _CompensationReferenceHeaderText({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.centerRight,
-      child: Text(
-        label,
-        textAlign: TextAlign.right,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFF6F737A),
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
-}
-
-final class _CompensationReferenceRow extends StatelessWidget {
-  const _CompensationReferenceRow({required this.row});
-
-  final CompensationReferenceComparisonRow row;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: <Widget>[
-        SizedBox(
-          width: 72,
-          child: Text(
-            row.label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF41454D),
-              letterSpacing: 0,
-            ),
-          ),
-        ),
-        Expanded(
-          child: _CompensationReferenceValue(
-            duration: row.actualDuration,
-            isStrong: false,
-          ),
-        ),
-        Expanded(
-          child: _CompensationReferenceValue(
-            duration: row.fixedIncludedDuration,
-            isStrong: false,
-          ),
-        ),
-        Expanded(
-          child: _CompensationReferenceValue(
-            duration: row.excessReferenceDuration,
-            isStrong: row.excessReferenceDuration > Duration.zero,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-final class _CompensationReferenceValue extends StatelessWidget {
-  const _CompensationReferenceValue({
-    required this.duration,
-    required this.isStrong,
-  });
-
-  final Duration duration;
-  final bool isStrong;
-
-  @override
-  Widget build(BuildContext context) {
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.centerRight,
-      child: Text(
-        formatMonthlySummaryDuration(duration: duration),
-        textAlign: TextAlign.right,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFF181D26),
-          fontWeight: isStrong ? FontWeight.w700 : FontWeight.w500,
-          letterSpacing: 0,
-        ),
-      ),
     );
   }
 }

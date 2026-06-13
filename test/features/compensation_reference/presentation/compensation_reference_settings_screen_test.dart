@@ -20,7 +20,6 @@ void main() {
     await tester.enterText(find.byType(TextField).at(0), '120');
     await tester.enterText(find.byType(TextField).at(1), '30');
     await tester.enterText(find.byType(TextField).at(2), '60');
-    await tester.enterText(find.byType(TextField).at(3), '2026-06');
     await tester.ensureVisible(find.text('저장'));
     await tester.pump();
     await tester.tap(find.text('저장'));
@@ -30,7 +29,7 @@ void main() {
     expect(repository.savedOvertimeMinutes, 120);
     expect(repository.savedNightMinutes, 30);
     expect(repository.savedHolidayMinutes, 60);
-    expect(repository.savedEffectiveFromMonth, DateTime(2026, 6));
+    expect(repository.savedEffectiveFromMonth, DateTime(2000));
   });
 
   testWidgets('shows unknown setting guidance form state', (
@@ -57,6 +56,12 @@ void main() {
     await tester.pump();
 
     expect(find.text('비교 방식'), findsOneWidget);
+    expect(find.text('고정 포함 시간 비교'), findsNothing);
+    expect(
+      find.text('입력한 시간은 실제 기록과 비교하는 개인 참고용입니다. 회사 기준이나 전문가 확인을 대신하지 않습니다.'),
+      findsNothing,
+    );
+    expect(find.text('적용 시작 월'), findsNothing);
     expect(find.text('잘 모르겠음'), findsOneWidget);
     expect(find.text('연장 근무 포함 시간(분)'), findsNothing);
   });

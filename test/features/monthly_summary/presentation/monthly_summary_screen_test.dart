@@ -122,7 +122,7 @@ void main() {
     expect(find.text('06-03 09:10-18:20'), findsOneWidget);
   });
 
-  testWidgets('shows fixed included comparison and opens settings', (
+  testWidgets('hides fixed included comparison card and opens settings', (
     WidgetTester tester,
   ) async {
     final _FakeCompensationReferenceRepository compensationRepository =
@@ -165,13 +165,11 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('고정 포함 시간 비교'), findsOneWidget);
-    expect(find.text('실제 기록'), findsOneWidget);
-    expect(find.text('고정 포함'), findsOneWidget);
-    expect(find.text('초과 참고'), findsOneWidget);
-    expect(find.text('3시간 30분'), findsWidgets);
-    expect(find.text('1시간'), findsOneWidget);
-    expect(find.text('2시간 30분'), findsOneWidget);
+    expect(find.text('고정 포함 시간 비교'), findsNothing);
+    expect(find.text('실제 기록'), findsNothing);
+    expect(find.text('고정 포함'), findsNothing);
+    expect(find.text('초과 참고'), findsNothing);
+    expect(find.text('고정 포함 시간 비교 설정'), findsOneWidget);
 
     await tester.ensureVisible(find.text('고정 포함 시간 비교 설정'));
     await tester.pump();

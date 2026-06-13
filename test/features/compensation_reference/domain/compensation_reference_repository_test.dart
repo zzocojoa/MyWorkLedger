@@ -6,7 +6,7 @@ import '../../../core/storage/in_memory_key_value_storage.dart';
 
 void main() {
   group('LocalStorageCompensationReferenceRepository', () {
-    test('saves and finds latest applicable setting for month', () async {
+    test('saves setting and applies it to every month lookup', () async {
       final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
       final LocalStorageCompensationReferenceRepository repository =
           _repository(storage: storage);
@@ -17,28 +17,20 @@ void main() {
         fixedIncludedNightMinutes: 30,
         fixedIncludedHolidayMinutes: 60,
         effectiveFromMonth: DateTime(2026, 5, 20),
-        memo: '5월부터',
-      );
-      await repository.save(
-        mode: CompensationReferenceMode.none,
-        fixedIncludedOvertimeMinutes: 0,
-        fixedIncludedNightMinutes: 0,
-        fixedIncludedHolidayMinutes: 0,
-        effectiveFromMonth: DateTime(2026, 7, 1),
         memo: null,
       );
 
-      final CompensationReferenceSetting? juneSetting = await repository
+      final CompensationReferenceSetting? pastSetting = await repository
           .findApplicableForMonth(year: 2026, month: 6);
-      final CompensationReferenceSetting? julySetting = await repository
-          .findApplicableForMonth(year: 2026, month: 7);
+      final CompensationReferenceSetting? futureSetting = await repository
+          .findApplicableForMonth(year: 2027, month: 1);
 
-      expect(juneSetting?.mode, CompensationReferenceMode.fixedIncluded);
-      expect(juneSetting?.effectiveFromMonth, DateTime(2026, 5));
-      expect(julySetting?.mode, CompensationReferenceMode.none);
+      expect(pastSetting?.mode, CompensationReferenceMode.fixedIncluded);
+      expect(futureSetting?.mode, CompensationReferenceMode.fixedIncluded);
+      expect(futureSetting?.fixedIncludedOvertimeMinutes, 120);
     });
 
-    test('updates same effective month without changing createdAt', () async {
+    test('updates current setting without changing createdAt', () async {
       final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
       DateTime clock = DateTime(2026, 6, 1, 9);
       final LocalStorageCompensationReferenceRepository repository =
