@@ -47,7 +47,100 @@ void main() {
     expect(find.text('기록 사유: 퇴근 기록 지연'), findsOneWidget);
     expect(find.text('메모: 배포 대응 후 퇴근'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
+    expect(find.text('닫기'), findsNothing);
     expect(repository.requestedMonths, <String>['2026-06']);
+  });
+
+  testWidgets('renders compact calendar without bottom overflow', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final DateTime now = DateTime(2026, 8, 31, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[
+        _workRecord(
+          id: 'work-2026-08-31',
+          workDate: DateTime(2026, 8, 31),
+          clockInAt: DateTime(2026, 8, 31, 9, 0),
+          clockOutAt: DateTime(2026, 8, 31, 18, 0),
+          tags: <WorkRecordTag>[],
+          memo: null,
+        ),
+      ],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('달력 보기'), findsOneWidget);
+    expect(find.text('오늘'), findsOneWidget);
+    expect(find.text('닫기'), findsNothing);
+  });
+
+  testWidgets('keeps scrolling after selecting a non-today date', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final DateTime now = DateTime(2026, 8, 31, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[
+        _workRecord(
+          id: 'work-2026-08-31',
+          workDate: DateTime(2026, 8, 31),
+          clockInAt: DateTime(2026, 8, 31, 9, 0),
+          clockOutAt: DateTime(2026, 8, 31, 18, 0),
+          tags: <WorkRecordTag>[],
+          memo: null,
+        ),
+      ],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollPosition todayPosition = _scrollPositionWithExtent(tester);
+    final double todayMaxScrollExtent = todayPosition.maxScrollExtent;
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
+
+    expect(todayMaxScrollExtent, greaterThan(0));
+    expect(todayPosition.pixels, greaterThan(0));
+
+    todayPosition.jumpTo(0);
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('calendar-day-2026-08-01')));
+    await tester.pump();
+
+    final ScrollPosition nonTodayPosition = _scrollPositionWithExtent(tester);
+    final double nonTodayMaxScrollExtent = nonTodayPosition.maxScrollExtent;
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('8월 1일 토요일'), findsOneWidget);
+    expect(find.text('오늘 기록 수정'), findsNothing);
+    expect(nonTodayMaxScrollExtent, greaterThan(0));
+    expect(nonTodayMaxScrollExtent, lessThan(todayMaxScrollExtent));
+    expect(nonTodayPosition.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('shows incomplete and empty date details after date selection', (
@@ -205,6 +298,15 @@ Widget _buildHost({
   return MaterialApp(
     home: _CalendarResultHost(repository: repository, now: now),
   );
+}
+
+ScrollPosition _scrollPositionWithExtent(WidgetTester tester) {
+  final List<ScrollableState> states = tester
+      .stateList<ScrollableState>(find.byType(Scrollable))
+      .toList(growable: false);
+  return states
+      .map((ScrollableState state) => state.position)
+      .firstWhere((ScrollPosition position) => position.maxScrollExtent > 0);
 }
 
 final class _CalendarResultHost extends StatefulWidget {

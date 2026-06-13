@@ -179,18 +179,13 @@ final class _WorkRecordCalendarScreenState
                     selectedDate: _selectedDate,
                     entry: selectedEntry,
                   ),
-                  const SizedBox(height: 18),
                   if (canEditToday) ...<Widget>[
+                    const SizedBox(height: 18),
                     FilledButton(
                       onPressed: _openEditTodayRecord,
                       child: const Text('오늘 기록 수정'),
                     ),
-                    const SizedBox(height: 10),
                   ],
-                  OutlinedButton(
-                    onPressed: _closeScreen,
-                    child: const Text('닫기'),
-                  ),
                 ],
               ],
             ),
@@ -281,7 +276,7 @@ final class _CalendarGrid extends StatelessWidget {
                 crossAxisCount: 7,
                 mainAxisSpacing: 6,
                 crossAxisSpacing: 4,
-                childAspectRatio: 0.74,
+                childAspectRatio: 0.58,
               ),
               itemBuilder: (BuildContext context, int index) {
                 final DateTime? date = cells[index];
@@ -370,42 +365,48 @@ final class _CalendarDayCell extends StatelessWidget {
             border: Border.fromBorderSide(borderSide),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  date.day.toString(),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _calendarMarker(entry: entry),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: foregroundColor,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0,
-                  ),
-                ),
-                if (isToday) ...<Widget>[
-                  const SizedBox(height: 2),
-                  Text(
-                    '오늘',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: foregroundColor,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      date.day.toString(),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                      ),
                     ),
-                  ),
-                ],
-              ],
+                    const SizedBox(height: 3),
+                    Text(
+                      _calendarMarker(entry: entry),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    if (isToday) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        '오늘',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: foregroundColor,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
