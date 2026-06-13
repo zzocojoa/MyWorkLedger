@@ -19,42 +19,19 @@ void main() {
     expect(find.text('기준 연도'), findsOneWidget);
     expect(find.text('2026'), findsOneWidget);
     expect(find.text('남은 연차'), findsOneWidget);
-    expect(find.text('총 연차'), findsOneWidget);
+    expect(find.text('총 연차'), findsNothing);
+    expect(find.byKey(const Key('totalLeaveDaysField')), findsNothing);
     expect(find.text('연차 사용 추가'), findsNWidgets(2));
     expect(find.text('사용 내역이 없습니다'), findsOneWidget);
-  });
-
-  testWidgets('saves total leave and refreshes summary', (
-    WidgetTester tester,
-  ) async {
-    final LocalStorageLeaveRepository repository = _createRepository();
-
-    await tester.pumpWidget(_buildScreen(repository: repository));
-    await tester.pump();
-    await tester.pump();
-
-    await tester.enterText(find.byKey(const Key('totalLeaveDaysField')), '15');
-    await tester.enterText(find.byKey(const Key('totalLeaveHoursField')), '0');
-    await tester.tap(find.widgetWithText(FilledButton, '총 연차 저장'));
-    await tester.pump();
-    await tester.pump();
-
-    expect(find.text('15일'), findsOneWidget);
-    expect(find.text('총 15일 0시간 · 사용 0시간'), findsOneWidget);
   });
 
   testWidgets('adds leave usage and displays usage list', (
     WidgetTester tester,
   ) async {
     final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 15 * 480);
 
     await tester.pumpWidget(_buildScreen(repository: repository));
-    await tester.pump();
-    await tester.pump();
-
-    await tester.enterText(find.byKey(const Key('totalLeaveDaysField')), '15');
-    await tester.enterText(find.byKey(const Key('totalLeaveHoursField')), '0');
-    await tester.tap(find.widgetWithText(FilledButton, '총 연차 저장'));
     await tester.pump();
     await tester.pump();
 
@@ -80,14 +57,9 @@ void main() {
     WidgetTester tester,
   ) async {
     final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 15 * 480);
 
     await tester.pumpWidget(_buildScreen(repository: repository));
-    await tester.pump();
-    await tester.pump();
-
-    await tester.enterText(find.byKey(const Key('totalLeaveDaysField')), '15');
-    await tester.enterText(find.byKey(const Key('totalLeaveHoursField')), '0');
-    await tester.tap(find.widgetWithText(FilledButton, '총 연차 저장'));
     await tester.pump();
     await tester.pump();
 
@@ -122,14 +94,9 @@ void main() {
     WidgetTester tester,
   ) async {
     final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 480);
 
     await tester.pumpWidget(_buildScreen(repository: repository));
-    await tester.pump();
-    await tester.pump();
-
-    await tester.enterText(find.byKey(const Key('totalLeaveDaysField')), '1');
-    await tester.enterText(find.byKey(const Key('totalLeaveHoursField')), '0');
-    await tester.tap(find.widgetWithText(FilledButton, '총 연차 저장'));
     await tester.pump();
     await tester.pump();
 

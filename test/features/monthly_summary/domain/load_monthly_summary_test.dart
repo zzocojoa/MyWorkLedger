@@ -1,10 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/models/work_rule.dart';
-import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/monthly_summary/domain/load_monthly_summary.dart';
 import 'package:workledger/features/monthly_summary/domain/monthly_summary.dart';
@@ -49,10 +47,6 @@ void main() {
         workRecordRepository: repository,
         leaveRepository: leaveRepository,
         workRuleRepository: workRuleRepository,
-        compensationReferenceRepository: _FakeCompensationReferenceRepository(
-          setting: null,
-          error: null,
-        ),
         targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
       );
 
@@ -90,7 +84,7 @@ void main() {
     });
 
     test(
-      'applies fixed included comparison without changing raw records',
+      'keeps fixed included comparison hidden from monthly summary',
       () async {
         final MonthlySummaryViewData viewData = await loadMonthlySummary(
           workRecordRepository: _FakeWorkRecordRepository(
@@ -114,20 +108,6 @@ void main() {
             rule: _workRule(),
             findActiveError: null,
           ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: CompensationReferenceSetting(
-              id: 'setting-1',
-              mode: CompensationReferenceMode.fixedIncluded,
-              fixedIncludedOvertimeMinutes: 60,
-              fixedIncludedNightMinutes: 0,
-              fixedIncludedHolidayMinutes: 0,
-              effectiveFromMonth: DateTime(2026, 6),
-              memo: null,
-              createdAt: DateTime(2026, 6, 1),
-              updatedAt: DateTime(2026, 6, 1),
-            ),
-            error: null,
-          ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
 
@@ -135,26 +115,8 @@ void main() {
           viewData.workSummary.totalWorkedDuration,
           const Duration(hours: 12, minutes: 30),
         );
-        expect(
-          viewData.compensationReferenceSummary.rows.first.actualDuration,
-          const Duration(hours: 3, minutes: 30),
-        );
-        expect(
-          viewData
-              .compensationReferenceSummary
-              .rows
-              .first
-              .fixedIncludedDuration,
-          const Duration(hours: 1),
-        );
-        expect(
-          viewData
-              .compensationReferenceSummary
-              .rows
-              .first
-              .excessReferenceDuration,
-          const Duration(hours: 2, minutes: 30),
-        );
+        expect(viewData.compensationReferenceSummary.isVisible, isFalse);
+        expect(viewData.compensationReferenceSummary.rows, isEmpty);
       },
     );
 
@@ -182,10 +144,6 @@ void main() {
           workRuleRepository: _FakeWorkRuleRepository(
             rule: _workRule(),
             findActiveError: null,
-          ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: null,
-            error: null,
           ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
@@ -245,10 +203,6 @@ void main() {
             rule: _workRule(),
             findActiveError: null,
           ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: null,
-            error: null,
-          ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
 
@@ -292,10 +246,6 @@ void main() {
             rule: null,
             findActiveError: null,
           ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: null,
-            error: null,
-          ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
 
@@ -330,10 +280,6 @@ void main() {
             rule: null,
             findActiveError: null,
           ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: null,
-            error: null,
-          ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
         throwsA(isA<WorkRecordRepositoryException>()),
@@ -362,10 +308,6 @@ void main() {
             rule: null,
             findActiveError: null,
           ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: null,
-            error: null,
-          ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
         throwsA(isA<LeaveRepositoryException>()),
@@ -390,10 +332,6 @@ void main() {
             findActiveError: const WorkRuleRepositoryException(
               'action=findActive rule=test failure',
             ),
-          ),
-          compensationReferenceRepository: _FakeCompensationReferenceRepository(
-            setting: null,
-            error: null,
           ),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
@@ -603,42 +541,5 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
     required List<int> workWeekdays,
   }) async {
     throw const WorkRuleRepositoryException('unexpected save call');
-  }
-}
-
-final class _FakeCompensationReferenceRepository
-    implements CompensationReferenceRepository {
-  const _FakeCompensationReferenceRepository({
-    required this.setting,
-    required this.error,
-  });
-
-  final CompensationReferenceSetting? setting;
-  final CompensationReferenceRepositoryException? error;
-
-  @override
-  Future<CompensationReferenceSetting?> findApplicableForMonth({
-    required int year,
-    required int month,
-  }) async {
-    final CompensationReferenceRepositoryException? value = error;
-    if (value != null) {
-      throw value;
-    }
-    return setting;
-  }
-
-  @override
-  Future<CompensationReferenceSetting> save({
-    required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
-    required DateTime effectiveFromMonth,
-    required String? memo,
-  }) async {
-    throw const CompensationReferenceRepositoryException(
-      'unexpected save call',
-    );
   }
 }

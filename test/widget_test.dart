@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/app/workledger_app.dart';
+import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
@@ -25,6 +26,12 @@ void main() {
         compensationReferenceRepository:
             _WidgetTestCompensationReferenceRepository(),
         pricingIntentRepository: _WidgetTestPricingIntentRepository(),
+        configureNotifications: () async {
+          return const WorkLedgerNotificationSetupResult(
+            permissionGranted: true,
+            notificationShown: true,
+          );
+        },
         now: () => DateTime(2026, 6, 12, 9, 0),
         navigatorKey: GlobalKey<NavigatorState>(),
       ),

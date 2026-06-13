@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/pricing_intent_event.dart';
 import '../../../core/models/work_record.dart';
-import '../../compensation_reference/domain/compensation_reference_repository.dart';
-import '../../compensation_reference/presentation/compensation_reference_settings_screen.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
 import '../../pricing/domain/pricing_intent_repository.dart';
@@ -11,7 +9,6 @@ import '../../pricing/domain/record_pricing_intent.dart';
 import '../../pricing/presentation/pricing_fake_door_screen.dart';
 import '../../work_record/domain/work_record_repository.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
-import '../../work_rule/presentation/work_rule_settings_screen.dart';
 import '../../work_time/domain/work_time_candidate.dart';
 import '../domain/load_monthly_summary.dart';
 import '../domain/monthly_summary.dart';
@@ -21,7 +18,6 @@ final class MonthlySummaryScreen extends StatefulWidget {
     required this.repository,
     required this.leaveRepository,
     required this.workRuleRepository,
-    required this.compensationReferenceRepository,
     required this.pricingIntentRepository,
     required this.now,
     super.key,
@@ -30,7 +26,6 @@ final class MonthlySummaryScreen extends StatefulWidget {
   final WorkRecordRepository repository;
   final LeaveRepository leaveRepository;
   final WorkRuleRepository workRuleRepository;
-  final CompensationReferenceRepository compensationReferenceRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
 
@@ -66,7 +61,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         workRecordRepository: widget.repository,
         leaveRepository: widget.leaveRepository,
         workRuleRepository: widget.workRuleRepository,
-        compensationReferenceRepository: widget.compensationReferenceRepository,
         targetMonth: _targetMonth,
       );
       if (!mounted) {
@@ -82,8 +76,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       _showError('연차 요약을 불러올 수 없습니다. ${error.toString()}');
     } on WorkRuleRepositoryException catch (error) {
       _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
-    } on CompensationReferenceRepositoryException catch (error) {
-      _showError('비교 방식을 불러올 수 없습니다. ${error.toString()}');
     } on MonthlySummaryException catch (error) {
       _showError('월간 요약을 계산할 수 없습니다. ${error.toString()}');
     } on LeaveSummaryException catch (error) {
@@ -168,32 +160,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     }
   }
 
-  Future<void> _openWorkRuleSettings() async {
-    final Object? result = await Navigator.of(context).push(
-      MaterialPageRoute<bool>(
-        builder: (BuildContext context) =>
-            WorkRuleSettingsScreen(repository: widget.workRuleRepository),
-      ),
-    );
-    if (result == true) {
-      await _loadSummary();
-    }
-  }
-
-  Future<void> _openCompensationReferenceSettings() async {
-    final Object? result = await Navigator.of(context).push(
-      MaterialPageRoute<bool>(
-        builder: (BuildContext context) => CompensationReferenceSettingsScreen(
-          repository: widget.compensationReferenceRepository,
-          targetMonth: DateTime(_targetMonth.year, _targetMonth.month),
-        ),
-      ),
-    );
-    if (result == true) {
-      await _loadSummary();
-    }
-  }
-
   void _closeScreen() {
     Navigator.of(context).pop(_didDeleteWorkRecord);
   }
@@ -237,15 +203,12 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                   _TotalWorkCard(viewData: viewData),
                   const SizedBox(height: 14),
                   _MonthlyStats(viewData: viewData),
-                  const SizedBox(height: 14),
-                  _WorkTimeCandidateSummaryCard(
-                    viewData: viewData,
-                    onOpenWorkRuleSettings: _openWorkRuleSettings,
-                  ),
-                  const SizedBox(height: 14),
-                  _CompensationReferenceSection(
-                    onOpenSettings: _openCompensationReferenceSettings,
-                  ),
+                  if (viewData
+                      .workTimeCandidateSummary
+                      .hasActiveTags) ...<Widget>[
+                    const SizedBox(height: 14),
+                    _WorkTimeCandidateSummaryCard(viewData: viewData),
+                  ],
                   const SizedBox(height: 14),
                   _MonthlyLeaveSummaryCard(viewData: viewData),
                   const SizedBox(height: 24),
@@ -426,17 +389,12 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
 }
 
 final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
-  const _WorkTimeCandidateSummaryCard({
-    required this.viewData,
-    required this.onOpenWorkRuleSettings,
-  });
+  const _WorkTimeCandidateSummaryCard({required this.viewData});
 
   final MonthlySummaryViewData viewData;
-  final VoidCallback onOpenWorkRuleSettings;
 
   @override
   Widget build(BuildContext context) {
-    final bool hasWorkRule = viewData.workRule != null;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -457,74 +415,10 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            if (!hasWorkRule) ...<Widget>[
-              Text(
-                '근무 기준을 설정하면 휴무일 근무, 정시 전 근무, 연장 근무, 야간 근무를 분리해 보여줍니다.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF41454D),
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: onOpenWorkRuleSettings,
-                child: const Text('근무 기준 설정'),
-              ),
-            ] else if (viewData.workSummary.completedWorkDayCount ==
-                0) ...<Widget>[
-              Text(
-                '완료된 근무 기록이 없습니다',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF41454D),
-                  letterSpacing: 0,
-                ),
-              ),
-            ] else if (!viewData
-                .workTimeCandidateSummary
-                .hasActiveTags) ...<Widget>[
-              Text(
-                '정시 기준 외 근무 없음',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF181D26),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '이번 달 기록은 설정한 근무 기준 안에 있습니다.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF6F737A),
-                  letterSpacing: 0,
-                ),
-              ),
-            ] else ...<Widget>[
-              _CandidateReferenceRows(
-                summary: viewData.workTimeCandidateSummary,
-              ),
-            ],
+            _CandidateReferenceRows(summary: viewData.workTimeCandidateSummary),
           ],
         ),
       ),
-    );
-  }
-}
-
-final class _CompensationReferenceSection extends StatelessWidget {
-  const _CompensationReferenceSection({required this.onOpenSettings});
-
-  final VoidCallback onOpenSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        OutlinedButton(
-          onPressed: onOpenSettings,
-          child: const Text('고정 포함 시간 비교 설정'),
-        ),
-      ],
     );
   }
 }

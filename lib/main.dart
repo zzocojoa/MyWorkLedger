@@ -72,6 +72,7 @@ Future<void> main() async {
       workRuleRepository: workRuleRepository,
       compensationReferenceRepository: compensationReferenceRepository,
       pricingIntentRepository: pricingIntentRepository,
+      configureNotifications: notificationService.initialize,
       now: now,
       navigatorKey: navigatorKey,
     ),

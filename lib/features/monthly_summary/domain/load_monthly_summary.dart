@@ -1,7 +1,6 @@
 import '../../../core/models/leave_usage.dart';
 import '../../../core/models/work_record.dart';
 import '../../../core/models/work_rule.dart';
-import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../compensation_reference/domain/compensation_reference_summary.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
@@ -17,7 +16,6 @@ Future<MonthlySummaryViewData> loadMonthlySummary({
   required WorkRecordRepository workRecordRepository,
   required LeaveRepository leaveRepository,
   required WorkRuleRepository workRuleRepository,
-  required CompensationReferenceRepository compensationReferenceRepository,
   required MonthlySummaryMonth targetMonth,
 }) async {
   targetMonth.validate();
@@ -54,12 +52,10 @@ Future<MonthlySummaryViewData> loadMonthlySummary({
       workRule: workRule,
     ),
     workTimeCandidateSummary: workTimeCandidateSummary,
-    compensationReferenceSummary: calculateCompensationReferenceSummary(
-      setting: await compensationReferenceRepository.findApplicableForMonth(
-        year: targetMonth.year,
-        month: targetMonth.month,
-      ),
-      workTimeCandidateSummary: workTimeCandidateSummary,
+    compensationReferenceSummary: CompensationReferenceSummary(
+      status: CompensationReferenceSummaryStatus.hidden,
+      rows: <CompensationReferenceComparisonRow>[],
+      reason: null,
     ),
   );
 }

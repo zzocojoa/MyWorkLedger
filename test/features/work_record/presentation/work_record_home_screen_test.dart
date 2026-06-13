@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
@@ -9,8 +10,10 @@ import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/leave/presentation/leave_management_screen.dart';
+import 'package:workledger/features/leave/presentation/leave_balance_settings_screen.dart';
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
+import 'package:workledger/features/settings/presentation/settings_home_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
@@ -98,11 +101,10 @@ void main() {
     expect(find.text('총 9시간 39분'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
     expect(find.text('달력 보기'), findsOneWidget);
-    expect(find.text('근무 태그를 볼까요?'), findsOneWidget);
-    expect(find.text('근무 기준 설정'), findsOneWidget);
+    expect(find.text('근무 태그를 볼까요?'), findsNothing);
   });
 
-  testWidgets('opens work rule settings from after clock-out prompt', (
+  testWidgets('opens work rule settings from settings home', (
     WidgetTester tester,
   ) async {
     final DateTime now = DateTime(2026, 6, 12, 19, 0);
@@ -128,7 +130,12 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('근무 기준 설정'));
+    await tester.tap(find.byTooltip('설정'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SettingsHomeScreen), findsOneWidget);
+
+    await tester.tap(find.text('근무 기준'));
     await tester.pumpAndSettle();
 
     expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
@@ -136,7 +143,7 @@ void main() {
     expect(find.text('정시 근무 기준'), findsNothing);
   });
 
-  testWidgets('opens work rule settings from app bar action', (
+  testWidgets('opens settings home from app bar action', (
     WidgetTester tester,
   ) async {
     final DateTime now = DateTime(2026, 6, 12, 19, 0);
@@ -158,12 +165,37 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byTooltip('근무 기준 설정'));
+    await tester.tap(find.byTooltip('설정'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
-    expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
-    expect(find.text('정시 근무 기준'), findsNothing);
+    expect(find.byType(SettingsHomeScreen), findsOneWidget);
+    expect(find.text('설정'), findsOneWidget);
+    expect(find.text('근무 기준'), findsOneWidget);
+    expect(find.text('비교 방식'), findsOneWidget);
+    expect(find.text('총 연차'), findsOneWidget);
+    expect(find.text('알림'), findsOneWidget);
+  });
+
+  testWidgets('opens total leave settings from settings home', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('설정'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('총 연차'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LeaveBalanceSettingsScreen), findsOneWidget);
+    expect(find.text('2026'), findsOneWidget);
   });
 
   testWidgets('shows current month preview values', (
@@ -439,6 +471,12 @@ Widget _buildScreen({
       compensationReferenceRepository:
           const _FakeCompensationReferenceRepository(),
       pricingIntentRepository: _FakePricingIntentRepository(),
+      configureNotifications: () async {
+        return const WorkLedgerNotificationSetupResult(
+          permissionGranted: true,
+          notificationShown: true,
+        );
+      },
       now: () => now,
     ),
   );

@@ -5,7 +5,6 @@ import '../domain/add_leave_usage.dart';
 import '../domain/leave_repository.dart';
 import '../domain/leave_summary.dart';
 import '../domain/load_leave_summary.dart';
-import '../domain/save_total_leave.dart';
 
 final class LeaveManagementScreen extends StatefulWidget {
   const LeaveManagementScreen({
@@ -23,8 +22,6 @@ final class LeaveManagementScreen extends StatefulWidget {
 
 final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
   late final int _year;
-  final TextEditingController _totalDaysController = TextEditingController();
-  final TextEditingController _totalHoursController = TextEditingController();
   final TextEditingController _usageDateController = TextEditingController();
   final TextEditingController _usageDaysController = TextEditingController();
   final TextEditingController _usageHoursController = TextEditingController();
@@ -45,8 +42,6 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
 
   @override
   void dispose() {
-    _totalDaysController.dispose();
-    _totalHoursController.dispose();
     _usageDateController.dispose();
     _usageDaysController.dispose();
     _usageHoursController.dispose();
@@ -68,7 +63,6 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
       if (!mounted) {
         return;
       }
-      _setTotalLeaveFields(totalLeaveMinutes: summary.totalLeaveMinutes);
       setState(() {
         _summary = summary;
         _isLoading = false;
@@ -77,28 +71,6 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
       _showError('연차 정보를 불러올 수 없습니다. ${error.toString()}');
     } on LeaveSummaryException catch (error) {
       _showError('연차 요약을 계산할 수 없습니다. ${error.toString()}');
-    }
-  }
-
-  Future<void> _saveTotalLeave() async {
-    try {
-      final int totalLeaveMinutes = parseLeaveMinutesInput(
-        daysText: _totalDaysController.text,
-        hoursText: _totalHoursController.text,
-        allowZero: true,
-      );
-      await saveTotalLeave(
-        repository: widget.repository,
-        year: _year,
-        totalLeaveMinutes: totalLeaveMinutes,
-      );
-      await _loadSummary();
-    } on FormatException catch (error) {
-      _showError('총 연차를 저장할 수 없습니다. ${error.message}');
-    } on ArgumentError catch (error) {
-      _showError('총 연차를 저장할 수 없습니다. ${error.message}');
-    } on LeaveRepositoryException catch (error) {
-      _showError('총 연차를 저장할 수 없습니다. ${error.toString()}');
     }
   }
 
@@ -157,19 +129,6 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     }
   }
 
-  void _setTotalLeaveFields({required int totalLeaveMinutes}) {
-    final int days = totalLeaveMinutes ~/ leaveMinutesPerDay;
-    final int remainingMinutes = totalLeaveMinutes.remainder(
-      leaveMinutesPerDay,
-    );
-    final int hours = remainingMinutes ~/ 60;
-    final int minutes = remainingMinutes.remainder(60);
-    _totalDaysController.text = days.toString();
-    _totalHoursController.text = minutes == 0
-        ? hours.toString()
-        : '$hours.${minutes == 30 ? '5' : minutes.toString().padLeft(2, '0')}';
-  }
-
   void _showError(String message) {
     if (!mounted) {
       return;
@@ -199,12 +158,6 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
                 const Center(child: CircularProgressIndicator())
               else if (summary != null) ...<Widget>[
                 _LeaveSummaryCard(summary: summary),
-                const SizedBox(height: 22),
-                _TotalLeaveForm(
-                  daysController: _totalDaysController,
-                  hoursController: _totalHoursController,
-                  onSave: _isLoading ? null : _saveTotalLeave,
-                ),
                 const SizedBox(height: 22),
                 _LeaveUsageForm(
                   dateController: _usageDateController,
@@ -325,48 +278,6 @@ final class _LeaveSummaryCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-final class _TotalLeaveForm extends StatelessWidget {
-  const _TotalLeaveForm({
-    required this.daysController,
-    required this.hoursController,
-    required this.onSave,
-  });
-
-  final TextEditingController daysController;
-  final TextEditingController hoursController;
-  final VoidCallback? onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SectionBox(
-      title: '총 연차',
-      children: <Widget>[
-        Row(
-          children: <Widget>[
-            Expanded(
-              child: _NumberField(
-                keyValue: const Key('totalLeaveDaysField'),
-                controller: daysController,
-                label: '일',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _NumberField(
-                keyValue: const Key('totalLeaveHoursField'),
-                controller: hoursController,
-                label: '시간',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        FilledButton(onPressed: onSave, child: const Text('총 연차 저장')),
-      ],
     );
   }
 }

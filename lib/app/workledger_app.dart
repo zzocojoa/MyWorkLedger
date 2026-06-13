@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/compensation_reference/domain/compensation_reference_repository.dart';
 import '../features/leave/domain/leave_repository.dart';
 import '../features/pricing/domain/pricing_intent_repository.dart';
+import '../features/settings/presentation/notification_settings_screen.dart';
 import '../features/work_record/domain/work_record_repository.dart';
 import '../features/work_record/presentation/work_record_home_screen.dart';
 import '../features/work_rule/domain/work_rule_repository.dart';
@@ -15,6 +16,7 @@ final class WorkLedgerApp extends StatelessWidget {
     required this.workRuleRepository,
     required this.compensationReferenceRepository,
     required this.pricingIntentRepository,
+    required this.configureNotifications,
     required this.now,
     required this.navigatorKey,
     super.key,
@@ -25,6 +27,7 @@ final class WorkLedgerApp extends StatelessWidget {
   final WorkRuleRepository workRuleRepository;
   final CompensationReferenceRepository compensationReferenceRepository;
   final PricingIntentRepository pricingIntentRepository;
+  final ConfigureWorkLedgerNotifications configureNotifications;
   final DateTime Function() now;
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -90,6 +93,7 @@ final class WorkLedgerApp extends StatelessWidget {
         workRuleRepository: workRuleRepository,
         compensationReferenceRepository: compensationReferenceRepository,
         pricingIntentRepository: pricingIntentRepository,
+        configureNotifications: configureNotifications,
         now: now,
       ),
     );
