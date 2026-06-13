@@ -1,10 +1,10 @@
 # Gap Analysis: workledger-mvp
 
-> Date: 2026-06-13 | Phase: check candidate | Scope: 삭제 기능 확장 반영 후 Flutter Android MVP 구현 vs plan/design/mockup
+> Date: 2026-06-13 | Phase: check candidate | Scope: 달력 보기 추가 반영 후 Flutter Android MVP 구현 vs plan/design/mockup
 
 ## Match Rate: 100%
 
-현재 구현은 WorkLedger MVP의 Must Have 19개 FR을 모두 충족한다. 추가 조사에서 P0로 분류된 오늘 근무 기록 삭제와 연차 사용 내역 삭제가 구현됐고, 월간 요약 기록 목록에서 이전 근무 기록도 삭제할 수 있어 잘못 입력한 핵심 사용자 데이터에 대한 복구 경로가 확장됐다.
+현재 구현은 WorkLedger MVP의 Must Have 19개 FR을 모두 충족한다. 추가 UI 개선으로 퇴근 후 홈의 secondary CTA가 `월간 요약 보기`에서 `달력 보기`로 바뀌었고, 사용자는 이번 달 날짜별 근무 기록 유무, 완료 기록, 출근만 기록된 incomplete 기록, 시간 누락 상태를 읽기 전용으로 확인할 수 있다. 하단 `월간 요약` 링크와 기존 월간 요약 화면은 유지됐다.
 
 `bkit_pdca_analyze` 실행 결과 bkit 상태는 `check` 단계로 올라갔다. 다만 사용자 승인 없이 phase 완료 처리는 하지 않았으며, 다음 결정은 최종 QA/Check 결과를 보고 진행한다.
 
@@ -15,7 +15,7 @@
 | `AGENTS.md` | 제품 범위, 제외 범위, bkit workflow |
 | `docs/01-plan/features/workledger-mvp.plan.md` | FR-01~FR-19, NFR, scope guard |
 | `docs/02-design/features/workledger-mvp.design.md` | 아키텍처, 알림 액션, fake-door, 테스트 계획 |
-| `docs/02-design/mockup.md` | S-01~S-07 화면 기준 |
+| `docs/02-design/mockup.md` | 홈, 달력 보기, 월간 요약 화면 기준 |
 | `docs/02-design/user-flow.md` | 홈, 알림, 수정, 월간, 연차, 가격 흐름 |
 | `docs/03-analysis/workledger-mvp.analysis.md` | 직전 95% gap analysis 기준 |
 | `pubspec.yaml` | Flutter l10n, `intl`, `flutter_localizations` 설정 |
@@ -23,9 +23,9 @@
 | `lib/l10n/` | 한국어/영어 ARB와 생성된 `AppLocalizations` |
 | `lib/app/workledger_app.dart` | `MaterialApp` localization wiring |
 | `lib/features/work_record/presentation/` | 홈 S-01/S-02/S-03와 주요 공통 문자열 |
-| `lib/features/monthly_summary/presentation/` | 월간 요약 S-05 |
-| `lib/features/leave/presentation/` | 연차 관리 S-06 |
-| `lib/features/pricing/presentation/` | 가격 fake-door S-07 |
+| `lib/features/monthly_summary/presentation/` | 월간 요약 화면 |
+| `lib/features/leave/presentation/` | 연차 관리 화면 |
+| `lib/features/pricing/presentation/` | 가격 fake-door 화면 |
 | `lib/core/notifications/` | Android persistent notification action |
 | `lib/core/storage/` | `KeyValueStorage.delete` 계약과 memory/persistent adapter |
 | `test/widget_test.dart` | 기본 locale, 한국어 UI, 영어 locale 구조 검증 |
@@ -71,6 +71,9 @@
 | 이전 근무 기록 삭제 | Done | `WorkRecordRepository.deleteByDate`, 월간 요약 기록 목록의 삭제 액션과 확인 다이얼로그 |
 | P0 연차 사용 내역 삭제 | Done | `LeaveRepository.deleteUsage`, 연차 관리 사용 내역 행의 삭제 액션 |
 | 저장소 삭제 계약 | Done | `KeyValueStorage.delete`, `MemoryKeyValueStorage`, `PersistentKeyValueStorage` |
+| 달력 보기 화면 | Done | `WorkRecordCalendarScreen`, `findByMonth`, `calculateMonthlySummary` 재사용 |
+| 퇴근 후 홈 secondary CTA | Done | `TodayWorkSecondaryAction.viewCalendar`, 버튼 문구 `달력 보기` |
+| 하단 월간 요약 링크 유지 | Done | `WorkRecordHomeScreen._HomeLinks`가 기존 `MonthlySummaryScreen` 이동 유지 |
 
 ## Implemented Items
 
@@ -85,9 +88,10 @@
 | 홈 S-01/S-02/S-03 | Done | 홈 상태별 UI와 primary CTA |
 | 홈 월간 preview | Done | 이번 달 총 근무와 남은 연차를 월간/연차 요약 계산값으로 표시 |
 | 오늘 기록 수정 S-04 | Done | 시간, 태그, 메모 수정, 오늘 기록 삭제 |
-| 월간 요약 S-05 | Done | 근무 합계, 근무일, 초과 참고, 태그별 참고, 연차 요약, 기록 목록, 이전 기록 삭제 |
-| 연차 관리 S-06 | Done | 총 연차, 사용 추가, 사용 내역 삭제, 남은 연차, 초과 상태 |
-| 가격 fake-door S-07 | Done | Report Pass/Pro 관심 이벤트와 MVP 안내 |
+| 달력 보기 | Done | 이번 달 날짜별 기록 상태, 선택 날짜 상세, 오늘 기록 수정 이동 |
+| 월간 요약 | Done | 근무 합계, 근무일, 초과 참고, 태그별 참고, 연차 요약, 기록 목록, 이전 기록 삭제 |
+| 연차 관리 | Done | 총 연차, 사용 추가, 사용 내역 삭제, 남은 연차, 초과 상태 |
+| 가격 fake-door | Done | Report Pass/Pro 관심 이벤트와 MVP 안내 |
 | Android persistent notification | Done | 권한 요청, 상시 알림, foreground/background action handler |
 | Android build integration | Done | manifest permission/receiver, desugaring, multidex |
 | 영어 i18n 구조 | Done | ko/en supported locales와 확장 가능한 ARB 구조 |
@@ -107,6 +111,7 @@
 |---|---|---|
 | Local storage implementation | Accepted deviation | 설계는 SQLite 계열 adapter 우선이지만 현재는 JSON key-value adapter다. MVP 데이터량과 월별 조회에는 충분하며 서버/클라우드 없이 로컬 저장 NFR을 충족한다 |
 | 홈 빠른 보정 chip | Partial | mockup의 홈 tag chip은 완전한 quick action이 아니지만 S-04 수정 화면에서 태그/메모 보정이 가능하다 |
+| 달력 보기 추가 | Accepted extension | FR을 새로 늘리지 않고 `WorkRecordRepository.findByMonth` 기반 읽기 전용 조회 화면으로만 추가했다. 이전 기록 생성/수정, 삭제, 리포트 생성은 달력 화면에 넣지 않았다 |
 | 알림 설정 화면 | Deferred | 설계에는 설정/알림 권한 화면이 있으나 FR-04의 persistent notification action 자체는 구현됐다. 별도 설정 화면은 release polish로 분리 가능하다 |
 | 전체 문자열 번역 | Accepted deviation | FR-19 범위는 영어 i18n 구조 준비다. 전체 화면의 완전 번역은 MVP 이후 확장 작업으로 둔다 |
 
@@ -140,6 +145,21 @@
 | 연차 사용 삭제 UI | Match | `LeaveManagementScreen`, 사용 내역 행 delete icon, 확인 다이얼로그 |
 | 연차 사용 삭제 후 요약 갱신 | Match | 삭제 성공 후 `_loadSummary()` 재호출 |
 | 삭제 취소 안전장치 | Match | widget test에서 취소 시 삭제 호출 없음 |
+
+## Calendar View Check
+
+| Requirement | Result | Evidence |
+|---|---|---|
+| 퇴근 후 홈 secondary CTA 변경 | Match | `TodayWorkSummary.secondaryButtonLabel`이 `달력 보기` 반환 |
+| 기존 하단 월간 요약 링크 유지 | Match | `WorkRecordHomeScreen._HomeLinks`가 `MonthlySummaryScreen` 이동 유지 |
+| 이번 달 날짜별 기록 표시 | Match | `WorkRecordCalendarScreen`이 `findByMonth` 결과를 월간 달력에 표시 |
+| 완료 기록 구분 | Match | 완료 기록은 `●`와 출근/퇴근/총 근무시간 표시 |
+| 출근만 기록된 incomplete 구분 | Match | `◐`, `출근만 기록됨`, 출근 시각 표시 |
+| 시간 누락 기록 구분 | Match | `○`, `퇴근만 기록됨` 또는 `시간이 비어 있음` 표시 |
+| 기록 없는 날짜 구분 | Match | `·`, `기록 없음` 표시 |
+| 오늘 수정만 허용 | Match | 선택 날짜가 오늘이고 기록이 있을 때만 `오늘 기록 수정` 버튼 표시 |
+| 이전 날짜 생성/수정 없음 | Match | 달력 화면에는 이전 기록 생성/수정 입력 UI 없음 |
+| 삭제/리포트/가격 진입 없음 | Match | 달력 화면에는 삭제 버튼, 월간 리포트 버튼, 가격 fake-door 진입점 없음 |
 
 ## FR-04 Notification Flow Check
 
@@ -208,15 +228,15 @@
 | Evidence | Result |
 |---|---|
 | `bkit_get_status` | phase `check`, progress `[Plan]✅ → [Design]✅ → [Do]✅ → [Check]🔄 → [Act]⏳` |
-| `bkit_pdca_analyze` | analysis path `docs/03-analysis/workledger-mvp.analysis.md`, iterationCount `13` |
+| `bkit_pdca_analyze` | analysis path `docs/03-analysis/workledger-mvp.analysis.md`, iterationCount `14` |
 | `bkit_pre_write_check` | 문서 갱신 허용, plan/design 확인됨 |
 | `flutter gen-l10n` | 직전 FR-19 구현 검증에서 완료 |
-| `dart format lib test` | 삭제 기능 구현 파일과 관련 테스트 포맷 완료 |
-| `flutter analyze` | 삭제 기능 구현 후 통과, `No issues found` |
-| `flutter test` | 삭제 기능 확장 후 135개 통과 |
-| `git --no-pager diff --check` | 삭제 기능 구현 후 통과 |
+| `dart format` | 달력 보기 구현 파일과 관련 테스트 포맷 완료 |
+| `flutter analyze` | 달력 보기 구현 후 통과, `No issues found` |
+| `flutter test` | 달력 보기 구현 후 139개 통과 |
+| `git --no-pager diff --check` | 통과 |
 
-이번 변경은 P0 삭제 기능인 오늘 근무 기록 삭제와 연차 사용 내역 삭제에 더해 월간 요약의 이전 근무 기록 삭제를 추가했다. 구현 후 `dart format lib test`, `flutter analyze`, `flutter test`, `git --no-pager diff --check`를 재실행했다.
+이번 변경은 퇴근 후 홈 secondary CTA를 달력 보기로 바꾸고, 월별 기록 조회를 읽기 전용 달력 화면으로 추가했다. 기존 하단 월간 요약 링크, 월간 요약 화면, 삭제 기능, 가격 fake-door 흐름은 유지한다.
 
 ## Recommendation
 
@@ -224,6 +244,6 @@
 
 권장 순서:
 
-1. 필요하면 emulator에서 오늘 기록 삭제, 이전 근무 기록 삭제, 연차 사용 삭제를 한 번 더 smoke test한다.
-2. release readiness 문서에 삭제 기능 추가 검증 여부를 반영한다.
+1. 전체 `flutter test`와 `git --no-pager diff --check`를 재실행한다.
+2. 필요하면 emulator에서 퇴근 후 `달력 보기` 진입과 하단 `월간 요약` 진입을 한 번 더 smoke test한다.
 3. 사용자 승인 후 현재 feature 변경사항을 기능 단위로 커밋한다.

@@ -77,11 +77,8 @@ void main() {
         expect(summary.statusText, '오늘 기록 완료');
         expect(summary.primaryAction, TodayWorkPrimaryAction.editTodayRecord);
         expect(summary.primaryButtonLabel, '오늘 기록 수정');
-        expect(
-          summary.secondaryAction,
-          TodayWorkSecondaryAction.viewMonthlySummary,
-        );
-        expect(summary.secondaryButtonLabel, '월간 요약 보기');
+        expect(summary.secondaryAction, TodayWorkSecondaryAction.viewCalendar);
+        expect(summary.secondaryButtonLabel, '달력 보기');
         expect(summary.elapsedDuration, isNull);
         expect(summary.workedDuration, const Duration(hours: 9, minutes: 39));
       },

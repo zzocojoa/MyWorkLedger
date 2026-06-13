@@ -10,10 +10,11 @@
 |---|---|---|---|---|
 | S-01 | 홈/오늘 기록 | `/` | 오늘 출근/퇴근 1탭 기록 | `WorkRecord` |
 | S-02 | 기록 수정 | `/work-record/edit` | 출근/퇴근 시각, 태그, 메모 보정 | `WorkRecord` |
-| S-03 | 연차 관리 | `/leave` | 총 연차 입력, 연차 사용 기록 | `LeaveBalance`, `LeaveUsage` |
-| S-04 | 월간 요약 | `/summary` | 월간 근무시간, 초과근무 참고 시간, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance` |
-| S-05 | 가격표/fake-door | `/pricing` | Report Pass/Pro 클릭 의향 측정 | `PricingIntentEvent` |
-| S-06 | 설정/알림 권한 | `/settings` | 상시 알림 상태와 권한 관리 | settings, notification permission |
+| S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무와 완료/미완료 상태 확인 | `WorkRecord` |
+| S-04 | 연차 관리 | `/leave` | 총 연차 입력, 연차 사용 기록 | `LeaveBalance`, `LeaveUsage` |
+| S-05 | 월간 요약 | `/summary` | 월간 근무시간, 초과근무 참고 시간, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance` |
+| S-06 | 가격표/fake-door | `/pricing` | Report Pass/Pro 클릭 의향 측정 | `PricingIntentEvent` |
+| S-07 | 설정/알림 권한 | `/settings` | 상시 알림 상태와 권한 관리 | settings, notification permission |
 
 ## Screen States
 
@@ -21,6 +22,7 @@
 |---|---|---|
 | 홈/오늘 기록 | 오늘 기록 없음, 출근 버튼 강조 | 저장 실패, 잘못된 퇴근 시각 |
 | 기록 수정 | 선택 기록 없음 | 검증 실패, 저장 실패 |
+| 달력 보기 | 선택 월 기록 없음 | 월별 조회 실패, 요약 계산 실패 |
 | 연차 관리 | 총 연차 미입력 | 30분 단위 위반, 저장 실패 |
 | 월간 요약 | 선택 월 기록 없음 | 요약 계산 실패 |
 | 가격표/fake-door | 이벤트 없음 | 이벤트 저장 실패 |
@@ -31,9 +33,11 @@
 | From | To | Trigger |
 |---|---|---|
 | 홈/오늘 기록 | 기록 수정 | 오늘 기록 카드 또는 수정 버튼 |
-| 홈/오늘 기록 | 월간 요약 | 하단/상단 요약 버튼 |
+| 홈/오늘 기록 | 달력 보기 | 퇴근 후 `달력 보기` 보조 버튼 |
+| 홈/오늘 기록 | 월간 요약 | 하단 `월간 요약` 버튼 |
 | 홈/오늘 기록 | 연차 관리 | 연차 버튼 |
 | 홈/오늘 기록 | 설정/알림 권한 | 설정 버튼 |
+| 달력 보기 | 기록 수정 | 선택 날짜가 오늘인 경우 `오늘 기록 수정` 버튼 |
 | 월간 요약 | 가격표/fake-door | 월간 리포트 만들기 버튼 |
 | 설정/알림 권한 | 홈/오늘 기록 | 뒤로가기 또는 홈 버튼 |
 

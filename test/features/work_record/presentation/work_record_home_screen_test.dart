@@ -9,6 +9,7 @@ import 'package:workledger/features/leave/presentation/leave_management_screen.d
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
+import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
 import 'package:workledger/l10n/app_localizations.dart';
 
@@ -91,7 +92,7 @@ void main() {
     expect(find.text('09:03 - 18:42'), findsOneWidget);
     expect(find.text('총 9시간 39분'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
-    expect(find.text('월간 요약 보기'), findsOneWidget);
+    expect(find.text('달력 보기'), findsOneWidget);
   });
 
   testWidgets('shows current month preview values', (
@@ -216,7 +217,7 @@ void main() {
     );
   });
 
-  testWidgets('opens monthly summary from after clock-out secondary action', (
+  testWidgets('opens calendar from after clock-out secondary action', (
     WidgetTester tester,
   ) async {
     final DateTime now = DateTime(2026, 6, 12, 19, 0);
@@ -234,13 +235,13 @@ void main() {
     await tester.pumpWidget(_buildScreen(repository: repository, now: now));
     await tester.pump();
 
-    await tester.tap(find.text('월간 요약 보기'));
+    await tester.tap(find.text('달력 보기'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(MonthlySummaryScreen), findsOneWidget);
-    expect(find.text('월간 요약'), findsOneWidget);
-    expect(find.text('2026-06'), findsOneWidget);
-    expect(find.text('9시간 39분'), findsOneWidget);
+    expect(find.byType(WorkRecordCalendarScreen), findsOneWidget);
+    expect(find.text('달력 보기'), findsOneWidget);
+    expect(find.text('2026년 6월'), findsOneWidget);
+    expect(find.text('총 9시간 39분'), findsOneWidget);
   });
 
   testWidgets('opens monthly summary from home monthly link', (
