@@ -103,6 +103,27 @@ final class LocalStorageLeaveRepository implements LeaveRepository {
     );
     return usage;
   }
+
+  @override
+  Future<void> deleteUsage({required String id}) async {
+    final String trimmedId = id.trim();
+    if (trimmedId.isEmpty) {
+      throw const LeaveRepositoryException(
+        'action=deleteUsage table=leave_usages id= rule=non-empty id',
+      );
+    }
+    final Map<String, Object?>? map = await storage.read(
+      table: leaveUsagesTable,
+      key: trimmedId,
+    );
+    if (map == null) {
+      throw LeaveRepositoryException(
+        'action=deleteUsage table=$leaveUsagesTable id=$trimmedId rule=missing leave usage',
+      );
+    }
+    _parseUsageMap(key: trimmedId, map: map);
+    await storage.delete(table: leaveUsagesTable, key: trimmedId);
+  }
 }
 
 LeaveBalance _parseBalanceMap({

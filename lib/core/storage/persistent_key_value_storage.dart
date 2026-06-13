@@ -92,6 +92,27 @@ final class PersistentKeyValueStorage implements KeyValueStorage {
     tables[table] = tableValues;
     await _writeTables(file: file, table: table, key: key, tables: tables);
   }
+
+  @override
+  Future<void> delete({required String table, required String key}) async {
+    final PersistentStorageTables tables = await _readTables(
+      file: file,
+      table: table,
+      key: key,
+      action: 'delete',
+    );
+    final Map<String, Map<String, Object?>>? tableValues = tables[table];
+    if (tableValues == null) {
+      return;
+    }
+    tableValues.remove(key);
+    if (tableValues.isEmpty) {
+      tables.remove(table);
+    } else {
+      tables[table] = tableValues;
+    }
+    await _writeTables(file: file, table: table, key: key, tables: tables);
+  }
 }
 
 Future<PersistentStorageTables> _readTables({

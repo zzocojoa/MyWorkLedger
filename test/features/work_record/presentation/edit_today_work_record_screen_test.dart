@@ -133,6 +133,61 @@ void main() {
     expect(find.text('저장 실패 후 유지'), findsOneWidget);
   });
 
+  testWidgets('deletes today record after confirmation', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 3),
+        clockOutAt: DateTime(2026, 6, 12, 18, 42),
+        tags: <WorkRecordTag>[],
+        memo: null,
+      ),
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '오늘 기록 삭제'));
+    await tester.pumpAndSettle();
+    expect(find.text('오늘 기록을 삭제할까요?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deleteTodayCallCount, 1);
+    expect(repository.record, isNull);
+  });
+
+  testWidgets('does not delete today record when confirmation is cancelled', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final WorkRecord record = _workRecord(
+      clockInAt: DateTime(2026, 6, 12, 9, 3),
+      clockOutAt: DateTime(2026, 6, 12, 18, 42),
+      tags: <WorkRecordTag>[],
+      memo: null,
+    );
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: record,
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '오늘 기록 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '취소'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deleteTodayCallCount, 0);
+    expect(repository.record, record);
+  });
+
   testWidgets('shows unavailable state when today record is missing', (
     WidgetTester tester,
   ) async {
@@ -189,7 +244,9 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   WorkRecord? record;
   final DateTime Function() now;
   int updateTodayCallCount = 0;
+  int deleteTodayCallCount = 0;
   WorkRecordRepositoryException? updateError;
+  WorkRecordRepositoryException? deleteError;
 
   @override
   Future<WorkRecord?> findToday() async {
@@ -243,5 +300,25 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
       updatedAt: now(),
     );
     return record!;
+  }
+
+  @override
+  Future<void> deleteToday() async {
+    deleteTodayCallCount += 1;
+    final WorkRecordRepositoryException? error = deleteError;
+    if (error != null) {
+      throw error;
+    }
+    if (record == null) {
+      throw const WorkRecordRepositoryException(
+        'action=deleteToday rule=missing record',
+      );
+    }
+    record = null;
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException('unexpected deleteByDate call');
   }
 }

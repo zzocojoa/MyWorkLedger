@@ -31,6 +31,7 @@ final class _EditTodayWorkRecordScreenState
   String? _errorMessage;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isDeleting = false;
 
   @override
   void initState() {
@@ -132,6 +133,34 @@ final class _EditTodayWorkRecordScreenState
     }
   }
 
+  Future<void> _deleteRecord() async {
+    final WorkRecord? record = _record;
+    if (record == null) {
+      _showError('삭제할 오늘 기록이 없습니다.');
+      return;
+    }
+
+    final bool confirmed = await _confirmTodayRecordDeletion(context: context);
+    if (!confirmed) {
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.repository.deleteToday();
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(true);
+    } on WorkRecordRepositoryException catch (error) {
+      _showError('삭제할 수 없습니다. ${error.message}');
+    }
+  }
+
   void _showError(String message) {
     if (!mounted) {
       return;
@@ -140,6 +169,7 @@ final class _EditTodayWorkRecordScreenState
       _errorMessage = message;
       _isLoading = false;
       _isSaving = false;
+      _isDeleting = false;
     });
   }
 
@@ -162,7 +192,7 @@ final class _EditTodayWorkRecordScreenState
         title: const Text('오늘 기록 수정'),
         actions: <Widget>[
           TextButton(
-            onPressed: _isLoading || _isSaving || record == null
+            onPressed: _isLoading || _isSaving || _isDeleting || record == null
                 ? null
                 : _saveRecord,
             child: const Text('저장'),
@@ -221,8 +251,16 @@ final class _EditTodayWorkRecordScreenState
                 _MemoField(controller: _memoController),
                 const SizedBox(height: 22),
                 FilledButton(
-                  onPressed: _isSaving ? null : _saveRecord,
+                  onPressed: _isSaving || _isDeleting ? null : _saveRecord,
                   child: const Text('저장'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: _isSaving || _isDeleting ? null : _deleteRecord,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFAA2D00),
+                  ),
+                  child: const Text('오늘 기록 삭제'),
                 ),
               ],
               if (_errorMessage != null) ...<Widget>[
@@ -235,6 +273,31 @@ final class _EditTodayWorkRecordScreenState
       ),
     );
   }
+}
+
+Future<bool> _confirmTodayRecordDeletion({
+  required BuildContext context,
+}) async {
+  final bool? result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('오늘 기록을 삭제할까요?'),
+        content: const Text('삭제하면 오늘 출근/퇴근 기록과 메모가 없어집니다.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    },
+  );
+  return result ?? false;
 }
 
 final class _ReadOnlyValue extends StatelessWidget {

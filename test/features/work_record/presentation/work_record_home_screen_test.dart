@@ -381,6 +381,7 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   int clockInCallCount = 0;
   int clockOutCallCount = 0;
   int updateTodayCallCount = 0;
+  int deleteTodayCallCount = 0;
   WorkRecordRepositoryException? clockInError;
 
   @override
@@ -471,6 +472,22 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
     );
     return _record!;
   }
+
+  @override
+  Future<void> deleteToday() async {
+    deleteTodayCallCount += 1;
+    if (_record == null) {
+      throw const WorkRecordRepositoryException(
+        'action=deleteToday rule=missing record',
+      );
+    }
+    _record = null;
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+  }
 }
 
 final class _FakePricingIntentRepository implements PricingIntentRepository {
@@ -540,5 +557,10 @@ final class _FakeLeaveRepository implements LeaveRepository {
     required String? memo,
   }) async {
     throw const LeaveRepositoryException('unexpected addUsage call');
+  }
+
+  @override
+  Future<void> deleteUsage({required String id}) async {
+    throw const LeaveRepositoryException('unexpected deleteUsage call');
   }
 }

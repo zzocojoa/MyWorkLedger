@@ -35,6 +35,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
   String? _errorMessage;
   bool _isLoading = true;
   bool _isRecordingPricingIntent = false;
+  bool _isDeletingRecord = false;
 
   @override
   void initState() {
@@ -82,6 +83,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       _errorMessage = message;
       _isLoading = false;
       _isRecordingPricingIntent = false;
+      _isDeletingRecord = false;
     });
   }
 
@@ -114,6 +116,34 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       _showError('가격 관심 이벤트를 저장할 수 없습니다. ${error.toString()}');
     } on ArgumentError catch (error) {
       _showError('가격 관심 이벤트를 저장할 수 없습니다. ${error.message}');
+    }
+  }
+
+  Future<void> _deleteRecord(MonthlyWorkRecordEntry entry) async {
+    final bool confirmed = await _confirmMonthlyRecordDeletion(
+      context: context,
+      entry: entry,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setState(() {
+      _isDeletingRecord = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.repository.deleteByDate(workDate: entry.workDate);
+      await _loadSummary();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isDeletingRecord = false;
+      });
+    } on WorkRecordRepositoryException catch (error) {
+      _showError('근무 기록을 삭제할 수 없습니다. ${error.toString()}');
     }
   }
 
@@ -150,7 +180,10 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                 const SizedBox(height: 14),
                 _MonthlyLeaveSummaryCard(viewData: viewData),
                 const SizedBox(height: 24),
-                _MonthlyRecordList(summary: viewData.workSummary),
+                _MonthlyRecordList(
+                  summary: viewData.workSummary,
+                  onDelete: _isDeletingRecord ? null : _deleteRecord,
+                ),
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _isRecordingPricingIntent
@@ -381,14 +414,6 @@ final class _TagReferenceSummary extends StatelessWidget {
                 duration: summary.holidayWorkDuration,
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              '급여 계산이 아닌 개인 참고용 분류입니다',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF41454D),
-                letterSpacing: 0,
-              ),
-            ),
           ],
         ),
       ),
@@ -502,9 +527,10 @@ final class _StatTile extends StatelessWidget {
 }
 
 final class _MonthlyRecordList extends StatelessWidget {
-  const _MonthlyRecordList({required this.summary});
+  const _MonthlyRecordList({required this.summary, required this.onDelete});
 
   final MonthlySummary summary;
+  final void Function(MonthlyWorkRecordEntry entry)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -536,6 +562,7 @@ final class _MonthlyRecordList extends StatelessWidget {
                 _MonthlyRecordRow(
                   entry: summary.entries[index],
                   showDivider: index < summary.entries.length - 1,
+                  onDelete: onDelete,
                 ),
             ],
           ),
@@ -594,10 +621,15 @@ final class _EmptyMonthlyRecords extends StatelessWidget {
 }
 
 final class _MonthlyRecordRow extends StatelessWidget {
-  const _MonthlyRecordRow({required this.entry, required this.showDivider});
+  const _MonthlyRecordRow({
+    required this.entry,
+    required this.showDivider,
+    required this.onDelete,
+  });
 
   final MonthlyWorkRecordEntry entry;
   final bool showDivider;
+  final void Function(MonthlyWorkRecordEntry entry)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -611,32 +643,74 @@ final class _MonthlyRecordRow extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              formatMonthlySummaryEntryLine(entry: entry),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    formatMonthlySummaryEntryLine(entry: entry),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF181D26),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  if (entry.isCompleted && entry.tags.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      formatMonthlySummaryTags(tags: entry.tags),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF41454D),
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (entry.isCompleted && entry.tags.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 6),
-              Text(
-                formatMonthlySummaryTags(tags: entry.tags),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF41454D),
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: onDelete == null ? null : () => onDelete!(entry),
+              tooltip: '근무 기록 삭제',
+              icon: const Icon(Icons.delete_outline),
+              color: const Color(0xFFAA2D00),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+Future<bool> _confirmMonthlyRecordDeletion({
+  required BuildContext context,
+  required MonthlyWorkRecordEntry entry,
+}) async {
+  final bool? result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('근무 기록을 삭제할까요?'),
+        content: Text(
+          '${formatMonthlySummaryDate(value: entry.workDate)} 기록을 삭제합니다.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    },
+  );
+  return result ?? false;
 }
 
 final class _MonthlySummaryMessage extends StatelessWidget {

@@ -11,4 +11,6 @@ abstract interface class KeyValueStorage {
     required String key,
     required Map<String, Object?> value,
   });
+
+  Future<void> delete({required String table, required String key});
 }

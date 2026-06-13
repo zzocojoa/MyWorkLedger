@@ -15,9 +15,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appKoreanName => '내근무장부';
 
   @override
-  String get homeLocalRecord => '개인 로컬 기록';
-
-  @override
   String get homeThisMonth => '이번 달';
 
   @override

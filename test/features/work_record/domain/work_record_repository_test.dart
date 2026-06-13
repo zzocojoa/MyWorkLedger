@@ -251,6 +251,125 @@ void main() {
       );
     });
 
+    test('deleteToday removes today record', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:03:00'),
+        idGenerator: () => 'work-1',
+      );
+      await repository.clockIn();
+
+      await repository.deleteToday();
+
+      expect(await repository.findToday(), isNull);
+      expect(
+        await storage.read(
+          table: LocalStorageWorkRecordRepository.workRecordsTable,
+          key: '2026-06-12',
+        ),
+        isNull,
+      );
+    });
+
+    test('deleteToday throws when today has no record', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:03:00'),
+        idGenerator: () => 'work-1',
+      );
+
+      await expectLater(
+        repository.deleteToday(),
+        throwsA(
+          isA<WorkRecordRepositoryException>().having(
+            (WorkRecordRepositoryException error) => error.message,
+            'message',
+            allOf(
+              contains('action=deleteToday'),
+              contains('table=work_records'),
+              contains('workDate=2026-06-12'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('deleteByDate removes selected previous record only', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:03:00'),
+        idGenerator: () => 'work-1',
+      );
+      final WorkRecord previousRecord = _createRecord(
+        id: 'previous-record',
+        workDate: DateTime(2026, 6, 1),
+        clockInAt: DateTime.parse('2026-06-01T09:00:00'),
+        clockOutAt: DateTime.parse('2026-06-01T18:00:00'),
+        tags: <WorkRecordTag>[],
+      );
+      final WorkRecord todayRecord = _createRecord(
+        id: 'today-record',
+        workDate: DateTime(2026, 6, 12),
+        clockInAt: DateTime.parse('2026-06-12T09:00:00'),
+        clockOutAt: DateTime.parse('2026-06-12T18:00:00'),
+        tags: <WorkRecordTag>[],
+      );
+      await _writeRecord(
+        storage: storage,
+        key: '2026-06-01',
+        record: previousRecord,
+      );
+      await _writeRecord(
+        storage: storage,
+        key: '2026-06-12',
+        record: todayRecord,
+      );
+
+      await repository.deleteByDate(workDate: DateTime(2026, 6, 1, 23, 30));
+
+      expect(
+        await storage.read(
+          table: LocalStorageWorkRecordRepository.workRecordsTable,
+          key: '2026-06-01',
+        ),
+        isNull,
+      );
+      expect(
+        await storage.read(
+          table: LocalStorageWorkRecordRepository.workRecordsTable,
+          key: '2026-06-12',
+        ),
+        isNotNull,
+      );
+    });
+
+    test('deleteByDate throws when selected date has no record', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:03:00'),
+        idGenerator: () => 'work-1',
+      );
+
+      await expectLater(
+        repository.deleteByDate(workDate: DateTime(2026, 6, 1, 23, 30)),
+        throwsA(
+          isA<WorkRecordRepositoryException>().having(
+            (WorkRecordRepositoryException error) => error.message,
+            'message',
+            allOf(
+              contains('action=deleteByDate'),
+              contains('table=work_records'),
+              contains('workDate=2026-06-01'),
+            ),
+          ),
+        ),
+      );
+    });
+
     test(
       'findByMonth returns selected month records sorted by work date',
       () async {
@@ -497,5 +616,10 @@ final class FailingWriteKeyValueStorage implements KeyValueStorage {
     required Map<String, Object?> value,
   }) async {
     throw StateError('write failed table=$table key=$key');
+  }
+
+  @override
+  Future<void> delete({required String table, required String key}) async {
+    throw StateError('delete failed table=$table key=$key');
   }
 }

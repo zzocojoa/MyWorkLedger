@@ -154,6 +154,37 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
     return record;
   }
 
+  @override
+  Future<void> deleteToday() async {
+    final DateTime now = clock();
+    final DateTime today = _dateOnly(now);
+    final WorkRecord? existingRecord = await _readByDate(today);
+    if (existingRecord == null) {
+      throw WorkRecordRepositoryException(
+        'action=deleteToday table=$workRecordsTable workDate=${_formatDateOnly(today)} rule=missing work record',
+      );
+    }
+    await storage.delete(
+      table: workRecordsTable,
+      key: _formatDateOnly(existingRecord.workDate),
+    );
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    final DateTime targetDate = _dateOnly(workDate);
+    final WorkRecord? existingRecord = await _readByDate(targetDate);
+    if (existingRecord == null) {
+      throw WorkRecordRepositoryException(
+        'action=deleteByDate table=$workRecordsTable workDate=${_formatDateOnly(targetDate)} rule=missing work record',
+      );
+    }
+    await storage.delete(
+      table: workRecordsTable,
+      key: _formatDateOnly(existingRecord.workDate),
+    );
+  }
+
   Future<WorkRecord?> _readByDate(DateTime workDate) async {
     final String key = _formatDateOnly(workDate);
     final Map<String, Object?>? map = await storage.read(

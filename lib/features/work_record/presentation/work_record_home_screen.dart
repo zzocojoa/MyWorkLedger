@@ -224,14 +224,6 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                localizations.homeLocalRecord,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF41454D),
-                  letterSpacing: 0,
-                ),
-              ),
               const SizedBox(height: 24),
               if (_isLoading && summary == null)
                 const Center(child: CircularProgressIndicator())

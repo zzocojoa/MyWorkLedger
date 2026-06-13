@@ -44,6 +44,20 @@ final class MemoryKeyValueStorage implements KeyValueStorage {
     tableValues[key] = _copyStorageMap(value);
     _tables[table] = tableValues;
   }
+
+  @override
+  Future<void> delete({required String table, required String key}) async {
+    final Map<String, Map<String, Object?>>? tableValues = _tables[table];
+    if (tableValues == null) {
+      return;
+    }
+    tableValues.remove(key);
+    if (tableValues.isEmpty) {
+      _tables.remove(table);
+      return;
+    }
+    _tables[table] = tableValues;
+  }
 }
 
 Map<String, Map<String, Map<String, Object?>>> _copyTables(

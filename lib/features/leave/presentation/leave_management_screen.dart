@@ -32,6 +32,7 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
   LeaveSummary? _summary;
   String? _errorMessage;
   bool _isLoading = true;
+  bool _isDeletingUsage = false;
 
   @override
   void initState() {
@@ -128,6 +129,34 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     }
   }
 
+  Future<void> _deleteUsage(LeaveUsage usage) async {
+    final bool confirmed = await _confirmLeaveUsageDeletion(
+      context: context,
+      usage: usage,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setState(() {
+      _isDeletingUsage = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.repository.deleteUsage(id: usage.id);
+      await _loadSummary();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isDeletingUsage = false;
+      });
+    } on LeaveRepositoryException catch (error) {
+      _showError('연차 사용을 삭제할 수 없습니다. ${error.toString()}');
+    }
+  }
+
   void _setTotalLeaveFields({required int totalLeaveMinutes}) {
     final int days = totalLeaveMinutes ~/ leaveMinutesPerDay;
     final int remainingMinutes = totalLeaveMinutes.remainder(
@@ -148,6 +177,7 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     setState(() {
       _errorMessage = message;
       _isLoading = false;
+      _isDeletingUsage = false;
     });
   }
 
@@ -184,7 +214,10 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
                   onAdd: _isLoading ? null : _addUsage,
                 ),
                 const SizedBox(height: 22),
-                _LeaveUsageList(usages: summary.usages),
+                _LeaveUsageList(
+                  usages: summary.usages,
+                  onDelete: _isDeletingUsage ? null : _deleteUsage,
+                ),
               ],
               if (_errorMessage != null) ...<Widget>[
                 const SizedBox(height: 16),
@@ -430,9 +463,10 @@ final class _NumberField extends StatelessWidget {
 }
 
 final class _LeaveUsageList extends StatelessWidget {
-  const _LeaveUsageList({required this.usages});
+  const _LeaveUsageList({required this.usages, required this.onDelete});
 
   final List<LeaveUsage> usages;
+  final void Function(LeaveUsage usage)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -458,6 +492,7 @@ final class _LeaveUsageList extends StatelessWidget {
           _LeaveUsageRow(
             usage: usages[index],
             showDivider: index < usages.length - 1,
+            onDelete: onDelete,
           ),
       ],
     );
@@ -465,10 +500,15 @@ final class _LeaveUsageList extends StatelessWidget {
 }
 
 final class _LeaveUsageRow extends StatelessWidget {
-  const _LeaveUsageRow({required this.usage, required this.showDivider});
+  const _LeaveUsageRow({
+    required this.usage,
+    required this.showDivider,
+    required this.onDelete,
+  });
 
   final LeaveUsage usage;
   final bool showDivider;
+  final void Function(LeaveUsage usage)? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -520,11 +560,46 @@ final class _LeaveUsageRow extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: onDelete == null ? null : () => onDelete!(usage),
+              tooltip: '연차 사용 삭제',
+              icon: const Icon(Icons.delete_outline),
+              color: const Color(0xFFAA2D00),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+Future<bool> _confirmLeaveUsageDeletion({
+  required BuildContext context,
+  required LeaveUsage usage,
+}) async {
+  final String usageText =
+      '${formatLeaveUsageDate(value: usage.usedOn)} ${formatLeaveMinutes(minutes: usage.usedLeaveMinutes, includeZeroHours: false)}';
+  final bool? result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('연차 사용을 삭제할까요?'),
+        content: Text('$usageText 기록을 삭제합니다.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    },
+  );
+  return result ?? false;
 }
 
 final class _SectionBox extends StatelessWidget {

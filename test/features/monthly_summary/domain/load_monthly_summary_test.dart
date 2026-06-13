@@ -201,6 +201,16 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   }) async {
     throw const WorkRecordRepositoryException('unexpected updateToday call');
   }
+
+  @override
+  Future<void> deleteToday() async {
+    throw const WorkRecordRepositoryException('unexpected deleteToday call');
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+  }
 }
 
 final class _FakeLeaveRepository implements LeaveRepository {
@@ -253,5 +263,10 @@ final class _FakeLeaveRepository implements LeaveRepository {
     required String? memo,
   }) async {
     throw const LeaveRepositoryException('unexpected addUsage call');
+  }
+
+  @override
+  Future<void> deleteUsage({required String id}) async {
+    throw const LeaveRepositoryException('unexpected deleteUsage call');
   }
 }

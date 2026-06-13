@@ -110,12 +110,6 @@ abstract class AppLocalizations {
   /// **'내근무장부'**
   String get appKoreanName;
 
-  /// Home subtitle explaining that records are personal and local.
-  ///
-  /// In ko, this message translates to:
-  /// **'개인 로컬 기록'**
-  String get homeLocalRecord;
-
   /// Home monthly preview heading.
   ///
   /// In ko, this message translates to:

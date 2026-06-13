@@ -15,9 +15,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appKoreanName => 'WorkLedger';
 
   @override
-  String get homeLocalRecord => 'Personal local record';
-
-  @override
   String get homeThisMonth => 'This month';
 
   @override

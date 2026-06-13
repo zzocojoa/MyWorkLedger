@@ -144,6 +144,16 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   }) async {
     return _record();
   }
+
+  @override
+  Future<void> deleteToday() async {
+    throw const WorkRecordRepositoryException('unexpected deleteToday call');
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+  }
 }
 
 WorkRecord _record() {

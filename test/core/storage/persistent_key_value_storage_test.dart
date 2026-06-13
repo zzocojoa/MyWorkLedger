@@ -47,6 +47,48 @@ void main() {
       await directory.delete(recursive: true);
     });
 
+    test('deletes a persisted value across adapter instances', () async {
+      final Directory directory = await _createTempDirectory();
+      final PersistentKeyValueStorage firstStorage = _createStorage(
+        directory: directory,
+      );
+      final Map<String, Object?> value = _createWorkRecordMap();
+
+      await firstStorage.write(
+        table: 'work_records',
+        key: '2026-06-12',
+        value: value,
+      );
+      await firstStorage.delete(table: 'work_records', key: '2026-06-12');
+
+      final PersistentKeyValueStorage secondStorage = _createStorage(
+        directory: directory,
+      );
+      final Map<String, Object?>? savedValue = await secondStorage.read(
+        table: 'work_records',
+        key: '2026-06-12',
+      );
+
+      expect(savedValue, isNull);
+      await directory.delete(recursive: true);
+    });
+
+    test('delete is idempotent when table or key is missing', () async {
+      final Directory directory = await _createTempDirectory();
+      final PersistentKeyValueStorage storage = _createStorage(
+        directory: directory,
+      );
+
+      await storage.delete(table: 'work_records', key: 'missing-key');
+
+      final Map<String, Map<String, Object?>> rows = await storage.readAll(
+        table: 'work_records',
+      );
+
+      expect(rows, isEmpty);
+      await directory.delete(recursive: true);
+    });
+
     test('does not expose mutable input maps or read maps', () async {
       final Directory directory = await _createTempDirectory();
       final PersistentKeyValueStorage storage = _createStorage(

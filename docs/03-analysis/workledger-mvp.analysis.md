@@ -1,10 +1,10 @@
 # Gap Analysis: workledger-mvp
 
-> Date: 2026-06-13 | Phase: check candidate | Scope: FR-19 i18n 반영 후 Flutter Android MVP 구현 vs plan/design/mockup
+> Date: 2026-06-13 | Phase: check candidate | Scope: 삭제 기능 확장 반영 후 Flutter Android MVP 구현 vs plan/design/mockup
 
 ## Match Rate: 100%
 
-현재 구현은 WorkLedger MVP의 Must Have 19개 FR을 모두 충족한다. 직전 95% 분석에서 남아 있던 FR-19 영어 i18n 구조가 추가되었고, 한국어 기본 UI도 유지된다.
+현재 구현은 WorkLedger MVP의 Must Have 19개 FR을 모두 충족한다. 추가 조사에서 P0로 분류된 오늘 근무 기록 삭제와 연차 사용 내역 삭제가 구현됐고, 월간 요약 기록 목록에서 이전 근무 기록도 삭제할 수 있어 잘못 입력한 핵심 사용자 데이터에 대한 복구 경로가 확장됐다.
 
 `bkit_pdca_analyze` 실행 결과 bkit 상태는 `check` 단계로 올라갔다. 다만 사용자 승인 없이 phase 완료 처리는 하지 않았으며, 다음 결정은 최종 QA/Check 결과를 보고 진행한다.
 
@@ -27,6 +27,7 @@
 | `lib/features/leave/presentation/` | 연차 관리 S-06 |
 | `lib/features/pricing/presentation/` | 가격 fake-door S-07 |
 | `lib/core/notifications/` | Android persistent notification action |
+| `lib/core/storage/` | `KeyValueStorage.delete` 계약과 memory/persistent adapter |
 | `test/widget_test.dart` | 기본 locale, 한국어 UI, 영어 locale 구조 검증 |
 
 ## Functional Requirement Status
@@ -66,6 +67,10 @@
 | 한국어 기본 locale 유지 | Done | `locale: const Locale('ko')` |
 | 홈 공통 문자열 연결 | Done | 앱 이름, 로컬 기록, 이번 달, 월간 요약, 연차 관리 등 |
 | widget test 보강 | Done | 기본 locale 한국어, 영어 locale 지원, l10n getter 검증 |
+| P0 오늘 근무 기록 삭제 | Done | `WorkRecordRepository.deleteToday`, 오늘 기록 수정 화면의 확인 다이얼로그 |
+| 이전 근무 기록 삭제 | Done | `WorkRecordRepository.deleteByDate`, 월간 요약 기록 목록의 삭제 액션과 확인 다이얼로그 |
+| P0 연차 사용 내역 삭제 | Done | `LeaveRepository.deleteUsage`, 연차 관리 사용 내역 행의 삭제 액션 |
+| 저장소 삭제 계약 | Done | `KeyValueStorage.delete`, `MemoryKeyValueStorage`, `PersistentKeyValueStorage` |
 
 ## Implemented Items
 
@@ -73,20 +78,20 @@
 |---|---|---|
 | Core models | Done | `WorkRecord`, `LeaveBalance`, `LeaveUsage`, `PricingIntentEvent` |
 | 모델 직렬화/검증 | Done | `copyWith`, `toMap`, `fromMap`, validation tests |
-| Local storage abstraction | Done | `KeyValueStorage`, persistent JSON storage, in-memory test adapter |
+| Local storage abstraction | Done | `KeyValueStorage`, `delete`, persistent JSON storage, in-memory test adapter |
 | 런타임 영속 저장소 연결 | Done | `main.dart`가 persistent JSON storage와 repositories 연결 |
-| WorkRecord repository | Done | `findToday`, `findByMonth`, `clockIn`, `clockOut`, `updateToday` |
+| WorkRecord repository | Done | `findToday`, `findByMonth`, `clockIn`, `clockOut`, `updateToday`, `deleteToday`, `deleteByDate` |
 | TodayWorkSummary | Done | 출근 전/근무 중/퇴근 후 상태 변환 |
 | 홈 S-01/S-02/S-03 | Done | 홈 상태별 UI와 primary CTA |
 | 홈 월간 preview | Done | 이번 달 총 근무와 남은 연차를 월간/연차 요약 계산값으로 표시 |
-| 오늘 기록 수정 S-04 | Done | 시간, 태그, 메모 수정 |
-| 월간 요약 S-05 | Done | 근무 합계, 근무일, 초과 참고, 태그별 참고, 연차 요약, 기록 목록 |
-| 연차 관리 S-06 | Done | 총 연차, 사용 추가, 남은 연차, 초과 상태 |
+| 오늘 기록 수정 S-04 | Done | 시간, 태그, 메모 수정, 오늘 기록 삭제 |
+| 월간 요약 S-05 | Done | 근무 합계, 근무일, 초과 참고, 태그별 참고, 연차 요약, 기록 목록, 이전 기록 삭제 |
+| 연차 관리 S-06 | Done | 총 연차, 사용 추가, 사용 내역 삭제, 남은 연차, 초과 상태 |
 | 가격 fake-door S-07 | Done | Report Pass/Pro 관심 이벤트와 MVP 안내 |
 | Android persistent notification | Done | 권한 요청, 상시 알림, foreground/background action handler |
 | Android build integration | Done | manifest permission/receiver, desugaring, multidex |
 | 영어 i18n 구조 | Done | ko/en supported locales와 확장 가능한 ARB 구조 |
-| 테스트 | Done | 직전 검증 기준 `flutter test` 122개 통과 |
+| 테스트 | Done | 삭제 기능 확장 후 `flutter test` 135개 통과 |
 
 ## Missing Items
 
@@ -117,6 +122,24 @@
 | 주요 공통 문자열 일부 연결 | Match | 홈 앱 이름, 로컬 기록, 이번 달, 요약/연차 label |
 | widget test 영향 보정 | Match | `test/widget_test.dart`가 locale/l10n 구조 검증 |
 | 새 기능 화면 추가 없음 | Match | l10n wiring과 테스트만 변경 |
+
+## P0 Deletion Follow-up Check
+
+| Requirement | Result | Evidence |
+|---|---|---|
+| 저장소 삭제 계약 | Match | `KeyValueStorage.delete({table, key})` |
+| 메모리 저장소 삭제 | Match | `MemoryKeyValueStorage.delete`, test in-memory adapter delete |
+| 영속 저장소 삭제 | Match | `PersistentKeyValueStorage.delete`, persistent delete tests |
+| 오늘 기록 삭제 repository | Match | `WorkRecordRepository.deleteToday`, `LocalStorageWorkRecordRepository.deleteToday` |
+| 오늘 기록 삭제 UI | Match | `EditTodayWorkRecordScreen`, `오늘 기록 삭제`, 확인 다이얼로그 |
+| 오늘 기록 삭제 후 홈 갱신 | Match | 삭제 성공 시 `Navigator.pop(true)`로 홈 reload 경로 사용 |
+| 이전 근무 기록 삭제 repository | Match | `WorkRecordRepository.deleteByDate`, `LocalStorageWorkRecordRepository.deleteByDate` |
+| 이전 근무 기록 삭제 UI | Match | `MonthlySummaryScreen`, 기록 행 delete icon, 확인 다이얼로그 |
+| 이전 근무 기록 삭제 후 월간 요약 갱신 | Match | 삭제 성공 후 `_loadSummary()` 재호출 |
+| 연차 사용 삭제 repository | Match | `LeaveRepository.deleteUsage`, `LocalStorageLeaveRepository.deleteUsage` |
+| 연차 사용 삭제 UI | Match | `LeaveManagementScreen`, 사용 내역 행 delete icon, 확인 다이얼로그 |
+| 연차 사용 삭제 후 요약 갱신 | Match | 삭제 성공 후 `_loadSummary()` 재호출 |
+| 삭제 취소 안전장치 | Match | widget test에서 취소 시 삭제 호출 없음 |
 
 ## FR-04 Notification Flow Check
 
@@ -185,15 +208,15 @@
 | Evidence | Result |
 |---|---|
 | `bkit_get_status` | phase `check`, progress `[Plan]✅ → [Design]✅ → [Do]✅ → [Check]🔄 → [Act]⏳` |
-| `bkit_pdca_analyze` | analysis path `docs/03-analysis/workledger-mvp.analysis.md`, iterationCount `10` |
+| `bkit_pdca_analyze` | analysis path `docs/03-analysis/workledger-mvp.analysis.md`, iterationCount `13` |
 | `bkit_pre_write_check` | 문서 갱신 허용, plan/design 확인됨 |
 | `flutter gen-l10n` | 직전 FR-19 구현 검증에서 완료 |
-| `dart format` | 태그별 참고 구현 파일과 관련 테스트 포맷 완료 |
-| `flutter analyze` | 태그별 참고 구현 후 통과, `No issues found` |
-| `flutter test` | 태그별 참고 구현 후 122개 통과 |
-| `git --no-pager diff --check` | 태그별 참고 구현 후 통과 |
+| `dart format lib test` | 삭제 기능 구현 파일과 관련 테스트 포맷 완료 |
+| `flutter analyze` | 삭제 기능 구현 후 통과, `No issues found` |
+| `flutter test` | 삭제 기능 확장 후 135개 통과 |
+| `git --no-pager diff --check` | 삭제 기능 구현 후 통과 |
 
-이번 변경은 월간 요약에 야근, 퇴근 지연, 휴일근무별 참고 시간을 추가하고 관련 문서를 갱신했다. 구현 후 `flutter analyze`, `flutter test`, `git --no-pager diff --check`를 재실행했다.
+이번 변경은 P0 삭제 기능인 오늘 근무 기록 삭제와 연차 사용 내역 삭제에 더해 월간 요약의 이전 근무 기록 삭제를 추가했다. 구현 후 `dart format lib test`, `flutter analyze`, `flutter test`, `git --no-pager diff --check`를 재실행했다.
 
 ## Recommendation
 
@@ -201,6 +224,6 @@
 
 권장 순서:
 
-1. 최종 emulator smoke test로 홈, 수정, 월간, 연차, 가격, 알림 action을 한 번 더 확인한다.
-2. release readiness 또는 MVP completion report를 작성한다.
+1. 필요하면 emulator에서 오늘 기록 삭제, 이전 근무 기록 삭제, 연차 사용 삭제를 한 번 더 smoke test한다.
+2. release readiness 문서에 삭제 기능 추가 검증 여부를 반영한다.
 3. 사용자 승인 후 현재 feature 변경사항을 기능 단위로 커밋한다.

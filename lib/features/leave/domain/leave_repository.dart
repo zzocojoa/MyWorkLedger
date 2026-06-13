@@ -16,6 +16,8 @@ abstract interface class LeaveRepository {
     required int usedLeaveMinutes,
     required String? memo,
   });
+
+  Future<void> deleteUsage({required String id});
 }
 
 final class LeaveRepositoryException implements Exception {

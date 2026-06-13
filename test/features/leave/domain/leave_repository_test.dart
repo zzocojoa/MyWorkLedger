@@ -100,6 +100,67 @@ void main() {
       ]);
     });
 
+    test('deleteUsage removes selected leave usage only', () async {
+      int idValue = 0;
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageLeaveRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:00:00'),
+        idGenerator: () {
+          idValue += 1;
+          return 'leave-usage-$idValue';
+        },
+      );
+      final LeaveUsage firstUsage = await repository.addUsage(
+        usedOn: DateTime(2026, 6, 3),
+        usedLeaveMinutes: 480,
+        memo: '개인 일정',
+      );
+      final LeaveUsage secondUsage = await repository.addUsage(
+        usedOn: DateTime(2026, 6, 10),
+        usedLeaveMinutes: 240,
+        memo: '오전 반차',
+      );
+
+      await repository.deleteUsage(id: firstUsage.id);
+
+      final List<LeaveUsage> usages = await repository.findUsagesByYear(
+        year: 2026,
+      );
+      expect(usages, <LeaveUsage>[secondUsage]);
+      expect(
+        await storage.read(
+          table: LocalStorageLeaveRepository.leaveUsagesTable,
+          key: firstUsage.id,
+        ),
+        isNull,
+      );
+    });
+
+    test('deleteUsage throws when usage is missing', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageLeaveRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-12T09:00:00'),
+        idGenerator: () => 'unused-id',
+      );
+
+      await expectLater(
+        repository.deleteUsage(id: 'missing-usage'),
+        throwsA(
+          isA<LeaveRepositoryException>().having(
+            (LeaveRepositoryException error) => error.message,
+            'message',
+            allOf(
+              contains('action=deleteUsage'),
+              contains('table=leave_usages'),
+              contains('id=missing-usage'),
+            ),
+          ),
+        ),
+      );
+    });
+
     test('throws explicit error when stored balance cannot parse', () async {
       final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
       await storage.write(

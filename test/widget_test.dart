@@ -27,7 +27,6 @@ void main() {
     expect(find.text('내근무장부'), findsOneWidget);
     expect(find.text('아직 출근 전'), findsOneWidget);
     expect(find.text('출근하기'), findsOneWidget);
-    expect(find.text('개인 로컬 기록'), findsOneWidget);
 
     final BuildContext context = tester.element(
       find.byType(WorkRecordHomeScreen),
@@ -64,6 +63,11 @@ final class _WidgetTestLeaveRepository implements LeaveRepository {
     required String? memo,
   }) async {
     throw const LeaveRepositoryException('test=widget action=addUsage');
+  }
+
+  @override
+  Future<void> deleteUsage({required String id}) async {
+    throw const LeaveRepositoryException('test=widget action=deleteUsage');
   }
 }
 
@@ -118,5 +122,17 @@ final class _WidgetTestWorkRecordRepository implements WorkRecordRepository {
     required String? memo,
   }) async {
     throw const WorkRecordRepositoryException('test=widget action=updateToday');
+  }
+
+  @override
+  Future<void> deleteToday() async {
+    throw const WorkRecordRepositoryException('test=widget action=deleteToday');
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException(
+      'test=widget action=deleteByDate',
+    );
   }
 }

@@ -15,6 +15,10 @@ abstract interface class WorkRecordRepository {
     required List<WorkRecordTag> tags,
     required String? memo,
   });
+
+  Future<void> deleteToday();
+
+  Future<void> deleteByDate({required DateTime workDate});
 }
 
 final class WorkRecordRepositoryException implements Exception {

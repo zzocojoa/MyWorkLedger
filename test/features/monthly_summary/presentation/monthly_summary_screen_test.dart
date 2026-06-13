@@ -37,7 +37,6 @@ void main() {
     expect(find.text('야근'), findsOneWidget);
     expect(find.text('퇴근 지연'), findsOneWidget);
     expect(find.text('휴일근무'), findsOneWidget);
-    expect(find.text('급여 계산이 아닌 개인 참고용 분류입니다'), findsOneWidget);
     expect(find.text('연차 요약'), findsOneWidget);
     expect(find.text('남은 연차'), findsOneWidget);
     expect(find.text('총 연차를 입력해 주세요'), findsOneWidget);
@@ -151,7 +150,6 @@ void main() {
     expect(find.text('2시간'), findsOneWidget);
     expect(find.text('3시간 30분'), findsOneWidget);
     expect(find.text('4시간 15분'), findsOneWidget);
-    expect(find.text('급여 계산이 아닌 개인 참고용 분류입니다'), findsOneWidget);
   });
 
   testWidgets('shows exceeded leave state clearly', (
@@ -232,6 +230,97 @@ void main() {
     expect(find.text('06-04 시간이 비어 있음'), findsOneWidget);
     expect(find.text('0일'), findsOneWidget);
   });
+
+  testWidgets('deletes monthly work record after confirmation and refreshes', (
+    WidgetTester tester,
+  ) async {
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      monthlyRecords: <WorkRecord>[
+        _completedRecord(
+          id: 'delete-target',
+          clockInAt: DateTime(2026, 6, 1, 9, 0),
+          clockOutAt: DateTime(2026, 6, 1, 17, 0),
+          tags: <WorkRecordTag>[],
+        ),
+        _completedRecord(
+          id: 'remaining-record',
+          clockInAt: DateTime(2026, 6, 2, 10, 0),
+          clockOutAt: DateTime(2026, 6, 2, 14, 0),
+          tags: <WorkRecordTag>[],
+        ),
+      ],
+      findByMonthError: null,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: _emptyLeaveRepository(),
+        now: DateTime(2026, 6, 12, 9, 0),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('12시간'), findsOneWidget);
+    expect(find.text('06-01 09:00-17:00'), findsOneWidget);
+    expect(find.text('06-02 10:00-14:00'), findsOneWidget);
+
+    await tester.ensureVisible(find.byTooltip('근무 기록 삭제').first);
+    await tester.pump();
+    await tester.tap(find.byTooltip('근무 기록 삭제').first);
+    await tester.pump();
+
+    expect(find.text('근무 기록을 삭제할까요?'), findsOneWidget);
+    expect(find.text('06-01 기록을 삭제합니다.'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.deleteByDateCallCount, 1);
+    expect(repository.deletedWorkDate, DateTime(2026, 6, 1));
+    expect(find.text('06-01 09:00-17:00'), findsNothing);
+    expect(find.text('06-02 10:00-14:00'), findsOneWidget);
+    expect(find.text('4시간'), findsOneWidget);
+  });
+
+  testWidgets(
+    'does not delete monthly work record when confirmation is cancelled',
+    (WidgetTester tester) async {
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        monthlyRecords: <WorkRecord>[
+          _completedRecord(
+            id: 'delete-cancelled',
+            clockInAt: DateTime(2026, 6, 1, 9, 0),
+            clockOutAt: DateTime(2026, 6, 1, 17, 0),
+            tags: <WorkRecordTag>[],
+          ),
+        ],
+        findByMonthError: null,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          leaveRepository: _emptyLeaveRepository(),
+          now: DateTime(2026, 6, 12, 9, 0),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.ensureVisible(find.byTooltip('근무 기록 삭제').first);
+      await tester.pump();
+      await tester.tap(find.byTooltip('근무 기록 삭제').first);
+      await tester.pump();
+      await tester.tap(find.widgetWithText(TextButton, '취소'));
+      await tester.pump();
+
+      expect(repository.deleteByDateCallCount, 0);
+      expect(find.text('06-01 09:00-17:00'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows Korean error when repository fails', (
     WidgetTester tester,
@@ -487,6 +576,11 @@ final class _FakeLeaveRepository implements LeaveRepository {
   }) async {
     throw const LeaveRepositoryException('unexpected addUsage call');
   }
+
+  @override
+  Future<void> deleteUsage({required String id}) async {
+    throw const LeaveRepositoryException('unexpected deleteUsage call');
+  }
 }
 
 final class _FakePricingIntentRepository implements PricingIntentRepository {
@@ -534,6 +628,8 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   final WorkRecordRepositoryException? findByMonthError;
   int? requestedYear;
   int? requestedMonth;
+  int deleteByDateCallCount = 0;
+  DateTime? deletedWorkDate;
 
   @override
   Future<WorkRecord?> findToday() async {
@@ -572,5 +668,30 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
     required String? memo,
   }) async {
     throw const WorkRecordRepositoryException('unexpected updateToday call');
+  }
+
+  @override
+  Future<void> deleteToday() async {
+    throw const WorkRecordRepositoryException('unexpected deleteToday call');
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    deleteByDateCallCount += 1;
+    final DateTime targetDate = DateTime(
+      workDate.year,
+      workDate.month,
+      workDate.day,
+    );
+    deletedWorkDate = targetDate;
+    final int removedCount = monthlyRecords.length;
+    monthlyRecords.removeWhere((WorkRecord record) {
+      return record.workDate == targetDate;
+    });
+    if (monthlyRecords.length == removedCount) {
+      throw WorkRecordRepositoryException(
+        'action=deleteByDate workDate=${targetDate.toIso8601String()} rule=missing work record',
+      );
+    }
   }
 }

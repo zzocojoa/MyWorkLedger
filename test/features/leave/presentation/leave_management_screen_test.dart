@@ -76,6 +76,48 @@ void main() {
     expect(find.text('오전 반차'), findsOneWidget);
   });
 
+  testWidgets('deletes leave usage after confirmation and refreshes summary', (
+    WidgetTester tester,
+  ) async {
+    final LocalStorageLeaveRepository repository = _createRepository();
+
+    await tester.pumpWidget(_buildScreen(repository: repository));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(find.byKey(const Key('totalLeaveDaysField')), '15');
+    await tester.enterText(find.byKey(const Key('totalLeaveHoursField')), '0');
+    await tester.tap(find.widgetWithText(FilledButton, '총 연차 저장'));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-10',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '0');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '4');
+    await tester.enterText(find.byKey(const Key('usageMemoField')), '오전 반차');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+    await tester.pump();
+
+    await tester.ensureVisible(find.byIcon(Icons.delete_outline));
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+    expect(find.text('연차 사용을 삭제할까요?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('15일'), findsOneWidget);
+    expect(find.text('총 15일 0시간 · 사용 0시간'), findsOneWidget);
+    expect(find.text('사용 내역이 없습니다'), findsOneWidget);
+    expect(find.text('오전 반차'), findsNothing);
+  });
+
   testWidgets('shows exceeded state after overuse', (
     WidgetTester tester,
   ) async {

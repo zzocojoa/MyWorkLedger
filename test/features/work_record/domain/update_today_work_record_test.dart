@@ -90,4 +90,14 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
       updatedAt: DateTime.parse('2026-06-12T20:00:00'),
     );
   }
+
+  @override
+  Future<void> deleteToday() async {
+    throw const WorkRecordRepositoryException('unexpected deleteToday call');
+  }
+
+  @override
+  Future<void> deleteByDate({required DateTime workDate}) async {
+    throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+  }
 }
