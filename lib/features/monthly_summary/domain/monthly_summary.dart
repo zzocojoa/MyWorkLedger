@@ -1,6 +1,7 @@
 import '../../../core/models/work_record.dart';
 import '../../../core/models/leave_usage.dart';
 import '../../../core/models/work_rule.dart';
+import '../../compensation_reference/domain/compensation_reference_summary.dart';
 import '../../leave/domain/leave_summary.dart';
 import '../../work_time/domain/work_time_candidate.dart';
 
@@ -161,6 +162,7 @@ final class MonthlySummaryViewData {
     required this.workRule,
     required this.displayTotalWorkedDuration,
     required this.workTimeCandidateSummary,
+    required this.compensationReferenceSummary,
   }) {
     _validateViewData(this);
   }
@@ -171,6 +173,7 @@ final class MonthlySummaryViewData {
   final WorkRule? workRule;
   final Duration displayTotalWorkedDuration;
   final WorkTimeCandidateSummary workTimeCandidateSummary;
+  final CompensationReferenceSummary compensationReferenceSummary;
 }
 
 void _validateEntry(MonthlyWorkRecordEntry entry) {

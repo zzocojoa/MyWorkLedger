@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/models/work_rule.dart';
+import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/leave/presentation/leave_management_screen.dart';
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
@@ -434,6 +436,8 @@ Widget _buildScreen({
       repository: repository,
       leaveRepository: resolvedLeaveRepository,
       workRuleRepository: resolvedWorkRuleRepository,
+      compensationReferenceRepository:
+          const _FakeCompensationReferenceRepository(),
       pricingIntentRepository: _FakePricingIntentRepository(),
       now: () => now,
     ),
@@ -757,5 +761,32 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
     );
     rule = savedRule;
     return savedRule;
+  }
+}
+
+final class _FakeCompensationReferenceRepository
+    implements CompensationReferenceRepository {
+  const _FakeCompensationReferenceRepository();
+
+  @override
+  Future<CompensationReferenceSetting?> findApplicableForMonth({
+    required int year,
+    required int month,
+  }) async {
+    return null;
+  }
+
+  @override
+  Future<CompensationReferenceSetting> save({
+    required CompensationReferenceMode mode,
+    required int fixedIncludedOvertimeMinutes,
+    required int fixedIncludedNightMinutes,
+    required int fixedIncludedHolidayMinutes,
+    required DateTime effectiveFromMonth,
+    required String? memo,
+  }) async {
+    throw const CompensationReferenceRepositoryException(
+      'unexpected save call',
+    );
   }
 }

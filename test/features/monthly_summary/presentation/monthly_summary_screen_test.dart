@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/models/work_rule.dart';
+import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
+import 'package:workledger/features/compensation_reference/presentation/compensation_reference_settings_screen.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
@@ -117,6 +120,66 @@ void main() {
     expect(find.text('야근'), findsNothing);
     expect(find.textContaining('기록 사유:'), findsNothing);
     expect(find.text('06-03 09:10-18:20'), findsOneWidget);
+  });
+
+  testWidgets('shows fixed included comparison and opens settings', (
+    WidgetTester tester,
+  ) async {
+    final _FakeCompensationReferenceRepository compensationRepository =
+        _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'setting-1',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedOvertimeMinutes: 60,
+            fixedIncludedNightMinutes: 0,
+            fixedIncludedHolidayMinutes: 0,
+            effectiveFromMonth: DateTime(2026, 6),
+            memo: null,
+            createdAt: DateTime(2026, 6, 1),
+            updatedAt: DateTime(2026, 6, 1),
+          ),
+          findError: null,
+        );
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: _FakeWorkRecordRepository(
+          monthlyRecords: <WorkRecord>[
+            _completedRecord(
+              id: 'work-1',
+              clockInAt: DateTime(2026, 6, 1, 9, 0),
+              clockOutAt: DateTime(2026, 6, 1, 21, 30),
+              tags: <WorkRecordTag>[],
+            ),
+          ],
+          findByMonthError: null,
+        ),
+        leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: _FakeWorkRuleRepository(
+          rule: _workRule(),
+          findActiveError: null,
+        ),
+        compensationReferenceRepository: compensationRepository,
+        now: DateTime(2026, 6, 12, 9),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('고정 포함 시간 비교'), findsOneWidget);
+    expect(find.text('실제 기록'), findsOneWidget);
+    expect(find.text('고정 포함'), findsOneWidget);
+    expect(find.text('초과 참고'), findsOneWidget);
+    expect(find.text('3시간 30분'), findsWidgets);
+    expect(find.text('1시간'), findsOneWidget);
+    expect(find.text('2시간 30분'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('고정 포함 시간 비교 설정'));
+    await tester.pump();
+    await tester.tap(find.text('고정 포함 시간 비교 설정'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CompensationReferenceSettingsScreen), findsOneWidget);
+    expect(find.text('비교 방식'), findsOneWidget);
   });
 
   testWidgets(
@@ -459,6 +522,11 @@ void main() {
           findActiveError: null,
         ),
         pricingIntentRepository: pricingIntentRepository,
+        compensationReferenceRepository:
+            const _FakeCompensationReferenceRepository(
+              setting: null,
+              findError: null,
+            ),
         now: DateTime(2026, 6, 12, 9, 0),
       ),
     );
@@ -510,6 +578,11 @@ void main() {
           findActiveError: null,
         ),
         pricingIntentRepository: pricingIntentRepository,
+        compensationReferenceRepository:
+            const _FakeCompensationReferenceRepository(
+              setting: null,
+              findError: null,
+            ),
         now: DateTime(2026, 6, 12, 9, 0),
       ),
     );
@@ -533,6 +606,7 @@ Widget _buildScreen({
   required _FakeLeaveRepository leaveRepository,
   required DateTime now,
   _FakeWorkRuleRepository? workRuleRepository,
+  _FakeCompensationReferenceRepository? compensationReferenceRepository,
 }) {
   return _buildScreenWithPricingRepository(
     repository: repository,
@@ -543,6 +617,12 @@ Widget _buildScreen({
     pricingIntentRepository: _FakePricingIntentRepository(
       failingEventTypes: <PricingIntentEventType>{},
     ),
+    compensationReferenceRepository:
+        compensationReferenceRepository ??
+        const _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+        ),
     now: now,
   );
 }
@@ -552,6 +632,7 @@ Widget _buildScreenWithPricingRepository({
   required _FakeLeaveRepository leaveRepository,
   required _FakeWorkRuleRepository workRuleRepository,
   required _FakePricingIntentRepository pricingIntentRepository,
+  required _FakeCompensationReferenceRepository compensationReferenceRepository,
   required DateTime now,
 }) {
   return MaterialApp(
@@ -559,6 +640,7 @@ Widget _buildScreenWithPricingRepository({
       repository: repository,
       leaveRepository: leaveRepository,
       workRuleRepository: workRuleRepository,
+      compensationReferenceRepository: compensationReferenceRepository,
       pricingIntentRepository: pricingIntentRepository,
       now: () => now,
     ),
@@ -762,6 +844,51 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
     required List<int> workWeekdays,
   }) async {
     throw const WorkRuleRepositoryException('unexpected save call');
+  }
+}
+
+final class _FakeCompensationReferenceRepository
+    implements CompensationReferenceRepository {
+  const _FakeCompensationReferenceRepository({
+    required this.setting,
+    required this.findError,
+  });
+
+  final CompensationReferenceSetting? setting;
+  final CompensationReferenceRepositoryException? findError;
+
+  @override
+  Future<CompensationReferenceSetting?> findApplicableForMonth({
+    required int year,
+    required int month,
+  }) async {
+    final CompensationReferenceRepositoryException? error = findError;
+    if (error != null) {
+      throw error;
+    }
+    return setting;
+  }
+
+  @override
+  Future<CompensationReferenceSetting> save({
+    required CompensationReferenceMode mode,
+    required int fixedIncludedOvertimeMinutes,
+    required int fixedIncludedNightMinutes,
+    required int fixedIncludedHolidayMinutes,
+    required DateTime effectiveFromMonth,
+    required String? memo,
+  }) async {
+    return CompensationReferenceSetting(
+      id: 'setting-saved',
+      mode: mode,
+      fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
+      fixedIncludedNightMinutes: fixedIncludedNightMinutes,
+      fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+      effectiveFromMonth: effectiveFromMonth,
+      memo: memo,
+      createdAt: DateTime(2026, 6, 1),
+      updatedAt: DateTime(2026, 6, 1),
+    );
   }
 }
 

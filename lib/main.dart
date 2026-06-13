@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'app/workledger_app.dart';
 import 'core/notifications/workledger_notification_service.dart';
 import 'core/storage/persistent_key_value_storage.dart';
+import 'features/compensation_reference/data/local_storage_compensation_reference_repository.dart';
 import 'features/leave/data/local_storage_leave_repository.dart';
 import 'features/pricing/data/local_storage_pricing_intent_repository.dart';
 import 'features/work_record/data/local_storage_work_record_repository.dart';
@@ -45,6 +46,12 @@ Future<void> main() async {
         clock: now,
         idGenerator: () => 'work-rule-${now().microsecondsSinceEpoch}',
       );
+  final LocalStorageCompensationReferenceRepository
+  compensationReferenceRepository = LocalStorageCompensationReferenceRepository(
+    storage: storage,
+    clock: now,
+    idGenerator: () => 'compensation-reference-${now().microsecondsSinceEpoch}',
+  );
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   final WorkLedgerNotificationService notificationService =
       WorkLedgerNotificationService(
@@ -63,6 +70,7 @@ Future<void> main() async {
       workRecordRepository: repository,
       leaveRepository: leaveRepository,
       workRuleRepository: workRuleRepository,
+      compensationReferenceRepository: compensationReferenceRepository,
       pricingIntentRepository: pricingIntentRepository,
       now: now,
       navigatorKey: navigatorKey,

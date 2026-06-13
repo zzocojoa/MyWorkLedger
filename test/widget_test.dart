@@ -1,11 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/app/workledger_app.dart';
+import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/models/work_rule.dart';
+import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
@@ -20,6 +22,8 @@ void main() {
         workRecordRepository: _WidgetTestWorkRecordRepository(),
         leaveRepository: _WidgetTestLeaveRepository(),
         workRuleRepository: _WidgetTestWorkRuleRepository(),
+        compensationReferenceRepository:
+            _WidgetTestCompensationReferenceRepository(),
         pricingIntentRepository: _WidgetTestPricingIntentRepository(),
         now: () => DateTime(2026, 6, 12, 9, 0),
         navigatorKey: GlobalKey<NavigatorState>(),
@@ -107,6 +111,31 @@ final class _WidgetTestWorkRuleRepository implements WorkRuleRepository {
     required List<int> workWeekdays,
   }) async {
     throw const WorkRuleRepositoryException('test=widget action=saveWorkRule');
+  }
+}
+
+final class _WidgetTestCompensationReferenceRepository
+    implements CompensationReferenceRepository {
+  @override
+  Future<CompensationReferenceSetting?> findApplicableForMonth({
+    required int year,
+    required int month,
+  }) async {
+    return null;
+  }
+
+  @override
+  Future<CompensationReferenceSetting> save({
+    required CompensationReferenceMode mode,
+    required int fixedIncludedOvertimeMinutes,
+    required int fixedIncludedNightMinutes,
+    required int fixedIncludedHolidayMinutes,
+    required DateTime effectiveFromMonth,
+    required String? memo,
+  }) async {
+    throw const CompensationReferenceRepositoryException(
+      'test=widget action=saveCompensationReference',
+    );
   }
 }
 

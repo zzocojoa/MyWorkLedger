@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/work_record.dart';
+import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
 import '../../leave/presentation/leave_management_screen.dart';
@@ -23,6 +24,7 @@ final class WorkRecordHomeScreen extends StatefulWidget {
     required this.repository,
     required this.leaveRepository,
     required this.workRuleRepository,
+    required this.compensationReferenceRepository,
     required this.pricingIntentRepository,
     required this.now,
     super.key,
@@ -31,6 +33,7 @@ final class WorkRecordHomeScreen extends StatefulWidget {
   final WorkRecordRepository repository;
   final LeaveRepository leaveRepository;
   final WorkRuleRepository workRuleRepository;
+  final CompensationReferenceRepository compensationReferenceRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
 
@@ -102,6 +105,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       workRecordRepository: widget.repository,
       leaveRepository: widget.leaveRepository,
       workRuleRepository: widget.workRuleRepository,
+      compensationReferenceRepository: widget.compensationReferenceRepository,
       targetMonth: MonthlySummaryMonth(
         year: currentTime.year,
         month: currentTime.month,
@@ -204,6 +208,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
           repository: widget.repository,
           leaveRepository: widget.leaveRepository,
           workRuleRepository: widget.workRuleRepository,
+          compensationReferenceRepository:
+              widget.compensationReferenceRepository,
           pricingIntentRepository: widget.pricingIntentRepository,
           now: widget.now,
         ),
