@@ -138,23 +138,6 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
-                '정시 근무 기준',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: const Color(0xFF181D26),
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '연장·야간 후보를 보여주기 위한 개인 기준입니다. 급여나 법정 수당 확정값이 아닙니다.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF41454D),
-                  letterSpacing: 0,
-                ),
-              ),
-              const SizedBox(height: 20),
               OutlinedButton(
                 onPressed: _isSaving ? null : _applyPreset,
                 child: const Text('09:00-18:00 빠른 설정'),

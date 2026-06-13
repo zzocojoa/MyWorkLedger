@@ -10,6 +10,7 @@ import '../../pricing/presentation/pricing_fake_door_screen.dart';
 import '../../work_record/domain/work_record_repository.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
 import '../../work_rule/presentation/work_rule_settings_screen.dart';
+import '../../work_time/domain/work_time_candidate.dart';
 import '../domain/load_monthly_summary.dart';
 import '../domain/monthly_summary.dart';
 
@@ -234,11 +235,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                         : _openPricingFakeDoor,
                     child: const Text('월간 리포트 만들기'),
                   ),
-                  const SizedBox(height: 10),
-                  OutlinedButton(
-                    onPressed: _closeScreen,
-                    child: const Text('홈으로'),
-                  ),
                 ],
               ],
             ),
@@ -284,16 +280,6 @@ final class _TotalWorkCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              viewData.workRule == null
-                  ? '개인 참고용 기록입니다'
-                  : '휴게시간을 제외한 개인 참고용 기록입니다',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.72),
-                letterSpacing: 0,
-              ),
-            ),
           ],
         ),
       ),
@@ -320,13 +306,10 @@ final class _MonthlyStats extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _StatTile(
-            label: '연장 후보',
+            label: '근무 태그',
             value: viewData.workRule == null
                 ? '기준 미설정'
-                : formatMonthlySummaryDuration(
-                    duration:
-                        viewData.workTimeCandidateSummary.overtimeDuration,
-                  ),
+                : '${viewData.workTimeCandidateSummary.activeTagCount}개',
           ),
         ),
       ],
@@ -441,7 +424,7 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              '연장·야간 후보',
+              '근무 태그',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: const Color(0xFF181D26),
                 fontWeight: FontWeight.w600,
@@ -451,7 +434,7 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
             const SizedBox(height: 12),
             if (!hasWorkRule) ...<Widget>[
               Text(
-                '근무 기준을 설정하면 정시 퇴근 이후 연장 후보와 22:00-06:00 야간 후보를 분리해 보여줍니다.',
+                '근무 기준을 설정하면 휴무일 근무, 정시 전 근무, 연장 근무, 야간 근무를 분리해 보여줍니다.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF41454D),
                   letterSpacing: 0,
@@ -462,27 +445,37 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
                 onPressed: onOpenWorkRuleSettings,
                 child: const Text('근무 기준 설정'),
               ),
-            ] else ...<Widget>[
-              _CandidateReferenceRow(
-                label: '연장 후보',
-                value: formatMonthlySummaryDuration(
-                  duration: viewData.workTimeCandidateSummary.overtimeDuration,
-                ),
-              ),
-              const SizedBox(height: 10),
-              _CandidateReferenceRow(
-                label: '야간 후보',
-                value: formatMonthlySummaryDuration(
-                  duration: viewData.workTimeCandidateSummary.nightWorkDuration,
-                ),
-              ),
-              const SizedBox(height: 12),
+            ] else if (viewData.workSummary.completedWorkDayCount ==
+                0) ...<Widget>[
               Text(
-                '개인 참고용 후보입니다. 급여나 법정 수당 확정값이 아닙니다.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                '완료된 근무 기록이 없습니다',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF41454D),
                   letterSpacing: 0,
                 ),
+              ),
+            ] else if (!viewData
+                .workTimeCandidateSummary
+                .hasActiveTags) ...<Widget>[
+              Text(
+                '정시 기준 외 근무 없음',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF181D26),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '이번 달 기록은 설정한 근무 기준 안에 있습니다.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF6F737A),
+                  letterSpacing: 0,
+                ),
+              ),
+            ] else ...<Widget>[
+              _CandidateReferenceRows(
+                summary: viewData.workTimeCandidateSummary,
               ),
             ],
           ],
@@ -490,6 +483,60 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+final class _CandidateReferenceRows extends StatelessWidget {
+  const _CandidateReferenceRows({required this.summary});
+
+  final WorkTimeCandidateSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_CandidateReferenceData> rows = _visibleCandidateRows(
+      summary: summary,
+    );
+    return Column(
+      children: <Widget>[
+        for (int index = 0; index < rows.length; index += 1) ...<Widget>[
+          if (index > 0) const SizedBox(height: 10),
+          _CandidateReferenceRow(
+            label: rows[index].label,
+            value: formatMonthlySummaryDuration(duration: rows[index].duration),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+final class _CandidateReferenceData {
+  const _CandidateReferenceData({required this.label, required this.duration});
+
+  final String label;
+  final Duration duration;
+}
+
+List<_CandidateReferenceData> _visibleCandidateRows({
+  required WorkTimeCandidateSummary summary,
+}) {
+  final List<_CandidateReferenceData> rows = <_CandidateReferenceData>[
+    _CandidateReferenceData(
+      label: '휴무일 근무',
+      duration: summary.nonWorkdayDuration,
+    ),
+    _CandidateReferenceData(
+      label: '정시 전 근무',
+      duration: summary.earlyWorkDuration,
+    ),
+    _CandidateReferenceData(label: '연장 근무', duration: summary.overtimeDuration),
+    _CandidateReferenceData(
+      label: '야간 근무',
+      duration: summary.nightWorkDuration,
+    ),
+  ];
+  return rows
+      .where((_CandidateReferenceData row) => row.duration > Duration.zero)
+      .toList(growable: false);
 }
 
 final class _CandidateReferenceRow extends StatelessWidget {

@@ -96,7 +96,7 @@ void main() {
     expect(find.text('총 9시간 39분'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
     expect(find.text('달력 보기'), findsOneWidget);
-    expect(find.text('연장·야간 후보를 볼까요?'), findsOneWidget);
+    expect(find.text('근무 태그를 볼까요?'), findsOneWidget);
     expect(find.text('근무 기준 설정'), findsOneWidget);
   });
 
@@ -130,7 +130,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
-    expect(find.text('정시 근무 기준'), findsOneWidget);
+    expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
+    expect(find.text('정시 근무 기준'), findsNothing);
+  });
+
+  testWidgets('opens work rule settings from app bar action', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 19, 0);
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      rule: _workRule(),
+    );
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        workRuleRepository: workRuleRepository,
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('근무 기준 설정'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
+    expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
+    expect(find.text('정시 근무 기준'), findsNothing);
   });
 
   testWidgets('shows current month preview values', (
@@ -169,6 +200,7 @@ void main() {
       _buildScreen(
         repository: repository,
         leaveRepository: leaveRepository,
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
         now: now,
       ),
     );
@@ -176,7 +208,7 @@ void main() {
 
     expect(find.text('이번 달'), findsOneWidget);
     expect(find.text('총 근무'), findsOneWidget);
-    expect(find.text('11시간 30분'), findsOneWidget);
+    expect(find.text('9시간 30분'), findsOneWidget);
     expect(find.text('남은 연차'), findsOneWidget);
     expect(find.text('14일'), findsOneWidget);
     expect(find.text('준비 중'), findsNothing);
@@ -350,7 +382,7 @@ void main() {
       expect(repository.deleteByDateCallCount, 1);
       expect(find.text('이 달 기록이 없습니다'), findsOneWidget);
 
-      await tester.tap(find.text('홈으로'));
+      await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
 
       expect(find.byType(WorkRecordHomeScreen), findsOneWidget);
@@ -466,6 +498,18 @@ LeaveUsage _leaveUsage({
     memo: null,
     createdAt: now,
     updatedAt: now,
+  );
+}
+
+WorkRule _workRule() {
+  return WorkRule(
+    id: 'active-rule',
+    regularStartTimeMinutes: 540,
+    regularEndTimeMinutes: 1080,
+    breakMinutes: 60,
+    workWeekdays: <int>[1, 2, 3, 4, 5],
+    createdAt: DateTime(2026, 6, 12, 19),
+    updatedAt: DateTime(2026, 6, 12, 19),
   );
 }
 

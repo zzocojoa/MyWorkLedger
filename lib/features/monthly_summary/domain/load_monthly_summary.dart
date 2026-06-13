@@ -69,9 +69,6 @@ Duration calculateDisplayTotalWorkedDuration({
         'model=MonthlySummaryViewData recordId=${entry.recordId} field=workedDuration rule=required for display total',
       );
     }
-    if (!workRule.workWeekdays.contains(entry.workDate.weekday)) {
-      return total + workedDuration;
-    }
     final Duration breakDuration = Duration(minutes: workRule.breakMinutes);
     final Duration adjustedDuration = workedDuration > breakDuration
         ? workedDuration - breakDuration
@@ -87,6 +84,8 @@ WorkTimeCandidateSummary _calculateMonthlyWorkTimeCandidateSummary({
   if (workRule == null) {
     return const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.unavailable,
+      nonWorkdayDuration: Duration.zero,
+      earlyWorkDuration: Duration.zero,
       overtimeDuration: Duration.zero,
       nightWorkDuration: Duration.zero,
       reason: 'workRuleMissing',
@@ -96,6 +95,8 @@ WorkTimeCandidateSummary _calculateMonthlyWorkTimeCandidateSummary({
   return records.fold(
     const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.available,
+      nonWorkdayDuration: Duration.zero,
+      earlyWorkDuration: Duration.zero,
       overtimeDuration: Duration.zero,
       nightWorkDuration: Duration.zero,
       reason: null,
@@ -110,6 +111,10 @@ WorkTimeCandidateSummary _calculateMonthlyWorkTimeCandidateSummary({
       }
       return WorkTimeCandidateSummary(
         status: WorkTimeCandidateStatus.available,
+        nonWorkdayDuration:
+            total.nonWorkdayDuration + candidate.nonWorkdayDuration,
+        earlyWorkDuration:
+            total.earlyWorkDuration + candidate.earlyWorkDuration,
         overtimeDuration: total.overtimeDuration + candidate.overtimeDuration,
         nightWorkDuration:
             total.nightWorkDuration + candidate.nightWorkDuration,

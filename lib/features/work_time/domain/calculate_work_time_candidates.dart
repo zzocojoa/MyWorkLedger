@@ -9,6 +9,8 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
   if (workRule == null) {
     return const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.unavailable,
+      nonWorkdayDuration: Duration.zero,
+      earlyWorkDuration: Duration.zero,
       overtimeDuration: Duration.zero,
       nightWorkDuration: Duration.zero,
       reason: 'workRuleMissing',
@@ -20,6 +22,8 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
   if (clockInAt == null || clockOutAt == null) {
     return const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.unavailable,
+      nonWorkdayDuration: Duration.zero,
+      earlyWorkDuration: Duration.zero,
       overtimeDuration: Duration.zero,
       nightWorkDuration: Duration.zero,
       reason: 'incompleteWorkRecord',
@@ -33,21 +37,76 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
     );
   }
 
-  final Duration overtimeDuration =
-      workRule.workWeekdays.contains(record.workDate.weekday)
+  final bool isWorkWeekday = workRule.workWeekdays.contains(
+    record.workDate.weekday,
+  );
+  final bool hasDelayedCheckout = record.tags.contains(
+    WorkRecordTag.delayedCheckout,
+  );
+  final Duration nonWorkdayDuration = !isWorkWeekday && !hasDelayedCheckout
+      ? _calculateAdjustedWorkedDuration(
+          clockInAt: clockInAt,
+          clockOutAt: clockOutAt,
+          breakMinutes: workRule.breakMinutes,
+        )
+      : Duration.zero;
+  final Duration earlyWorkDuration = _calculateEarlyWorkDuration(
+    record: record,
+    workRule: workRule,
+  );
+  final Duration overtimeDuration = !hasDelayedCheckout
       ? _calculateOvertimeDuration(record: record, workRule: workRule)
       : Duration.zero;
-  final Duration nightWorkDuration = _calculateNightWorkDuration(
-    clockInAt: clockInAt,
-    clockOutAt: clockOutAt,
-  );
+  final Duration nightWorkDuration = hasDelayedCheckout
+      ? Duration.zero
+      : _calculateNightWorkDuration(
+          clockInAt: clockInAt,
+          clockOutAt: clockOutAt,
+        );
 
   return WorkTimeCandidateSummary(
     status: WorkTimeCandidateStatus.available,
+    nonWorkdayDuration: nonWorkdayDuration,
+    earlyWorkDuration: earlyWorkDuration,
     overtimeDuration: overtimeDuration,
     nightWorkDuration: nightWorkDuration,
     reason: null,
   );
+}
+
+Duration _calculateAdjustedWorkedDuration({
+  required DateTime clockInAt,
+  required DateTime clockOutAt,
+  required int breakMinutes,
+}) {
+  final Duration workedDuration = clockOutAt.difference(clockInAt);
+  final Duration breakDuration = Duration(minutes: breakMinutes);
+  if (workedDuration <= breakDuration) {
+    return Duration.zero;
+  }
+  return workedDuration - breakDuration;
+}
+
+Duration _calculateEarlyWorkDuration({
+  required WorkRecord record,
+  required WorkRule workRule,
+}) {
+  final DateTime? clockInAt = record.clockInAt;
+  if (clockInAt == null) {
+    throw ArgumentError.value(
+      record.id,
+      'record',
+      'clockInAt is required for early work calculation',
+    );
+  }
+  final DateTime regularStartAt = _dateTimeAtMinuteOfDay(
+    date: record.workDate,
+    minuteOfDay: workRule.regularStartTimeMinutes,
+  );
+  if (!clockInAt.isBefore(regularStartAt)) {
+    return Duration.zero;
+  }
+  return regularStartAt.difference(clockInAt);
 }
 
 Duration _calculateOvertimeDuration({

@@ -18,6 +18,8 @@ void main() {
       );
 
       expect(summary.status, WorkTimeCandidateStatus.unavailable);
+      expect(summary.nonWorkdayDuration, Duration.zero);
+      expect(summary.earlyWorkDuration, Duration.zero);
       expect(summary.overtimeDuration, Duration.zero);
       expect(summary.nightWorkDuration, Duration.zero);
       expect(summary.reason, 'workRuleMissing');
@@ -50,22 +52,79 @@ void main() {
       );
 
       expect(summary.status, WorkTimeCandidateStatus.available);
+      expect(summary.nonWorkdayDuration, Duration.zero);
+      expect(summary.earlyWorkDuration, Duration.zero);
       expect(summary.overtimeDuration, const Duration(hours: 2, minutes: 30));
       expect(summary.nightWorkDuration, Duration.zero);
+      expect(summary.hasActiveTags, isTrue);
+      expect(summary.activeTagCount, 1);
     });
 
-    test('does not calculate weekday overtime for non-work weekday', () {
+    test('reports no active tags for regular weekday work', () {
       final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
         record: _record(
           id: 'work-1',
-          workDate: DateTime(2026, 6, 13),
-          clockInAt: DateTime(2026, 6, 13, 9),
-          clockOutAt: DateTime(2026, 6, 13, 20, 30),
+          workDate: DateTime(2026, 6, 12),
+          clockInAt: DateTime(2026, 6, 12, 9),
+          clockOutAt: DateTime(2026, 6, 12, 18),
         ),
         workRule: _weekdayRule(),
       );
 
+      expect(summary.status, WorkTimeCandidateStatus.available);
+      expect(summary.hasActiveTags, isFalse);
+      expect(summary.activeTagCount, 0);
+    });
+
+    test('calculates weekday early work before regular start', () {
+      final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
+        record: _record(
+          id: 'work-1',
+          workDate: DateTime(2026, 6, 12),
+          clockInAt: DateTime(2026, 6, 12, 7, 26),
+          clockOutAt: DateTime(2026, 6, 12, 21, 26),
+        ),
+        workRule: _weekdayRule(),
+      );
+
+      expect(summary.earlyWorkDuration, const Duration(hours: 1, minutes: 34));
+      expect(summary.overtimeDuration, const Duration(hours: 3, minutes: 26));
+      expect(summary.nightWorkDuration, Duration.zero);
+    });
+
+    test('keeps non-workday and time candidates separated', () {
+      final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
+        record: _record(
+          id: 'work-1',
+          workDate: DateTime(2026, 6, 13),
+          clockInAt: DateTime(2026, 6, 13, 7, 26),
+          clockOutAt: DateTime(2026, 6, 13, 21, 26),
+        ),
+        workRule: _weekdayRule(),
+      );
+
+      expect(summary.nonWorkdayDuration, const Duration(hours: 13));
+      expect(summary.earlyWorkDuration, const Duration(hours: 1, minutes: 34));
+      expect(summary.overtimeDuration, const Duration(hours: 3, minutes: 26));
+      expect(summary.nightWorkDuration, Duration.zero);
+    });
+
+    test('excludes unreliable clock-out candidates for delayed checkout', () {
+      final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
+        record: _recordWithTags(
+          id: 'work-1',
+          workDate: DateTime(2026, 6, 12),
+          clockInAt: DateTime(2026, 6, 12, 7, 26),
+          clockOutAt: DateTime(2026, 6, 12, 23, 30),
+          tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+        ),
+        workRule: _weekdayRule(),
+      );
+
+      expect(summary.nonWorkdayDuration, Duration.zero);
+      expect(summary.earlyWorkDuration, const Duration(hours: 1, minutes: 34));
       expect(summary.overtimeDuration, Duration.zero);
+      expect(summary.nightWorkDuration, Duration.zero);
     });
 
     test('calculates night work overlap between 22 and next day 06', () {
@@ -145,12 +204,28 @@ WorkRecord _record({
   required DateTime? clockInAt,
   required DateTime? clockOutAt,
 }) {
-  return WorkRecord(
+  return _recordWithTags(
     id: id,
     workDate: workDate,
     clockInAt: clockInAt,
     clockOutAt: clockOutAt,
     tags: <WorkRecordTag>[],
+  );
+}
+
+WorkRecord _recordWithTags({
+  required String id,
+  required DateTime workDate,
+  required DateTime? clockInAt,
+  required DateTime? clockOutAt,
+  required List<WorkRecordTag> tags,
+}) {
+  return WorkRecord(
+    id: id,
+    workDate: workDate,
+    clockInAt: clockInAt,
+    clockOutAt: clockOutAt,
+    tags: tags,
     memo: null,
     createdAt: DateTime(workDate.year, workDate.month, workDate.day, 8),
     updatedAt: DateTime(workDate.year, workDate.month, workDate.day, 19),

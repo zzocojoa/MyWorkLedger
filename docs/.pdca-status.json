@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-06-13T07:16:51.983Z",
+  "lastUpdated": "2026-06-13T09:29:03.108Z",
   "activeFeatures": [
     "workledger-mvp"
   ],
@@ -9,7 +9,7 @@
     "workledger-mvp": {
       "phase": "check",
       "matchRate": null,
-      "iterationCount": 16,
+      "iterationCount": 20,
       "documents": {}
     }
   },
@@ -21,7 +21,7 @@
   "session": {
     "startedAt": "2026-06-11T15:06:13.913Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-06-13T07:16:51.983Z"
+    "lastActivity": "2026-06-13T09:29:03.108Z"
   },
   "history": [
     {

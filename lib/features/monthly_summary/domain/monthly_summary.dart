@@ -291,6 +291,16 @@ void _validateViewData(MonthlySummaryViewData data) {
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.overtimeDuration rule=non-negative',
     );
   }
+  if (data.workTimeCandidateSummary.nonWorkdayDuration.isNegative) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.nonWorkdayDuration rule=non-negative',
+    );
+  }
+  if (data.workTimeCandidateSummary.earlyWorkDuration.isNegative) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.earlyWorkDuration rule=non-negative',
+    );
+  }
   if (data.workTimeCandidateSummary.nightWorkDuration.isNegative) {
     throw MonthlySummaryException(
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.nightWorkDuration rule=non-negative',

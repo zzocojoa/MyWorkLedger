@@ -109,7 +109,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
     );
     return _HomeMonthlyPreviewData(
       totalWorkedText: formatMonthlySummaryDuration(
-        duration: viewData.workSummary.totalWorkedDuration,
+        duration: viewData.displayTotalWorkedDuration,
       ),
       remainingLeaveText: viewData.leaveSummary.balance == null
           ? '총 연차 미입력'
@@ -254,7 +254,16 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
     final AppLocalizations localizations = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(localizations.appKoreanName)),
+      appBar: AppBar(
+        title: Text(localizations.appKoreanName),
+        actions: <Widget>[
+          IconButton(
+            tooltip: '근무 기준 설정',
+            onPressed: _openWorkRuleSettings,
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -419,7 +428,7 @@ final class _WorkRulePrompt extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              '연장·야간 후보를 볼까요?',
+              '근무 태그를 볼까요?',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: const Color(0xFF181D26),
                 fontWeight: FontWeight.w700,
@@ -428,7 +437,7 @@ final class _WorkRulePrompt extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              '정시 출근·퇴근 기준을 한 번만 저장하면 월간 요약에서 후보 시간을 분리해 보여줍니다.',
+              '정시 출근·퇴근 기준을 한 번만 저장하면 월간 요약에서 근무 태그를 분리해 보여줍니다.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: const Color(0xFF41454D),
                 letterSpacing: 0,

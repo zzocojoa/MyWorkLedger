@@ -17,7 +17,7 @@
 
 | Entity | Purpose | Cardinality |
 |---|---|---|
-| `WorkRecord` | 날짜별 출근/퇴근/태그/메모 기록 | 근무일 1개당 최대 1개 |
+| `WorkRecord` | 날짜별 출근/퇴근/기록 사유/메모 기록 | 근무일 1개당 최대 1개 |
 | `LeaveBalance` | 연도별 총 연차 수동 입력값 | 연도 1개당 최대 1개 |
 | `LeaveUsage` | 날짜별 연차 사용 기록 | 연도별 0개 이상 |
 | `PricingIntentEvent` | 가격표/fake-door 클릭 로그 | 제한 없음 |
@@ -28,9 +28,9 @@
 
 | Value | Korean Label | Meaning |
 |---|---|---|
-| `overtime` | 야근 | 사용자가 야근으로 표시한 기록 |
-| `delayedCheckout` | 퇴근 지연 | 사용자가 퇴근 지연으로 표시한 기록 |
-| `holidayWork` | 휴일근무 | 사용자가 휴일근무로 표시한 기록 |
+| `overtime` | 야근 | 기존 저장 데이터 호환 값. 월간 근무 태그 계산 근거로 사용하지 않는다 |
+| `delayedCheckout` | 퇴근 기록 지연 | 퇴근 버튼을 늦게 누른 기록 사유 |
+| `holidayWork` | 휴일근무 | 기존 저장 데이터 호환 값. 휴무일 근무는 근무 기준 요일로 계산한다 |
 
 ### PricingIntentEventType
 
@@ -59,7 +59,7 @@
 | `workDate` | Date | Yes | Yes | none | 로컬 시간대 기준 근무일 |
 | `clockInAt` | DateTime? | No | No | null | 출근 기록 시각 |
 | `clockOutAt` | DateTime? | No | No | null | 퇴근 기록 시각 |
-| `tags` | List<WorkRecordTag> | Yes | No | empty | 야근, 퇴근 지연, 휴일근무 태그 목록 |
+| `tags` | List<WorkRecordTag> | Yes | No | empty | 기록 사유 호환 필드. 월간 근무 태그는 근무 기준과 출퇴근 시각으로 계산한다 |
 | `memo` | String? | No | No | null | 사용자가 입력한 짧은 메모 |
 | `createdAt` | DateTime | Yes | No | now | 생성 시각 |
 | `updatedAt` | DateTime | Yes | No | now | 마지막 수정 시각 |

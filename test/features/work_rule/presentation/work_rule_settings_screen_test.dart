@@ -16,7 +16,8 @@ void main() {
     await tester.pumpWidget(_buildScreen(repository: repository));
     await tester.pump();
 
-    expect(find.text('정시 근무 기준'), findsOneWidget);
+    expect(find.text('정시 근무 기준'), findsNothing);
+    expect(find.textContaining('급여나 법정 수당 확정값이 아닙니다.'), findsNothing);
     expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
 
     await tester.tap(find.text('저장'));

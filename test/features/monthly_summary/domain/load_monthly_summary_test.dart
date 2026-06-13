@@ -69,10 +69,119 @@ void main() {
       expect(viewData.monthlyUsedLeaveMinutes, 240);
       expect(viewData.workRule, _workRule());
       expect(
+        viewData.workTimeCandidateSummary.earlyWorkDuration,
+        Duration.zero,
+      );
+      expect(
+        viewData.workTimeCandidateSummary.nonWorkdayDuration,
+        Duration.zero,
+      );
+      expect(
         viewData.workTimeCandidateSummary.overtimeDuration,
         const Duration(hours: 2, minutes: 30),
       );
     });
+
+    test(
+      'separates non-workday and time candidates with break excluded total',
+      () async {
+        final MonthlySummaryViewData viewData = await loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[
+              _record(
+                id: 'saturday-work',
+                clockInAt: DateTime(2026, 6, 13, 7, 26),
+                clockOutAt: DateTime(2026, 6, 13, 21, 26),
+                tags: <WorkRecordTag>[],
+              ),
+            ],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        );
+
+        expect(
+          viewData.workSummary.totalWorkedDuration,
+          const Duration(hours: 14),
+        );
+        expect(viewData.displayTotalWorkedDuration, const Duration(hours: 13));
+        expect(
+          viewData.workTimeCandidateSummary.nonWorkdayDuration,
+          const Duration(hours: 13),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.earlyWorkDuration,
+          const Duration(hours: 1, minutes: 34),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.overtimeDuration,
+          const Duration(hours: 3, minutes: 26),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.nightWorkDuration,
+          Duration.zero,
+        );
+      },
+    );
+
+    test(
+      'combines early work and excludes delayed checkout overtime',
+      () async {
+        final MonthlySummaryViewData viewData = await loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[
+              _record(
+                id: 'early-and-late',
+                clockInAt: DateTime(2026, 6, 1, 7, 26),
+                clockOutAt: DateTime(2026, 6, 1, 21, 26),
+                tags: <WorkRecordTag>[],
+              ),
+              _record(
+                id: 'delayed-checkout',
+                clockInAt: DateTime(2026, 6, 2, 9, 0),
+                clockOutAt: DateTime(2026, 6, 2, 23, 30),
+                tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+              ),
+            ],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        );
+
+        expect(
+          viewData.workTimeCandidateSummary.earlyWorkDuration,
+          const Duration(hours: 1, minutes: 34),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.overtimeDuration,
+          const Duration(hours: 3, minutes: 26),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.nightWorkDuration,
+          Duration.zero,
+        );
+      },
+    );
 
     test(
       'returns unavailable work time candidates when work rule is missing',
