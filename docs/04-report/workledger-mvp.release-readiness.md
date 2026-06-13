@@ -14,7 +14,7 @@ WorkLedger MVP는 현재 Must Have 기능 요구사항 19개 중 19개를 충족
 | Target platform | Flutter Android |
 | Build artifact | `build/app/outputs/flutter-apk/app-debug.apk` |
 | Smoke test device | `emulator-5554`, Android 16 API 36 |
-| Commit status | Not committed |
+| Commit status | PR #2 open on `codex/work-record-calendar-view` |
 
 ## Related Documents
 
@@ -23,7 +23,7 @@ WorkLedger MVP는 현재 Must Have 기능 요구사항 19개 중 19개를 충족
 | `docs/01-plan/features/workledger-mvp.plan.md` | MVP source of truth |
 | `docs/02-design/features/workledger-mvp.design.md` | Architecture and implementation plan |
 | `docs/02-design/design-system-rules.md` | Airtable-derived design rules |
-| `docs/02-design/mockup.md` | S-01 to S-07 UI structure |
+| `docs/02-design/mockup.md` | Home, calendar, monthly summary, leave, pricing UI structure |
 | `.lazyweb/design-research/workledger-mobile-time-tracking-2026-06-12/report.html` | Mobile time tracking design research |
 | `docs/03-analysis/workledger-mvp.analysis.md` | 100% gap analysis result |
 
@@ -37,6 +37,7 @@ WorkLedger MVP는 현재 Must Have 기능 요구사항 19개 중 19개를 충족
 | Work tags and short memo | Done |
 | Manual leave total and usage tracking | Done |
 | Monthly work and leave summary | Done |
+| Read-only calendar view | Done |
 | Pricing fake-door event measurement | Done |
 | Android persistent notification actions | Done |
 | Korean default UI | Done |
@@ -64,9 +65,9 @@ Commands were run from `/Users/beatlefeed/Documents/MyWorkLedger`.
 | Command | Result |
 |---|---|
 | `bkit_detect_level` | Starter, high confidence |
-| `bkit_get_status` | phase `check`, iterationCount `8` |
+| `bkit_get_status` | phase `check`, iterationCount `14` |
 | `$HOME/.local/share/flutter-stable/bin/flutter analyze` | Passed, `No issues found!` |
-| `$HOME/.local/share/flutter-stable/bin/flutter test` | Passed, `119 All tests passed!` |
+| `$HOME/.local/share/flutter-stable/bin/flutter test` | Passed, `139 All tests passed!` |
 | `$HOME/.local/share/flutter-stable/bin/flutter build apk --debug` | Completed, debug APK generated |
 | `adb -s emulator-5554 install -r build/app/outputs/flutter-apk/app-debug.apk` | Success |
 | `adb -s emulator-5554 shell monkey -p com.workledger.workledger 1` | App launched |
@@ -106,6 +107,7 @@ Home screen was installed and launched on `emulator-5554`.
 | App foreground | `mCurrentFocus=...com.workledger.workledger.MainActivity` | Passed |
 | App title | UIAutomator `content-desc="내근무장부"` | Passed |
 | Home state | UIAutomator `content-desc="오늘 기록 완료"` | Passed |
+| Calendar entry | Widget test `달력 보기` opens `WorkRecordCalendarScreen` | Passed |
 | Monthly entry | UIAutomator `content-desc="월간 요약"` | Passed |
 | Leave entry | UIAutomator `content-desc="연차 관리"` | Passed |
 | Monthly summary screen | UIAutomator `content-desc="이번 달 총 근무"`, `content-desc="태그별 참고"`, `content-desc="연차 요약"` | Passed |
@@ -153,10 +155,10 @@ The following out-of-scope items are not included in this release candidate.
 
 The current MVP is ready for a debug release candidate review on Android emulator.
 
-Recommended next action is not more feature work. The next action is final project hygiene:
+Recommended next action is not more feature work. The next action is PR review and merge:
 
-1. Review the diff once.
-2. Commit the current feature branch after user approval.
+1. Review PR #2.
+2. Merge after checks/review.
 3. If a distributable APK is needed, decide whether to prepare signing and a release build separately.
 
 ## Follow-up Improvements
@@ -168,4 +170,4 @@ These are not blockers for the current MVP.
 | Design token centralization | Current UI follows the rules, but colors/radius/spacing are repeated across widgets |
 | Release build signing | Current artifact is a debug APK, not a signed production release |
 | CI workflow | Helpful before repeated releases, but not required for the current local MVP check |
-| Final commit and branch cleanup | Requires explicit user approval |
+| Final branch cleanup | After PR #2 merge |

@@ -9,6 +9,7 @@ import 'package:workledger/features/leave/presentation/leave_management_screen.d
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
+import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
 import 'package:workledger/l10n/app_localizations.dart';
 
@@ -91,7 +92,7 @@ void main() {
     expect(find.text('09:03 - 18:42'), findsOneWidget);
     expect(find.text('총 9시간 39분'), findsOneWidget);
     expect(find.text('오늘 기록 수정'), findsOneWidget);
-    expect(find.text('월간 요약 보기'), findsOneWidget);
+    expect(find.text('달력 보기'), findsOneWidget);
   });
 
   testWidgets('shows current month preview values', (
@@ -216,7 +217,7 @@ void main() {
     );
   });
 
-  testWidgets('opens monthly summary from after clock-out secondary action', (
+  testWidgets('opens calendar from after clock-out secondary action', (
     WidgetTester tester,
   ) async {
     final DateTime now = DateTime(2026, 6, 12, 19, 0);
@@ -234,13 +235,13 @@ void main() {
     await tester.pumpWidget(_buildScreen(repository: repository, now: now));
     await tester.pump();
 
-    await tester.tap(find.text('월간 요약 보기'));
+    await tester.tap(find.text('달력 보기'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(MonthlySummaryScreen), findsOneWidget);
-    expect(find.text('월간 요약'), findsOneWidget);
-    expect(find.text('2026-06'), findsOneWidget);
-    expect(find.text('9시간 39분'), findsOneWidget);
+    expect(find.byType(WorkRecordCalendarScreen), findsOneWidget);
+    expect(find.text('달력 보기'), findsOneWidget);
+    expect(find.text('2026년 6월'), findsOneWidget);
+    expect(find.text('총 9시간 39분'), findsOneWidget);
   });
 
   testWidgets('opens monthly summary from home monthly link', (
@@ -263,6 +264,62 @@ void main() {
     expect(find.text('월간 요약'), findsOneWidget);
     expect(find.text('이 달 기록이 없습니다'), findsOneWidget);
   });
+
+  testWidgets(
+    'refreshes home after deleting today record from monthly summary',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 19, 0);
+      final WorkRecord record = _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 0),
+        clockOutAt: DateTime(2026, 6, 12, 18, 0),
+        now: DateTime(2026, 6, 12, 18, 0),
+      );
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: record,
+        monthlyRecords: <WorkRecord>[record],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+      await tester.pump();
+
+      expect(find.text('오늘 기록 완료'), findsOneWidget);
+      expect(find.text('09:00 - 18:00'), findsOneWidget);
+
+      await tester.tap(find.text('월간 요약'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MonthlySummaryScreen), findsOneWidget);
+      expect(find.text('06-12 09:00-18:00'), findsOneWidget);
+
+      await tester.ensureVisible(find.byTooltip('근무 기록 삭제'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('근무 기록 삭제'));
+      await tester.pump();
+
+      expect(find.text('근무 기록을 삭제할까요?'), findsOneWidget);
+      expect(
+        find.text('06-12 오늘 기록을 삭제합니다. 홈 상태도 출근 전으로 바뀝니다.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(TextButton, '삭제'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repository.deleteByDateCallCount, 1);
+      expect(find.text('이 달 기록이 없습니다'), findsOneWidget);
+
+      await tester.tap(find.text('홈으로'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WorkRecordHomeScreen), findsOneWidget);
+      expect(find.text('아직 출근 전'), findsOneWidget);
+      expect(find.text('출근하기'), findsOneWidget);
+      expect(find.text('0분'), findsOneWidget);
+      expect(find.text('오늘 기록 완료'), findsNothing);
+    },
+  );
 
   testWidgets('opens leave management from home leave link', (
     WidgetTester tester,
@@ -382,6 +439,7 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   int clockOutCallCount = 0;
   int updateTodayCallCount = 0;
   int deleteTodayCallCount = 0;
+  int deleteByDateCallCount = 0;
   WorkRecordRepositoryException? clockInError;
 
   @override
@@ -486,7 +544,25 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
 
   @override
   Future<void> deleteByDate({required DateTime workDate}) async {
-    throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+    deleteByDateCallCount += 1;
+    final DateTime targetDate = DateTime(
+      workDate.year,
+      workDate.month,
+      workDate.day,
+    );
+    final int beforeCount = monthlyRecords.length;
+    monthlyRecords.removeWhere((WorkRecord record) {
+      return record.workDate == targetDate;
+    });
+    final WorkRecord? todayRecord = _record;
+    if (todayRecord != null && todayRecord.workDate == targetDate) {
+      _record = null;
+    }
+    if (beforeCount == monthlyRecords.length && todayRecord == _record) {
+      throw WorkRecordRepositoryException(
+        'action=deleteByDate workDate=${targetDate.toIso8601String()} rule=missing record',
+      );
+    }
   }
 }
 

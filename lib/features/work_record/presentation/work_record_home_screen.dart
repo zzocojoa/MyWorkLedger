@@ -14,6 +14,7 @@ import '../domain/today_work_status.dart';
 import '../domain/today_work_summary.dart';
 import '../domain/work_record_repository.dart';
 import 'edit_today_work_record_screen.dart';
+import 'work_record_calendar_screen.dart';
 
 final class WorkRecordHomeScreen extends StatefulWidget {
   const WorkRecordHomeScreen({
@@ -164,14 +165,28 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
     }
 
     switch (action) {
-      case TodayWorkSecondaryAction.viewMonthlySummary:
-        await _openMonthlySummary();
+      case TodayWorkSecondaryAction.viewCalendar:
+        await _openCalendar();
+    }
+  }
+
+  Future<void> _openCalendar() async {
+    final Object? result = await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
+        builder: (BuildContext context) => WorkRecordCalendarScreen(
+          repository: widget.repository,
+          now: widget.now,
+        ),
+      ),
+    );
+    if (result == true) {
+      await _loadSummary();
     }
   }
 
   Future<void> _openMonthlySummary() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+    final Object? result = await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
         builder: (BuildContext context) => MonthlySummaryScreen(
           repository: widget.repository,
           leaveRepository: widget.leaveRepository,
@@ -180,6 +195,9 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
         ),
       ),
     );
+    if (result == true) {
+      await _loadSummary();
+    }
   }
 
   Future<void> _openLeaveManagement() async {
