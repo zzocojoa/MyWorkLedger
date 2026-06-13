@@ -185,8 +185,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
   }
 
   Future<void> _openMonthlySummary() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+    final Object? result = await Navigator.of(context).push(
+      MaterialPageRoute<bool>(
         builder: (BuildContext context) => MonthlySummaryScreen(
           repository: widget.repository,
           leaveRepository: widget.leaveRepository,
@@ -195,6 +195,9 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
         ),
       ),
     );
+    if (result == true) {
+      await _loadSummary();
+    }
   }
 
   Future<void> _openLeaveManagement() async {

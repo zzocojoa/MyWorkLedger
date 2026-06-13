@@ -36,6 +36,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
   bool _isLoading = true;
   bool _isRecordingPricingIntent = false;
   bool _isDeletingRecord = false;
+  bool _didDeleteWorkRecord = false;
 
   @override
   void initState() {
@@ -123,6 +124,10 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     final bool confirmed = await _confirmMonthlyRecordDeletion(
       context: context,
       entry: entry,
+      isToday: _isSameDate(
+        left: entry.workDate,
+        right: _dateOnly(widget.now()),
+      ),
     );
     if (!confirmed) {
       return;
@@ -135,6 +140,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
 
     try {
       await widget.repository.deleteByDate(workDate: entry.workDate);
+      _didDeleteWorkRecord = true;
       await _loadSummary();
       if (!mounted) {
         return;
@@ -147,57 +153,73 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     }
   }
 
+  void _closeScreen() {
+    Navigator.of(context).pop(_didDeleteWorkRecord);
+  }
+
   @override
   Widget build(BuildContext context) {
     final MonthlySummaryViewData? viewData = _viewData;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('월간 요약')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text(
-                formatMonthlySummaryMonth(month: _targetMonth),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF41454D),
-                  letterSpacing: 0,
+    return PopScope<bool>(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, bool? result) {
+        if (didPop) {
+          return;
+        }
+        _closeScreen();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('월간 요약'),
+          leading: BackButton(onPressed: _closeScreen),
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  formatMonthlySummaryMonth(month: _targetMonth),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: const Color(0xFF41454D),
+                    letterSpacing: 0,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              if (_isLoading && viewData == null)
-                const Center(child: CircularProgressIndicator())
-              else if (_errorMessage != null)
-                _MonthlySummaryMessage(message: _errorMessage!)
-              else if (viewData != null) ...<Widget>[
-                _TotalWorkCard(summary: viewData.workSummary),
-                const SizedBox(height: 14),
-                _MonthlyStats(summary: viewData.workSummary),
-                const SizedBox(height: 14),
-                _TagReferenceSummary(summary: viewData.workSummary),
-                const SizedBox(height: 14),
-                _MonthlyLeaveSummaryCard(viewData: viewData),
-                const SizedBox(height: 24),
-                _MonthlyRecordList(
-                  summary: viewData.workSummary,
-                  onDelete: _isDeletingRecord ? null : _deleteRecord,
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _isRecordingPricingIntent
-                      ? null
-                      : _openPricingFakeDoor,
-                  child: const Text('월간 리포트 만들기'),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  child: const Text('홈으로'),
-                ),
+                const SizedBox(height: 20),
+                if (_isLoading && viewData == null)
+                  const Center(child: CircularProgressIndicator())
+                else if (_errorMessage != null)
+                  _MonthlySummaryMessage(message: _errorMessage!)
+                else if (viewData != null) ...<Widget>[
+                  _TotalWorkCard(summary: viewData.workSummary),
+                  const SizedBox(height: 14),
+                  _MonthlyStats(summary: viewData.workSummary),
+                  const SizedBox(height: 14),
+                  _TagReferenceSummary(summary: viewData.workSummary),
+                  const SizedBox(height: 14),
+                  _MonthlyLeaveSummaryCard(viewData: viewData),
+                  const SizedBox(height: 24),
+                  _MonthlyRecordList(
+                    summary: viewData.workSummary,
+                    onDelete: _isDeletingRecord ? null : _deleteRecord,
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: _isRecordingPricingIntent
+                        ? null
+                        : _openPricingFakeDoor,
+                    child: const Text('월간 리포트 만들기'),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    onPressed: _closeScreen,
+                    child: const Text('홈으로'),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -688,6 +710,7 @@ final class _MonthlyRecordRow extends StatelessWidget {
 Future<bool> _confirmMonthlyRecordDeletion({
   required BuildContext context,
   required MonthlyWorkRecordEntry entry,
+  required bool isToday,
 }) async {
   final bool? result = await showDialog<bool>(
     context: context,
@@ -695,7 +718,7 @@ Future<bool> _confirmMonthlyRecordDeletion({
       return AlertDialog(
         title: const Text('근무 기록을 삭제할까요?'),
         content: Text(
-          '${formatMonthlySummaryDate(value: entry.workDate)} 기록을 삭제합니다.',
+          _formatMonthlyRecordDeletionMessage(entry: entry, isToday: isToday),
         ),
         actions: <Widget>[
           TextButton(
@@ -711,6 +734,27 @@ Future<bool> _confirmMonthlyRecordDeletion({
     },
   );
   return result ?? false;
+}
+
+String _formatMonthlyRecordDeletionMessage({
+  required MonthlyWorkRecordEntry entry,
+  required bool isToday,
+}) {
+  final String date = formatMonthlySummaryDate(value: entry.workDate);
+  if (isToday) {
+    return '$date 오늘 기록을 삭제합니다. 홈 상태도 출근 전으로 바뀝니다.';
+  }
+  return '$date 기록을 삭제합니다.';
+}
+
+DateTime _dateOnly(DateTime value) {
+  return DateTime(value.year, value.month, value.day);
+}
+
+bool _isSameDate({required DateTime left, required DateTime right}) {
+  return left.year == right.year &&
+      left.month == right.month &&
+      left.day == right.day;
 }
 
 final class _MonthlySummaryMessage extends StatelessWidget {
