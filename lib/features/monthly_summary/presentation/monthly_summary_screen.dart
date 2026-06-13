@@ -1,0 +1,832 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/models/pricing_intent_event.dart';
+import '../../../core/models/work_record.dart';
+import '../../leave/domain/leave_repository.dart';
+import '../../leave/domain/leave_summary.dart';
+import '../../pricing/domain/pricing_intent_repository.dart';
+import '../../pricing/domain/record_pricing_intent.dart';
+import '../../pricing/presentation/pricing_fake_door_screen.dart';
+import '../../work_record/domain/work_record_repository.dart';
+import '../domain/load_monthly_summary.dart';
+import '../domain/monthly_summary.dart';
+
+final class MonthlySummaryScreen extends StatefulWidget {
+  const MonthlySummaryScreen({
+    required this.repository,
+    required this.leaveRepository,
+    required this.pricingIntentRepository,
+    required this.now,
+    super.key,
+  });
+
+  final WorkRecordRepository repository;
+  final LeaveRepository leaveRepository;
+  final PricingIntentRepository pricingIntentRepository;
+  final DateTime Function() now;
+
+  @override
+  State<MonthlySummaryScreen> createState() => _MonthlySummaryScreenState();
+}
+
+final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
+  late final MonthlySummaryMonth _targetMonth;
+  MonthlySummaryViewData? _viewData;
+  String? _errorMessage;
+  bool _isLoading = true;
+  bool _isRecordingPricingIntent = false;
+  bool _isDeletingRecord = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final DateTime value = widget.now();
+    _targetMonth = MonthlySummaryMonth(year: value.year, month: value.month);
+    _loadSummary();
+  }
+
+  Future<void> _loadSummary() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final MonthlySummaryViewData viewData = await loadMonthlySummary(
+        workRecordRepository: widget.repository,
+        leaveRepository: widget.leaveRepository,
+        targetMonth: _targetMonth,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _viewData = viewData;
+        _isLoading = false;
+      });
+    } on WorkRecordRepositoryException catch (error) {
+      _showError('월간 요약을 불러올 수 없습니다. ${error.toString()}');
+    } on LeaveRepositoryException catch (error) {
+      _showError('연차 요약을 불러올 수 없습니다. ${error.toString()}');
+    } on MonthlySummaryException catch (error) {
+      _showError('월간 요약을 계산할 수 없습니다. ${error.toString()}');
+    } on LeaveSummaryException catch (error) {
+      _showError('연차 요약을 계산할 수 없습니다. ${error.toString()}');
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _errorMessage = message;
+      _isLoading = false;
+      _isRecordingPricingIntent = false;
+      _isDeletingRecord = false;
+    });
+  }
+
+  Future<void> _openPricingFakeDoor() async {
+    setState(() {
+      _isRecordingPricingIntent = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await recordPricingIntent(
+        repository: widget.pricingIntentRepository,
+        eventType: PricingIntentEventType.reportButtonTapped,
+        selectedPlan: null,
+        sourceScreen: 'monthly_summary',
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isRecordingPricingIntent = false;
+      });
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) =>
+              PricingFakeDoorScreen(repository: widget.pricingIntentRepository),
+        ),
+      );
+    } on PricingIntentRepositoryException catch (error) {
+      _showError('가격 관심 이벤트를 저장할 수 없습니다. ${error.toString()}');
+    } on ArgumentError catch (error) {
+      _showError('가격 관심 이벤트를 저장할 수 없습니다. ${error.message}');
+    }
+  }
+
+  Future<void> _deleteRecord(MonthlyWorkRecordEntry entry) async {
+    final bool confirmed = await _confirmMonthlyRecordDeletion(
+      context: context,
+      entry: entry,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setState(() {
+      _isDeletingRecord = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.repository.deleteByDate(workDate: entry.workDate);
+      await _loadSummary();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isDeletingRecord = false;
+      });
+    } on WorkRecordRepositoryException catch (error) {
+      _showError('근무 기록을 삭제할 수 없습니다. ${error.toString()}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final MonthlySummaryViewData? viewData = _viewData;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('월간 요약')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                formatMonthlySummaryMonth(month: _targetMonth),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: const Color(0xFF41454D),
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (_isLoading && viewData == null)
+                const Center(child: CircularProgressIndicator())
+              else if (_errorMessage != null)
+                _MonthlySummaryMessage(message: _errorMessage!)
+              else if (viewData != null) ...<Widget>[
+                _TotalWorkCard(summary: viewData.workSummary),
+                const SizedBox(height: 14),
+                _MonthlyStats(summary: viewData.workSummary),
+                const SizedBox(height: 14),
+                _TagReferenceSummary(summary: viewData.workSummary),
+                const SizedBox(height: 14),
+                _MonthlyLeaveSummaryCard(viewData: viewData),
+                const SizedBox(height: 24),
+                _MonthlyRecordList(
+                  summary: viewData.workSummary,
+                  onDelete: _isDeletingRecord ? null : _deleteRecord,
+                ),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: _isRecordingPricingIntent
+                      ? null
+                      : _openPricingFakeDoor,
+                  child: const Text('월간 리포트 만들기'),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  child: const Text('홈으로'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+final class _TotalWorkCard extends StatelessWidget {
+  const _TotalWorkCard({required this.summary});
+
+  final MonthlySummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF181D26),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              '이번 달 총 근무',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: 0.82),
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              formatMonthlySummaryDuration(
+                duration: summary.totalWorkedDuration,
+              ),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '개인 참고용 기록입니다',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.72),
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _MonthlyStats extends StatelessWidget {
+  const _MonthlyStats({required this.summary});
+
+  final MonthlySummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: _StatTile(
+            label: '근무일',
+            value: '${summary.completedWorkDayCount}일',
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _StatTile(
+            label: '초과 참고',
+            value: formatMonthlySummaryDuration(
+              duration: summary.overtimeReferenceDuration,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _MonthlyLeaveSummaryCard extends StatelessWidget {
+  const _MonthlyLeaveSummaryCard({required this.viewData});
+
+  final MonthlySummaryViewData viewData;
+
+  @override
+  Widget build(BuildContext context) {
+    final LeaveSummary leaveSummary = viewData.leaveSummary;
+    final bool hasBalance = leaveSummary.balance != null;
+    final String remainingText = !hasBalance
+        ? '총 연차를 입력해 주세요'
+        : leaveSummary.isExceeded
+        ? '초과 ${formatMonthlySummaryLeaveMinutes(minutes: -leaveSummary.remainingLeaveMinutes)}'
+        : formatMonthlySummaryLeaveMinutes(
+            minutes: leaveSummary.remainingLeaveMinutes,
+          );
+    final String monthlyUsedText = formatMonthlySummaryLeaveMinutes(
+      minutes: viewData.monthlyUsedLeaveMinutes,
+    );
+    final String totalLine = hasBalance
+        ? '총 ${formatMonthlySummaryLeaveMinutes(minutes: leaveSummary.totalLeaveMinutes)} · 올해 사용 ${formatMonthlySummaryLeaveMinutes(minutes: leaveSummary.usedLeaveMinutes)}'
+        : '연차 관리에서 올해 총 연차를 먼저 입력하세요';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              '연차 요약',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _LeaveStatBlock(label: '남은 연차', value: remainingText),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _LeaveStatBlock(
+                    label: '이번 달 사용 연차',
+                    value: monthlyUsedText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              totalLine,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF41454D),
+                letterSpacing: 0,
+              ),
+            ),
+            if (hasBalance && leaveSummary.isExceeded) ...<Widget>[
+              const SizedBox(height: 8),
+              Text(
+                '초과 사용 중',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF181D26),
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _TagReferenceSummary extends StatelessWidget {
+  const _TagReferenceSummary({required this.summary});
+
+  final MonthlySummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              '태그별 참고',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _TagReferenceRow(
+              label: '야근',
+              value: formatMonthlySummaryDuration(
+                duration: summary.overtimeDuration,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _TagReferenceRow(
+              label: '퇴근 지연',
+              value: formatMonthlySummaryDuration(
+                duration: summary.delayedCheckoutDuration,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _TagReferenceRow(
+              label: '휴일근무',
+              value: formatMonthlySummaryDuration(
+                duration: summary.holidayWorkDuration,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _TagReferenceRow extends StatelessWidget {
+  const _TagReferenceRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: const Color(0xFF41454D),
+            letterSpacing: 0,
+          ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: const Color(0xFF181D26),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _LeaveStatBlock extends StatelessWidget {
+  const _LeaveStatBlock({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: const Color(0xFF41454D),
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: const Color(0xFF181D26),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _StatTile extends StatelessWidget {
+  const _StatTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF41454D),
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _MonthlyRecordList extends StatelessWidget {
+  const _MonthlyRecordList({required this.summary, required this.onDelete});
+
+  final MonthlySummary summary;
+  final void Function(MonthlyWorkRecordEntry entry)? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    if (summary.entries.isEmpty) {
+      return const _EmptyMonthlyRecords();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          '이번 달 기록',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: const Color(0xFF181D26),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: const Color(0xFFDDDDDD)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: <Widget>[
+              for (int index = 0; index < summary.entries.length; index += 1)
+                _MonthlyRecordRow(
+                  entry: summary.entries[index],
+                  showDivider: index < summary.entries.length - 1,
+                  onDelete: onDelete,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _EmptyMonthlyRecords extends StatelessWidget {
+  const _EmptyMonthlyRecords();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              '이번 달 기록',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '이 달 기록이 없습니다',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '출근/퇴근 기록이 쌓이면 월간 요약이 표시됩니다.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF41454D),
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _MonthlyRecordRow extends StatelessWidget {
+  const _MonthlyRecordRow({
+    required this.entry,
+    required this.showDivider,
+    required this.onDelete,
+  });
+
+  final MonthlyWorkRecordEntry entry;
+  final bool showDivider;
+  final void Function(MonthlyWorkRecordEntry entry)? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: showDivider
+              ? const BorderSide(color: Color(0xFFEAEAEA))
+              : BorderSide.none,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    formatMonthlySummaryEntryLine(entry: entry),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF181D26),
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  if (entry.isCompleted && entry.tags.isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      formatMonthlySummaryTags(tags: entry.tags),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF41454D),
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: onDelete == null ? null : () => onDelete!(entry),
+              tooltip: '근무 기록 삭제',
+              icon: const Icon(Icons.delete_outline),
+              color: const Color(0xFFAA2D00),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Future<bool> _confirmMonthlyRecordDeletion({
+  required BuildContext context,
+  required MonthlyWorkRecordEntry entry,
+}) async {
+  final bool? result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('근무 기록을 삭제할까요?'),
+        content: Text(
+          '${formatMonthlySummaryDate(value: entry.workDate)} 기록을 삭제합니다.',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      );
+    },
+  );
+  return result ?? false;
+}
+
+final class _MonthlySummaryMessage extends StatelessWidget {
+  const _MonthlySummaryMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Text(
+          message,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: const Color(0xFF181D26),
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String formatMonthlySummaryMonth({required MonthlySummaryMonth month}) {
+  final String monthValue = month.month.toString().padLeft(2, '0');
+  return '${month.year}-$monthValue';
+}
+
+String formatMonthlySummaryEntryLine({required MonthlyWorkRecordEntry entry}) {
+  final String date = formatMonthlySummaryDate(value: entry.workDate);
+  if (entry.isCompleted) {
+    final DateTime? clockInAt = entry.clockInAt;
+    final DateTime? clockOutAt = entry.clockOutAt;
+    if (clockInAt == null || clockOutAt == null) {
+      throw MonthlySummaryException(
+        'widget=MonthlySummaryScreen recordId=${entry.recordId} status=completed rule=clock-in and clock-out required',
+      );
+    }
+    return '$date ${formatMonthlySummaryClock(value: clockInAt)}-${formatMonthlySummaryClock(value: clockOutAt)}';
+  }
+
+  if (entry.clockInAt != null && entry.clockOutAt == null) {
+    return '$date 출근만 기록됨';
+  }
+  if (entry.clockInAt == null && entry.clockOutAt != null) {
+    return '$date 퇴근만 기록됨';
+  }
+  return '$date 시간이 비어 있음';
+}
+
+String formatMonthlySummaryDate({required DateTime value}) {
+  final String month = value.month.toString().padLeft(2, '0');
+  final String day = value.day.toString().padLeft(2, '0');
+  return '$month-$day';
+}
+
+String formatMonthlySummaryClock({required DateTime value}) {
+  final String hour = value.hour.toString().padLeft(2, '0');
+  final String minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
+String formatMonthlySummaryDuration({required Duration duration}) {
+  if (duration.isNegative) {
+    throw ArgumentError.value(duration, 'duration', 'must not be negative');
+  }
+
+  final int hours = duration.inHours;
+  final int minutes = duration.inMinutes.remainder(60);
+  if (hours == 0) {
+    return '$minutes분';
+  }
+  if (minutes == 0) {
+    return '$hours시간';
+  }
+  return '$hours시간 $minutes분';
+}
+
+String formatMonthlySummaryLeaveMinutes({required int minutes}) {
+  if (minutes < 0) {
+    throw ArgumentError.value(minutes, 'minutes', 'must not be negative');
+  }
+  final int days = minutes ~/ leaveMinutesPerDay;
+  final int remainingMinutes = minutes.remainder(leaveMinutesPerDay);
+  final int hours = remainingMinutes ~/ 60;
+  final int trailingMinutes = remainingMinutes.remainder(60);
+  final List<String> parts = <String>[];
+  if (days > 0) {
+    parts.add('$days일');
+  }
+  if (hours > 0 || trailingMinutes > 0 || parts.isEmpty) {
+    if (trailingMinutes == 0) {
+      parts.add('$hours시간');
+    } else if (hours == 0) {
+      parts.add('$trailingMinutes분');
+    } else {
+      parts.add('$hours시간 $trailingMinutes분');
+    }
+  }
+  return parts.join(' ');
+}
+
+String formatMonthlySummaryTags({required List<WorkRecordTag> tags}) {
+  return tags.map(formatMonthlySummaryTag).join(' · ');
+}
+
+String formatMonthlySummaryTag(WorkRecordTag tag) {
+  return switch (tag) {
+    WorkRecordTag.overtime => '야근',
+    WorkRecordTag.delayedCheckout => '퇴근 지연',
+    WorkRecordTag.holidayWork => '휴일근무',
+  };
+}
