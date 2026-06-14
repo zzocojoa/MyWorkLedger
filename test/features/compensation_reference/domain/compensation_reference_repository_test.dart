@@ -13,9 +13,7 @@ void main() {
 
       await repository.save(
         mode: CompensationReferenceMode.fixedIncluded,
-        fixedIncludedOvertimeMinutes: 120,
-        fixedIncludedNightMinutes: 30,
-        fixedIncludedHolidayMinutes: 60,
+        fixedIncludedAfterRegularEndMinutes: 120,
         effectiveFromMonth: DateTime(2026, 5, 20),
         memo: null,
       );
@@ -27,7 +25,7 @@ void main() {
 
       expect(pastSetting?.mode, CompensationReferenceMode.fixedIncluded);
       expect(futureSetting?.mode, CompensationReferenceMode.fixedIncluded);
-      expect(futureSetting?.fixedIncludedOvertimeMinutes, 120);
+      expect(futureSetting?.fixedIncludedAfterRegularEndMinutes, 120);
     });
 
     test('updates current setting without changing createdAt', () async {
@@ -41,18 +39,14 @@ void main() {
           );
       final CompensationReferenceSetting first = await repository.save(
         mode: CompensationReferenceMode.unknown,
-        fixedIncludedOvertimeMinutes: 0,
-        fixedIncludedNightMinutes: 0,
-        fixedIncludedHolidayMinutes: 0,
+        fixedIncludedAfterRegularEndMinutes: 0,
         effectiveFromMonth: DateTime(2026, 6),
         memo: null,
       );
       clock = DateTime(2026, 6, 2, 9);
       final CompensationReferenceSetting second = await repository.save(
         mode: CompensationReferenceMode.fixedIncluded,
-        fixedIncludedOvertimeMinutes: 60,
-        fixedIncludedNightMinutes: 0,
-        fixedIncludedHolidayMinutes: 0,
+        fixedIncludedAfterRegularEndMinutes: 60,
         effectiveFromMonth: DateTime(2026, 6),
         memo: '변경',
       );

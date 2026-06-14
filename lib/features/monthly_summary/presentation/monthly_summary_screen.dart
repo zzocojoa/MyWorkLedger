@@ -82,7 +82,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
     } on WorkRuleRepositoryException catch (error) {
       _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
     } on CompensationReferenceRepositoryException catch (error) {
-      _showError('비교 방식을 불러올 수 없습니다. ${error.toString()}');
+      _showError('포함 시간 비교를 불러올 수 없습니다. ${error.toString()}');
     } on MonthlySummaryException catch (error) {
       _showError('월간 요약을 계산할 수 없습니다. ${error.toString()}');
     } on LeaveSummaryException catch (error) {

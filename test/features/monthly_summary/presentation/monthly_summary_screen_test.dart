@@ -144,9 +144,7 @@ void main() {
         compensationReferenceRepository: _FakeCompensationReferenceRepository(
           setting: _compensationReferenceSetting(
             mode: CompensationReferenceMode.fixedIncluded,
-            fixedIncludedOvertimeMinutes: 120,
-            fixedIncludedNightMinutes: 0,
-            fixedIncludedHolidayMinutes: 0,
+            fixedIncludedAfterRegularEndMinutes: 120,
           ),
           findApplicableError: null,
         ),
@@ -160,7 +158,7 @@ void main() {
     expect(find.text('실제 기록'), findsWidgets);
     expect(find.text('포함 시간'), findsWidgets);
     expect(find.text('초과 참고'), findsWidgets);
-    expect(find.text('연장 근무'), findsWidgets);
+    expect(find.text('정시 이후 근무'), findsWidgets);
     expect(find.text('3시간 30분'), findsWidgets);
     expect(find.text('2시간'), findsOneWidget);
     expect(find.text('1시간 30분'), findsOneWidget);
@@ -191,9 +189,7 @@ void main() {
         compensationReferenceRepository: _FakeCompensationReferenceRepository(
           setting: _compensationReferenceSetting(
             mode: CompensationReferenceMode.unknown,
-            fixedIncludedOvertimeMinutes: 0,
-            fixedIncludedNightMinutes: 0,
-            fixedIncludedHolidayMinutes: 0,
+            fixedIncludedAfterRegularEndMinutes: 0,
           ),
           findApplicableError: null,
         ),
@@ -710,16 +706,12 @@ WorkRule _workRule() {
 
 CompensationReferenceSetting _compensationReferenceSetting({
   required CompensationReferenceMode mode,
-  required int fixedIncludedOvertimeMinutes,
-  required int fixedIncludedNightMinutes,
-  required int fixedIncludedHolidayMinutes,
+  required int fixedIncludedAfterRegularEndMinutes,
 }) {
   return CompensationReferenceSetting(
     id: 'compensation-reference',
     mode: mode,
-    fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
-    fixedIncludedNightMinutes: fixedIncludedNightMinutes,
-    fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+    fixedIncludedAfterRegularEndMinutes: fixedIncludedAfterRegularEndMinutes,
     effectiveFromMonth: DateTime(2000),
     memo: null,
     createdAt: DateTime(2026, 6, 1, 9),
@@ -770,9 +762,7 @@ final class _FakeCompensationReferenceRepository
   @override
   Future<CompensationReferenceSetting> save({
     required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
+    required int fixedIncludedAfterRegularEndMinutes,
     required DateTime effectiveFromMonth,
     required String? memo,
   }) async {

@@ -7,9 +7,7 @@ void main() {
       final CompensationReferenceSetting setting = CompensationReferenceSetting(
         id: 'setting-1',
         mode: CompensationReferenceMode.fixedIncluded,
-        fixedIncludedOvertimeMinutes: 120,
-        fixedIncludedNightMinutes: 30,
-        fixedIncludedHolidayMinutes: 60,
+        fixedIncludedAfterRegularEndMinutes: 120,
         effectiveFromMonth: DateTime(2026, 6),
         memo: '계약서 기준 확인',
         createdAt: DateTime(2026, 6, 1, 9),
@@ -28,9 +26,7 @@ void main() {
         () => CompensationReferenceSetting(
           id: 'setting-1',
           mode: CompensationReferenceMode.none,
-          fixedIncludedOvertimeMinutes: 0,
-          fixedIncludedNightMinutes: 0,
-          fixedIncludedHolidayMinutes: 0,
+          fixedIncludedAfterRegularEndMinutes: 0,
           effectiveFromMonth: DateTime(2026, 6, 2),
           memo: null,
           createdAt: DateTime(2026, 6, 1),
@@ -38,6 +34,23 @@ void main() {
         ),
         throwsArgumentError,
       );
+    });
+
+    test('parses legacy overtime included minutes as after regular end', () {
+      final CompensationReferenceSetting parsed =
+          CompensationReferenceSetting.fromMap(<String, Object?>{
+            'id': 'setting-1',
+            'mode': CompensationReferenceMode.fixedIncluded.name,
+            'fixed_included_overtime_minutes': 90,
+            'fixed_included_night_minutes': 30,
+            'fixed_included_holiday_minutes': 60,
+            'effective_from_month': DateTime(2026, 6).toIso8601String(),
+            'memo': null,
+            'created_at': DateTime(2026, 6, 1).toIso8601String(),
+            'updated_at': DateTime(2026, 6, 1).toIso8601String(),
+          });
+
+      expect(parsed.fixedIncludedAfterRegularEndMinutes, 90);
     });
   });
 }

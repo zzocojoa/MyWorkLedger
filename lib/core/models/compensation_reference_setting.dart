@@ -15,9 +15,7 @@ final class CompensationReferenceSetting {
   CompensationReferenceSetting({
     required this.id,
     required this.mode,
-    required this.fixedIncludedOvertimeMinutes,
-    required this.fixedIncludedNightMinutes,
-    required this.fixedIncludedHolidayMinutes,
+    required this.fixedIncludedAfterRegularEndMinutes,
     required this.effectiveFromMonth,
     required this.memo,
     required this.createdAt,
@@ -28,9 +26,7 @@ final class CompensationReferenceSetting {
 
   final String id;
   final CompensationReferenceMode mode;
-  final int fixedIncludedOvertimeMinutes;
-  final int fixedIncludedNightMinutes;
-  final int fixedIncludedHolidayMinutes;
+  final int fixedIncludedAfterRegularEndMinutes;
   final DateTime effectiveFromMonth;
   final String? memo;
   final DateTime createdAt;
@@ -39,9 +35,7 @@ final class CompensationReferenceSetting {
   CompensationReferenceSetting copyWith({
     required String id,
     required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
+    required int fixedIncludedAfterRegularEndMinutes,
     required DateTime effectiveFromMonth,
     required String? memo,
     required DateTime createdAt,
@@ -50,9 +44,7 @@ final class CompensationReferenceSetting {
     return CompensationReferenceSetting(
       id: id,
       mode: mode,
-      fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
-      fixedIncludedNightMinutes: fixedIncludedNightMinutes,
-      fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+      fixedIncludedAfterRegularEndMinutes: fixedIncludedAfterRegularEndMinutes,
       effectiveFromMonth: effectiveFromMonth,
       memo: memo,
       createdAt: createdAt,
@@ -64,9 +56,8 @@ final class CompensationReferenceSetting {
     return <String, Object?>{
       'id': id,
       'mode': mode.name,
-      'fixed_included_overtime_minutes': fixedIncludedOvertimeMinutes,
-      'fixed_included_night_minutes': fixedIncludedNightMinutes,
-      'fixed_included_holiday_minutes': fixedIncludedHolidayMinutes,
+      'fixed_included_after_regular_end_minutes':
+          fixedIncludedAfterRegularEndMinutes,
       'effective_from_month': effectiveFromMonth.toIso8601String(),
       'memo': memo,
       'created_at': createdAt.toIso8601String(),
@@ -78,20 +69,22 @@ final class CompensationReferenceSetting {
     return CompensationReferenceSetting(
       id: _readString(map, 'id'),
       mode: _readMode(map, 'mode'),
-      fixedIncludedOvertimeMinutes: _readInt(
-        map,
-        'fixed_included_overtime_minutes',
-      ),
-      fixedIncludedNightMinutes: _readInt(map, 'fixed_included_night_minutes'),
-      fixedIncludedHolidayMinutes: _readInt(
-        map,
-        'fixed_included_holiday_minutes',
-      ),
+      fixedIncludedAfterRegularEndMinutes:
+          _readFixedIncludedAfterRegularEndMinutes(map),
       effectiveFromMonth: _readDateTime(map, 'effective_from_month'),
       memo: _readNullableString(map, 'memo'),
       createdAt: _readDateTime(map, 'created_at'),
       updatedAt: _readDateTime(map, 'updated_at'),
     );
+  }
+
+  static int _readFixedIncludedAfterRegularEndMinutes(
+    Map<String, Object?> map,
+  ) {
+    if (map.containsKey('fixed_included_after_regular_end_minutes')) {
+      return _readInt(map, 'fixed_included_after_regular_end_minutes');
+    }
+    return _readInt(map, 'fixed_included_overtime_minutes');
   }
 
   @override
@@ -100,10 +93,8 @@ final class CompensationReferenceSetting {
         other is CompensationReferenceSetting &&
             id == other.id &&
             mode == other.mode &&
-            fixedIncludedOvertimeMinutes ==
-                other.fixedIncludedOvertimeMinutes &&
-            fixedIncludedNightMinutes == other.fixedIncludedNightMinutes &&
-            fixedIncludedHolidayMinutes == other.fixedIncludedHolidayMinutes &&
+            fixedIncludedAfterRegularEndMinutes ==
+                other.fixedIncludedAfterRegularEndMinutes &&
             effectiveFromMonth == other.effectiveFromMonth &&
             memo == other.memo &&
             createdAt == other.createdAt &&
@@ -115,9 +106,7 @@ final class CompensationReferenceSetting {
     return Object.hash(
       id,
       mode,
-      fixedIncludedOvertimeMinutes,
-      fixedIncludedNightMinutes,
-      fixedIncludedHolidayMinutes,
+      fixedIncludedAfterRegularEndMinutes,
       effectiveFromMonth,
       memo,
       createdAt,
@@ -139,16 +128,8 @@ void _validateCompensationReferenceSetting(
     throw ArgumentError.value(setting.id, 'id', 'must not be empty');
   }
   _validateNonNegativeMinutes(
-    value: setting.fixedIncludedOvertimeMinutes,
-    field: 'fixedIncludedOvertimeMinutes',
-  );
-  _validateNonNegativeMinutes(
-    value: setting.fixedIncludedNightMinutes,
-    field: 'fixedIncludedNightMinutes',
-  );
-  _validateNonNegativeMinutes(
-    value: setting.fixedIncludedHolidayMinutes,
-    field: 'fixedIncludedHolidayMinutes',
+    value: setting.fixedIncludedAfterRegularEndMinutes,
+    field: 'fixedIncludedAfterRegularEndMinutes',
   );
   if (!_isMonthOnly(setting.effectiveFromMonth)) {
     throw ArgumentError.value(

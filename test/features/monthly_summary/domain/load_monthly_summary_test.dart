@@ -114,9 +114,7 @@ void main() {
         compensationReferenceRepository: _FakeCompensationReferenceRepository(
           setting: _compensationReferenceSetting(
             mode: CompensationReferenceMode.fixedIncluded,
-            fixedIncludedOvertimeMinutes: 120,
-            fixedIncludedNightMinutes: 0,
-            fixedIncludedHolidayMinutes: 0,
+            fixedIncludedAfterRegularEndMinutes: 120,
           ),
           findApplicableError: null,
         ),
@@ -131,7 +129,7 @@ void main() {
         viewData.compensationReferenceSummary.status,
         CompensationReferenceSummaryStatus.available,
       );
-      expect(viewData.compensationReferenceSummary.rows[0].label, '연장 근무');
+      expect(viewData.compensationReferenceSummary.rows[0].label, '정시 이후 근무');
       expect(
         viewData.compensationReferenceSummary.rows[0].actualDuration,
         const Duration(hours: 3, minutes: 30),
@@ -467,16 +465,12 @@ WorkRule _workRule() {
 
 CompensationReferenceSetting _compensationReferenceSetting({
   required CompensationReferenceMode mode,
-  required int fixedIncludedOvertimeMinutes,
-  required int fixedIncludedNightMinutes,
-  required int fixedIncludedHolidayMinutes,
+  required int fixedIncludedAfterRegularEndMinutes,
 }) {
   return CompensationReferenceSetting(
     id: 'compensation-reference',
     mode: mode,
-    fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
-    fixedIncludedNightMinutes: fixedIncludedNightMinutes,
-    fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+    fixedIncludedAfterRegularEndMinutes: fixedIncludedAfterRegularEndMinutes,
     effectiveFromMonth: DateTime(2000),
     memo: null,
     createdAt: DateTime(2026, 6, 1, 9),
@@ -593,9 +587,7 @@ final class _FakeCompensationReferenceRepository
   @override
   Future<CompensationReferenceSetting> save({
     required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
+    required int fixedIncludedAfterRegularEndMinutes,
     required DateTime effectiveFromMonth,
     required String? memo,
   }) async {
