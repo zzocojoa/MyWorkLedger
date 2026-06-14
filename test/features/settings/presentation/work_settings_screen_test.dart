@@ -89,9 +89,10 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('기본 근무 기준'), findsOneWidget);
-    expect(find.text('추가 근무 기준'), findsOneWidget);
+    expect(find.text('정시 근무'), findsOneWidget);
     expect(find.text('포함 시간 비교'), findsOneWidget);
+    expect(find.text('근무 태그 기준'), findsOneWidget);
+    expect(find.text('고급 설정'), findsOneWidget);
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
 
     await tester.ensureVisible(
@@ -107,15 +108,54 @@ void main() {
     expect(find.text('야간 근무 포함 시간(분)'), findsNothing);
     expect(find.text('휴무일 근무 포함 시간(분)'), findsNothing);
 
-    await tester.tap(_findModeTile(value: CompensationReferenceMode.none));
+    await tester.ensureVisible(find.text('고정 포함 시간 없음'));
+    await tester.pump();
+    await tester.tap(find.text('고정 포함 시간 없음'));
     await tester.pump();
 
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
 
-    await tester.tap(_findModeTile(value: CompensationReferenceMode.unknown));
+    await tester.ensureVisible(find.text('잘 모르겠음'));
+    await tester.pump();
+    await tester.tap(find.text('잘 모르겠음'));
     await tester.pump();
 
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
+  });
+
+  testWidgets('keeps weekday selection collapsed until user changes it', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.ensureVisible(find.text('고급 설정'));
+    await tester.pump();
+
+    expect(find.text('근무 요일'), findsOneWidget);
+    expect(find.text('월-금'), findsOneWidget);
+    expect(find.text('평일 근무 요일'), findsNothing);
+    expect(_findWeekdayChip(label: '월'), findsNothing);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '변경'));
+    await tester.pump();
+
+    expect(find.text('근무 요일'), findsNWidgets(2));
+    expect(_findWeekdayChip(label: '월'), findsOneWidget);
+    expect(_findWeekdayChip(label: '토'), findsOneWidget);
   });
 
   testWidgets('shows work rule save failure with section context', (
@@ -253,12 +293,19 @@ Finder _findModeTile({required CompensationReferenceMode value}) {
 }
 
 Future<void> _tapSave({required WidgetTester tester}) async {
-  final Finder saveButton = find.widgetWithText(FilledButton, '저장');
+  final Finder saveButton = find.widgetWithText(TextButton, '저장');
   await tester.testTextInput.receiveAction(TextInputAction.done);
-  await tester.ensureVisible(saveButton);
   await tester.pump();
-  final FilledButton button = tester.widget<FilledButton>(saveButton);
+  final TextButton button = tester.widget<TextButton>(saveButton);
   button.onPressed!();
+}
+
+Finder _findWeekdayChip({required String label}) {
+  return find.byWidgetPredicate((Widget widget) {
+    return widget is FilterChip &&
+        widget.label is Text &&
+        (widget.label as Text).data == label;
+  });
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {

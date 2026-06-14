@@ -207,20 +207,18 @@
 |---|---|---:|---:|---|---|
 | `id` | String | Yes | Yes | generated | 로컬 고유 ID |
 | `mode` | CompensationReferenceMode | Yes | No | `unknown` | 비교 방식 선택값 |
-| `fixedIncludedOvertimeMinutes` | int | Yes | No | 0 | 월 고정 포함 연장 근무 시간 |
-| `fixedIncludedNightMinutes` | int | Yes | No | 0 | 월 고정 포함 야간 근무 시간 |
-| `fixedIncludedHolidayMinutes` | int | Yes | No | 0 | 월 고정 포함 휴무일 근무 시간 |
-| `effectiveFromMonth` | Date | Yes | Yes | none | 적용 시작 월. 저장 시 해당 월의 1일로 정규화 |
-| `memo` | String? | No | No | null | 계약서/급여명세서 확인 메모 |
+| `fixedIncludedAfterRegularEndMinutes` | int | Yes | No | 0 | 정시 퇴근 이후 고정 포함 시간 |
+| `effectiveFromMonth` | Date | Yes | Yes | 2000-01-01 | UI 입력 없이 전체 데이터에 적용하기 위한 내부 기준 월 |
+| `memo` | String? | No | No | null | 사용자가 남긴 참고 메모 |
 | `createdAt` | DateTime | Yes | No | now | 생성 시각 |
 | `updatedAt` | DateTime | Yes | No | now | 마지막 수정 시각 |
 
 ### CompensationReferenceSetting Validation
 
 - `mode`는 `none`, `fixedIncluded`, `unknown` 중 하나여야 한다.
-- `fixedIncludedOvertimeMinutes`, `fixedIncludedNightMinutes`, `fixedIncludedHolidayMinutes`는 0 이상이어야 한다.
+- `fixedIncludedAfterRegularEndMinutes`는 0 이상이어야 한다.
 - 고정 포함 시간 값은 30분 단위 입력을 권장한다.
-- `effectiveFromMonth`는 월 단위 날짜이며, 저장 시 `YYYY-MM-01` 형태로 정규화한다.
+- `effectiveFromMonth`는 월 단위 날짜이며, 현재 UI에서는 입력받지 않고 전체 데이터 반영 기준으로 저장한다.
 - 같은 `effectiveFromMonth`의 `CompensationReferenceSetting`은 1개만 허용한다.
 - `mode != fixedIncluded`이면 고정 포함 시간 비교는 비활성화하고 시간 필드는 계산에 사용하지 않는다.
 - `memo`는 비어 있거나 500자 이하 문자열이어야 한다.
@@ -230,13 +228,10 @@
 
 | Value | Rule | Stored |
 |---|---|---|
-| `applicableSetting` | 월간 요약 대상 월보다 같거나 이전인 최신 `effectiveFromMonth` 설정 | No |
-| `actualOvertimeMinutes` | 기존 `WorkRecord + WorkRule` 기반 연장 근무 후보 시간 | No |
-| `actualNightMinutes` | 기존 `WorkRecord + WorkRule` 기반 야간 근무 후보 시간 | No |
-| `actualHolidayMinutes` | 기존 `WorkRecord + WorkRule` 기반 휴무일 근무 후보 시간 | No |
-| `overtimeExcessReferenceMinutes` | `max(actualOvertimeMinutes - fixedIncludedOvertimeMinutes, 0)` | No |
-| `nightExcessReferenceMinutes` | `max(actualNightMinutes - fixedIncludedNightMinutes, 0)` | No |
-| `holidayExcessReferenceMinutes` | `max(actualHolidayMinutes - fixedIncludedHolidayMinutes, 0)` | No |
+| `applicableSetting` | 전체 데이터 기준으로 저장된 현재 `CompensationReferenceSetting` | No |
+| `actualAfterRegularEndMinutes` | 기존 `WorkRecord + WorkRule` 기반 정시 퇴근 이후 실제 근무 시간 | No |
+| `includedReferenceMinutes` | 사용자가 입력한 `fixedIncludedAfterRegularEndMinutes` | No |
+| `excessReferenceMinutes` | `max(actualAfterRegularEndMinutes - fixedIncludedAfterRegularEndMinutes, 0)` | No |
 
 ## Query Patterns
 
@@ -246,7 +241,7 @@
 | 기록 수정 | 선택한 `WorkRecord.id` 조회 후 수정 |
 | 연차 관리 | 현재 연도 `LeaveBalance`와 해당 연도 `LeaveUsage` 목록 조회 |
 | 월간 요약 | 월 범위의 `WorkRecord`, `LeaveUsage` 목록 조회 |
-| 월간 고정 포함 시간 비교 | 월간 요약 대상 월에 적용 가능한 `CompensationReferenceSetting` 최신 1건 조회 |
+| 월간 고정 포함 시간 비교 | 전체 데이터 기준으로 저장된 `CompensationReferenceSetting` 1건 조회 |
 | 가격표/fake-door | `PricingIntentEvent` 생성 및 최근 이벤트 목록 조회 |
 
 ## Initial Index Plan

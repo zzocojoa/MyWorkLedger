@@ -54,6 +54,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
   String? _errorMessage;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _showsWeekdaySelector = false;
 
   @override
   void initState() {
@@ -270,7 +271,15 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('근무 설정')),
+      appBar: AppBar(
+        title: const Text('근무 설정'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: _isLoading || _isSaving ? null : _save,
+            child: Text(_isSaving ? '저장 중' : '저장'),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
@@ -281,7 +290,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                 const Center(child: CircularProgressIndicator())
               else ...<Widget>[
                 _SettingsSection(
-                  title: '기본 근무 기준',
+                  title: '정시 근무',
                   children: <Widget>[
                     OutlinedButton(
                       onPressed: _isSaving ? null : _applyPreset,
@@ -304,35 +313,6 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                       controller: _breakController,
                       decoration: const InputDecoration(labelText: '휴게시간(분)'),
                       keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 18),
-                    _WeekdaySelector(
-                      selectedWeekdays: _selectedWeekdays,
-                      enabled: !_isSaving,
-                      onChanged: _changeWeekdaySelection,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _SettingsSection(
-                  title: '추가 근무 기준',
-                  children: <Widget>[
-                    TextField(
-                      controller: _overtimeStartController,
-                      decoration: const InputDecoration(
-                        labelText: '연장 근무 시작',
-                        helperText: '정시 퇴근 이후 시각만 입력할 수 있습니다.',
-                      ),
-                      keyboardType: TextInputType.datetime,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _nightWorkStartController,
-                      decoration: const InputDecoration(
-                        labelText: '야간 근무 시작',
-                        helperText: '입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.',
-                      ),
-                      keyboardType: TextInputType.datetime,
                     ),
                   ],
                 ),
@@ -379,15 +359,92 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 18),
+                _SettingsSection(
+                  title: '근무 태그 기준',
+                  children: <Widget>[
+                    Text(
+                      '정시 전 근무는 정시 출근 이전 구간으로 표시됩니다.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF5F6673),
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _overtimeStartController,
+                      decoration: const InputDecoration(
+                        labelText: '연장 근무 시작',
+                        helperText: '정시 퇴근 이후 시각만 입력할 수 있습니다.',
+                      ),
+                      keyboardType: TextInputType.datetime,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nightWorkStartController,
+                      decoration: const InputDecoration(
+                        labelText: '야간 근무 시작',
+                        helperText: '입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.',
+                      ),
+                      keyboardType: TextInputType.datetime,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                _SettingsSection(
+                  title: '고급 설정',
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                '근무 요일',
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      color: const Color(0xFF181D26),
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0,
+                                    ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                formatWorkRuleWeekdays(
+                                  weekdays: _selectedWeekdays,
+                                ),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: const Color(0xFF5F6673),
+                                      letterSpacing: 0,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton(
+                          onPressed: _isSaving ? null : _toggleWeekdaySelector,
+                          child: Text(_showsWeekdaySelector ? '닫기' : '변경'),
+                        ),
+                      ],
+                    ),
+                    if (_showsWeekdaySelector) ...<Widget>[
+                      const SizedBox(height: 14),
+                      _WeekdaySelector(
+                        selectedWeekdays: _selectedWeekdays,
+                        enabled: !_isSaving,
+                        onChanged: _changeWeekdaySelection,
+                      ),
+                    ],
+                  ],
+                ),
                 if (_errorMessage != null) ...<Widget>[
                   const SizedBox(height: 16),
                   _SettingsMessage(message: _errorMessage!),
                 ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _isSaving ? null : _save,
-                  child: Text(_isSaving ? '저장 중' : '저장'),
-                ),
               ],
             ],
           ),
@@ -403,6 +460,12 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       } else {
         _selectedWeekdays.remove(weekday);
       }
+    });
+  }
+
+  void _toggleWeekdaySelector() {
+    setState(() {
+      _showsWeekdaySelector = !_showsWeekdaySelector;
     });
   }
 
@@ -430,6 +493,43 @@ final List<int> _allWeekdays = <int>[
   DateTime.saturday,
   DateTime.sunday,
 ];
+
+String formatWorkRuleWeekdays({required Set<int> weekdays}) {
+  if (_hasSameWeekdays(
+    weekdays: weekdays,
+    expected: <int>[
+      DateTime.monday,
+      DateTime.tuesday,
+      DateTime.wednesday,
+      DateTime.thursday,
+      DateTime.friday,
+    ],
+  )) {
+    return '월-금';
+  }
+  final List<int> sortedWeekdays = weekdays.toList(growable: false)..sort();
+  if (sortedWeekdays.isEmpty) {
+    return '선택 없음';
+  }
+  return sortedWeekdays
+      .map((int weekday) => formatWorkRuleWeekday(weekday: weekday))
+      .join(', ');
+}
+
+bool _hasSameWeekdays({
+  required Set<int> weekdays,
+  required List<int> expected,
+}) {
+  if (weekdays.length != expected.length) {
+    return false;
+  }
+  for (final int weekday in expected) {
+    if (!weekdays.contains(weekday)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 final class _SettingsSection extends StatelessWidget {
   const _SettingsSection({required this.title, required this.children});
@@ -484,7 +584,7 @@ final class _WeekdaySelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          '평일 근무 요일',
+          '근무 요일',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
             color: const Color(0xFF181D26),
             fontWeight: FontWeight.w600,
@@ -568,7 +668,7 @@ final class _MinutesField extends StatelessWidget {
       controller: controller,
       decoration: InputDecoration(
         labelText: '$label(분)',
-        helperText: '정시 퇴근 17:00 + 120분이면 19:00까지 포함 시간으로 봅니다.',
+        helperText: '예: 120분 = 정시 후 2시간',
       ),
       keyboardType: TextInputType.number,
       inputFormatters: <TextInputFormatter>[

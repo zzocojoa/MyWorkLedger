@@ -32,7 +32,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(WorkSettingsScreen), findsOneWidget);
-    expect(find.text('기본 근무 기준'), findsOneWidget);
+    expect(find.text('정시 근무'), findsOneWidget);
     expect(find.text('포함 시간 비교'), findsOneWidget);
   });
 
