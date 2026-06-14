@@ -19,9 +19,7 @@ abstract interface class CompensationReferenceRepository {
 
   Future<CompensationReferenceSetting> save({
     required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
+    required int fixedIncludedAfterRegularEndMinutes,
     required DateTime effectiveFromMonth,
     required String? memo,
   });

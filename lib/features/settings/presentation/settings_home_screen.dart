@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
-import '../../compensation_reference/presentation/compensation_reference_settings_screen.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/presentation/leave_balance_settings_screen.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
-import '../../work_rule/presentation/work_rule_settings_screen.dart';
 import 'notification_settings_screen.dart';
+import 'work_settings_screen.dart';
 
 final class SettingsHomeScreen extends StatelessWidget {
   const SettingsHomeScreen({
@@ -34,16 +33,9 @@ final class SettingsHomeScreen extends StatelessWidget {
           children: <Widget>[
             _SettingsRow(
               icon: Icons.schedule_outlined,
-              title: '근무 기준',
-              subtitle: '정시 출퇴근, 휴게시간, 근무 요일',
-              onTap: () => _openWorkRuleSettings(context: context),
-            ),
-            _SettingsDivider(),
-            _SettingsRow(
-              icon: Icons.rule_outlined,
-              title: '비교 방식',
-              subtitle: '고정 포함 시간 없음, 있음, 잘 모르겠음',
-              onTap: () => _openCompensationReferenceSettings(context: context),
+              title: '근무 설정',
+              subtitle: '정시, 연장/야간, 포함 시간 비교',
+              onTap: () => _openWorkSettings(context: context),
             ),
             _SettingsDivider(),
             _SettingsRow(
@@ -65,23 +57,13 @@ final class SettingsHomeScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _openWorkRuleSettings({required BuildContext context}) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<bool>(
-        builder: (BuildContext context) =>
-            WorkRuleSettingsScreen(repository: workRuleRepository),
-      ),
-    );
-  }
-
-  Future<void> _openCompensationReferenceSettings({
-    required BuildContext context,
-  }) async {
+  Future<void> _openWorkSettings({required BuildContext context}) async {
     final DateTime currentMonth = now();
     await Navigator.of(context).push(
       MaterialPageRoute<bool>(
-        builder: (BuildContext context) => CompensationReferenceSettingsScreen(
-          repository: compensationReferenceRepository,
+        builder: (BuildContext context) => WorkSettingsScreen(
+          workRuleRepository: workRuleRepository,
+          compensationReferenceRepository: compensationReferenceRepository,
           targetMonth: DateTime(currentMonth.year, currentMonth.month),
         ),
       ),

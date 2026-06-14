@@ -62,7 +62,8 @@ Future<MonthlySummaryViewData> loadMonthlySummary({
     workTimeCandidateSummary: workTimeCandidateSummary,
     compensationReferenceSummary: calculateCompensationReferenceSummary(
       setting: compensationReferenceSetting,
-      workTimeCandidateSummary: workTimeCandidateSummary,
+      records: records,
+      workRule: workRule,
     ),
   );
 }

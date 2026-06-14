@@ -40,9 +40,7 @@ final class LocalStorageCompensationReferenceRepository
   @override
   Future<CompensationReferenceSetting> save({
     required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
+    required int fixedIncludedAfterRegularEndMinutes,
     required DateTime effectiveFromMonth,
     required String? memo,
   }) async {
@@ -61,9 +59,8 @@ final class LocalStorageCompensationReferenceRepository
         ? CompensationReferenceSetting(
             id: idGenerator(),
             mode: mode,
-            fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
-            fixedIncludedNightMinutes: fixedIncludedNightMinutes,
-            fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+            fixedIncludedAfterRegularEndMinutes:
+                fixedIncludedAfterRegularEndMinutes,
             effectiveFromMonth: normalizedMonth,
             memo: _normalizeMemo(memo: memo),
             createdAt: now,
@@ -72,9 +69,8 @@ final class LocalStorageCompensationReferenceRepository
         : existingSetting.copyWith(
             id: existingSetting.id,
             mode: mode,
-            fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
-            fixedIncludedNightMinutes: fixedIncludedNightMinutes,
-            fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+            fixedIncludedAfterRegularEndMinutes:
+                fixedIncludedAfterRegularEndMinutes,
             effectiveFromMonth: normalizedMonth,
             memo: _normalizeMemo(memo: memo),
             createdAt: existingSetting.createdAt,

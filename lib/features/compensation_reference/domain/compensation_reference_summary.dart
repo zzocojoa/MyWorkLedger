@@ -1,5 +1,6 @@
 import '../../../core/models/compensation_reference_setting.dart';
-import '../../work_time/domain/work_time_candidate.dart';
+import '../../../core/models/work_record.dart';
+import '../../../core/models/work_rule.dart';
 
 enum CompensationReferenceSummaryStatus { hidden, notConfigured, available }
 
@@ -37,7 +38,8 @@ final class CompensationReferenceComparisonRow {
 
 CompensationReferenceSummary calculateCompensationReferenceSummary({
   required CompensationReferenceSetting? setting,
-  required WorkTimeCandidateSummary workTimeCandidateSummary,
+  required List<WorkRecord> records,
+  required WorkRule? workRule,
 }) {
   if (setting == null || setting.mode == CompensationReferenceMode.none) {
     return CompensationReferenceSummary(
@@ -53,54 +55,81 @@ CompensationReferenceSummary calculateCompensationReferenceSummary({
       reason: 'settingUnknown',
     );
   }
-  if (!workTimeCandidateSummary.isAvailable) {
+  if (workRule == null) {
     return CompensationReferenceSummary(
       status: CompensationReferenceSummaryStatus.hidden,
       rows: <CompensationReferenceComparisonRow>[],
       reason: 'workRuleMissing',
     );
   }
+  final CompensationReferenceComparisonRow row =
+      _createAfterRegularEndComparisonRow(
+        records: records,
+        workRule: workRule,
+        fixedIncludedMinutes: setting.fixedIncludedAfterRegularEndMinutes,
+      );
   return CompensationReferenceSummary(
     status: CompensationReferenceSummaryStatus.available,
-    rows: <CompensationReferenceComparisonRow>[
-      _createComparisonRow(
-        label: '연장 근무',
-        actualDuration: workTimeCandidateSummary.overtimeDuration,
-        fixedIncludedMinutes: setting.fixedIncludedOvertimeMinutes,
-      ),
-      _createComparisonRow(
-        label: '야간 근무',
-        actualDuration: workTimeCandidateSummary.nightWorkDuration,
-        fixedIncludedMinutes: setting.fixedIncludedNightMinutes,
-      ),
-      _createComparisonRow(
-        label: '휴무일 근무',
-        actualDuration: workTimeCandidateSummary.nonWorkdayDuration,
-        fixedIncludedMinutes: setting.fixedIncludedHolidayMinutes,
-      ),
-    ],
+    rows: <CompensationReferenceComparisonRow>[row],
     reason: null,
   );
 }
 
-CompensationReferenceComparisonRow _createComparisonRow({
-  required String label,
-  required Duration actualDuration,
+CompensationReferenceComparisonRow _createAfterRegularEndComparisonRow({
+  required List<WorkRecord> records,
+  required WorkRule workRule,
   required int fixedIncludedMinutes,
 }) {
-  final Duration fixedIncludedDuration = Duration(
-    minutes: fixedIncludedMinutes,
-  );
-  final Duration excessReferenceDuration =
-      actualDuration > fixedIncludedDuration
-      ? actualDuration - fixedIncludedDuration
-      : Duration.zero;
+  final Duration fixedIncludedLimit = Duration(minutes: fixedIncludedMinutes);
+  Duration actualDuration = Duration.zero;
+  Duration fixedIncludedDuration = Duration.zero;
+  Duration excessReferenceDuration = Duration.zero;
+  for (final WorkRecord record in records) {
+    final Duration recordDuration = _calculateAfterRegularEndDuration(
+      record: record,
+      workRule: workRule,
+    );
+    final Duration recordIncludedDuration = recordDuration > fixedIncludedLimit
+        ? fixedIncludedLimit
+        : recordDuration;
+    actualDuration += recordDuration;
+    fixedIncludedDuration += recordIncludedDuration;
+    excessReferenceDuration += recordDuration - recordIncludedDuration;
+  }
   return CompensationReferenceComparisonRow(
-    label: label,
+    label: '정시 이후 근무',
     actualDuration: actualDuration,
     fixedIncludedDuration: fixedIncludedDuration,
     excessReferenceDuration: excessReferenceDuration,
   );
+}
+
+Duration _calculateAfterRegularEndDuration({
+  required WorkRecord record,
+  required WorkRule workRule,
+}) {
+  final DateTime? clockInAt = record.clockInAt;
+  final DateTime? clockOutAt = record.clockOutAt;
+  if (clockInAt == null || clockOutAt == null) {
+    return Duration.zero;
+  }
+  if (record.tags.contains(WorkRecordTag.delayedCheckout)) {
+    return Duration.zero;
+  }
+  if (!workRule.workWeekdays.contains(record.workDate.weekday)) {
+    return Duration.zero;
+  }
+  final DateTime regularEndAt = DateTime(
+    record.workDate.year,
+    record.workDate.month,
+    record.workDate.day,
+    workRule.regularEndTimeMinutes ~/ 60,
+    workRule.regularEndTimeMinutes.remainder(60),
+  );
+  if (!clockOutAt.isAfter(regularEndAt)) {
+    return Duration.zero;
+  }
+  return clockOutAt.difference(regularEndAt);
 }
 
 void _validateSummary(CompensationReferenceSummary summary) {

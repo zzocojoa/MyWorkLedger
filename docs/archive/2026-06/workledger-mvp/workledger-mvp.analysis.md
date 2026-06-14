@@ -1,10 +1,10 @@
 # Gap Analysis: workledger-mvp
 
-> Date: 2026-06-14 | Phase: archived | Scope: WorkLedger MVP plus PR #13 comparison summary follow-up
+> Date: 2026-06-14 | Phase: archived | Scope: WorkLedger MVP plus unified work settings follow-up
 
 ## Match Rate: 100%
 
-계산 기준은 MVP functional requirements 19개와 구현 중 추가 설계된 근무 기준, 근무 태그, 달력 보기 안정화 항목 15개를 합친 총 34개다. 현재 MVP 기준 34개 항목은 모두 구현됐고, PR #13은 고정 포함 시간 비교 방식을 월간 요약에 읽기 전용 참고 카드로 연결하는 후속 개선이다.
+계산 기준은 MVP functional requirements 19개와 구현 중 추가 설계된 근무 기준, 근무 태그, 달력 보기 안정화 항목 15개를 합친 총 34개다. 현재 MVP 기준 34개 항목은 모두 구현됐고, 이번 브랜치는 고정 포함 시간 비교 방식을 월간 요약에 읽기 전용 참고 카드로 연결하는 후속 개선이다.
 
 ```text
 implemented = 34
@@ -12,7 +12,7 @@ total = 34
 matchRate = 34 / 34 = 100%
 ```
 
-이번 check는 PR #13 `feat: show included time comparison summary` 브랜치 상태를 기준으로 한다. PR #13은 `고정 포함 시간 있음`일 때만 월간 요약에 `포함 시간 대비` 카드를 표시하고, `고정 포함 시간 없음`과 `잘 모르겠음`에서는 비교 카드를 숨긴다.
+이번 check는 `codex/unify-work-settings` 브랜치 상태를 기준으로 한다. 이 브랜치는 `고정 포함 시간 있음`일 때만 월간 요약에 `포함 시간 대비` 카드를 표시하고, `고정 포함 시간 없음`과 `잘 모르겠음`에서는 비교 카드를 숨긴다.
 
 ## Sources Checked
 
@@ -47,7 +47,7 @@ matchRate = 34 / 34 = 100%
 | 달력 보기 | Done | 날짜별 완료, 출근만 기록, 시간 누락, 기록 없음 구분 |
 | 달력 작은 화면 안정성 | Done | PR #5에서 overflow 방지와 `닫기` 버튼 제거 |
 | 월간 요약 | Done | 총 근무, 근무일, 근무 태그, 연차 요약, 조건부 포함 시간 대비 |
-| 근무 기준 설정 | Done | 정시 출근/퇴근, 휴게시간, 평일 근무 요일 |
+| 근무 설정 | Done | 정시 출근/퇴근, 연장/야간 시작, 휴게시간, 평일 근무 요일, 포함 시간 비교 |
 | 근무 태그 계산 | Done | 휴무일 근무, 정시 전 근무, 연장 근무, 야간 근무 |
 | 근무 태그 결과 카드 | Done | 0분 태그는 숨기고 실제 태그가 있을 때만 표시 |
 | 연차 관리 | Done | 총 연차는 설정으로 이동, 사용량 추가/삭제는 연차 화면에 유지 |
@@ -84,7 +84,7 @@ matchRate = 34 / 34 = 100%
 | Item | Status | Evidence |
 |---|---|---|
 | 첫 실행에서 근무 기준 설정을 강제하지 않음 | Done | 홈에서 기준 없이 출근/퇴근 가능 |
-| 선택형 근무 기준 설정 화면 | Done | `WorkRuleSettingsScreen` |
+| 선택형 근무 설정 화면 | Done | `WorkSettingsScreen` |
 | 정시 출근/퇴근/휴게시간/평일 요일 저장 | Done | `WorkRule`, `LocalStorageWorkRuleRepository` |
 | 첫 퇴근 후 또는 월간 요약에서 설정 제안 | Done | 홈과 월간 요약 prompt |
 | 홈 상단 설정 진입점 | Done | 홈 AppBar 설정 버튼 |
@@ -121,15 +121,16 @@ matchRate = 34 / 34 = 100%
 
 ## Verification
 
-검증은 PR #13 브랜치 결과를 기준으로 정리했다.
+검증은 `codex/unify-work-settings` 브랜치 결과를 기준으로 정리한다.
 
 | Command or Check | Result |
 |---|---|
 | `$HOME/.local/share/flutter-stable/bin/flutter analyze` | Passed |
-| `$HOME/.local/share/flutter-stable/bin/flutter test` | Passed, 213 tests |
+| `$HOME/.local/share/flutter-stable/bin/flutter test` | Passed, 216 tests |
 | `$HOME/.local/share/flutter-stable/bin/flutter build apk --debug` | Passed |
 | `git --no-pager diff --check` | Passed |
-| PR #13 local diff review | Passed |
+| local diff review | Passed |
+| SM G977N Android 12 launch check | Passed |
 | GitHub checks | Not configured |
 | Production URL / canary | Not applicable, Flutter Android app |
 
@@ -143,11 +144,12 @@ matchRate = 34 / 34 = 100%
 
 ## Post-MVP Follow-up Candidate
 
-`fixed-included-work-time`은 고정 포함 시간을 따로 기록해야 하는 사용자를 위한 후속 개선이다. PR #13에서는 월간 요약에서 사용자가 저장한 비교 방식의 결과를 읽기 전용으로 확인할 수 있게 했다.
+`fixed-included-work-time`은 고정 포함 시간을 따로 기록해야 하는 사용자를 위한 후속 개선이다. `codex/unify-work-settings`에서는 월간 요약에서 사용자가 저장한 비교 방식의 결과를 읽기 전용으로 확인할 수 있게 했다.
 
 | Candidate | Status | Reason |
 |---|---|---|
 | 비교 방식 설정 | Done | 사용자가 `없음`, `있음`, `잘 모르겠음` 중 하나를 저장 |
+| 설정 화면 통합 | Done | 설정 홈에서는 `근무 설정`으로 진입하고, 화면 내부에서 근무 기준과 포함 시간 비교를 함께 저장 |
 | 전체 데이터 반영 | Done | 적용 시작 월 입력 없이 저장한 비교 방식을 전체 기록 기준으로 사용 |
 | 월간 요약 조건부 표시 | Done | `있음`이면 `포함 시간 대비` 표시, `없음`/`잘 모르겠음`이면 숨김 |
 
@@ -156,15 +158,16 @@ matchRate = 34 / 34 = 100%
 - `WorkRecord`에는 고정 포함 시간 여부를 저장하지 않는다.
 - 별도 `CompensationReferenceSetting`을 월간 요약 계산 시점에만 참조한다.
 - 설정 변경은 기존 기록을 수정하거나 마이그레이션하지 않고 전체 데이터 기준으로 저장한다.
-- 월간 요약은 연장 근무, 야간 근무, 휴무일 근무별 `실제 기록`, `포함 시간`, `초과 참고`만 표시한다.
+- 월간 요약은 `정시 이후 근무` 기준으로 `실제 기록`, `포함 시간`, `초과 참고`를 표시한다.
+- 야간 근무와 휴무일 근무는 포함 시간 비교 입력에서 제외하고, 기존 근무 태그 영역에서 별도 표시한다.
 - 확정값, 분쟁 판단, 청구 안내, 전문 자문은 범위 밖이다.
 
 ## Recommendation
 
-Match Rate가 100%이고 PR #13 브랜치 검증도 통과했으므로 구현 gap은 닫힌 상태다. 다음 단계는 PR #13 Files changed 확인 후 merge readiness를 판단하는 것이다.
+Match Rate가 100%이고 브랜치 검증도 통과하면 구현 gap은 닫힌 상태다. 다음 단계는 Files changed 확인 후 ship readiness를 판단하는 것이다.
 
 ## Next Steps
 
-1. PR #13 Files changed를 최종 확인한다.
+1. 브랜치 Files changed를 최종 확인한다.
 2. GitHub checks가 없으면 로컬 `flutter analyze`, `flutter test`, `flutter build apk --debug` 결과를 merge safety 근거로 사용한다.
-3. 이상 없으면 `$land-and-deploy`로 PR #13을 merge한다.
+3. 이상 없으면 `$ship`으로 PR 생성 readiness를 정리한다.

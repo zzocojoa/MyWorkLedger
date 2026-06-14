@@ -14,11 +14,11 @@ import 'package:workledger/features/leave/presentation/leave_balance_settings_sc
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/settings/presentation/settings_home_screen.dart';
+import 'package:workledger/features/settings/presentation/work_settings_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
 import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
-import 'package:workledger/features/work_rule/presentation/work_rule_settings_screen.dart';
 import 'package:workledger/l10n/app_localizations.dart';
 
 void main() {
@@ -104,7 +104,7 @@ void main() {
     expect(find.text('근무 태그를 볼까요?'), findsNothing);
   });
 
-  testWidgets('opens work rule settings from settings home', (
+  testWidgets('opens work settings from settings home', (
     WidgetTester tester,
   ) async {
     final DateTime now = DateTime(2026, 6, 12, 19, 0);
@@ -135,12 +135,12 @@ void main() {
 
     expect(find.byType(SettingsHomeScreen), findsOneWidget);
 
-    await tester.tap(find.text('근무 기준'));
+    await tester.tap(find.text('근무 설정'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(WorkRuleSettingsScreen), findsOneWidget);
+    expect(find.byType(WorkSettingsScreen), findsOneWidget);
     expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
-    expect(find.text('정시 근무 기준'), findsNothing);
+    expect(find.text('기본 근무 기준'), findsOneWidget);
   });
 
   testWidgets('opens settings home from app bar action', (
@@ -170,8 +170,9 @@ void main() {
 
     expect(find.byType(SettingsHomeScreen), findsOneWidget);
     expect(find.text('설정'), findsOneWidget);
-    expect(find.text('근무 기준'), findsOneWidget);
-    expect(find.text('비교 방식'), findsOneWidget);
+    expect(find.text('근무 설정'), findsOneWidget);
+    expect(find.text('근무 기준'), findsNothing);
+    expect(find.text('비교 방식'), findsNothing);
     expect(find.text('총 연차'), findsOneWidget);
     expect(find.text('알림'), findsOneWidget);
   });
@@ -891,9 +892,7 @@ final class _FakeCompensationReferenceRepository
   @override
   Future<CompensationReferenceSetting> save({
     required CompensationReferenceMode mode,
-    required int fixedIncludedOvertimeMinutes,
-    required int fixedIncludedNightMinutes,
-    required int fixedIncludedHolidayMinutes,
+    required int fixedIncludedAfterRegularEndMinutes,
     required DateTime effectiveFromMonth,
     required String? memo,
   }) async {
