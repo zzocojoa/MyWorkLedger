@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 
 import '../../../core/models/compensation_reference_setting.dart';
@@ -24,6 +27,10 @@ final class WorkSettingsScreen extends StatefulWidget {
 }
 
 final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
+  final ScrollController _scrollController = ScrollController(
+    keepScrollOffset: false,
+  );
+  Timer? _scrollResetTimer;
   final TextEditingController _startController = TextEditingController(
     text: '09:00',
   );
@@ -64,6 +71,8 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
 
   @override
   void dispose() {
+    _scrollResetTimer?.cancel();
+    _scrollController.dispose();
     _startController.dispose();
     _endController.dispose();
     _overtimeStartController.dispose();
@@ -95,6 +104,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
         _applyCompensationReferenceSetting(setting: setting);
         _isLoading = false;
       });
+      _resetScrollPosition();
     } on WorkRuleRepositoryException catch (error) {
       _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
     } on CompensationReferenceRepositoryException catch (error) {
@@ -281,176 +291,193 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
+        child: ListView(
+          controller: _scrollController,
+          scrollCacheExtent: const ScrollCacheExtent.pixels(2400),
+          shrinkWrap: true,
+          physics: const AlwaysScrollableScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              if (_isLoading)
-                const Center(child: CircularProgressIndicator())
-              else ...<Widget>[
-                _SettingsSection(
-                  title: '정시 근무',
-                  children: <Widget>[
-                    OutlinedButton(
-                      onPressed: _isSaving ? null : _applyPreset,
-                      child: const Text('09:00-18:00 빠른 설정'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _startController,
-                      decoration: const InputDecoration(labelText: '정시 출근'),
-                      keyboardType: TextInputType.datetime,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _endController,
-                      decoration: const InputDecoration(labelText: '정시 퇴근'),
-                      keyboardType: TextInputType.datetime,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _breakController,
-                      decoration: const InputDecoration(labelText: '휴게시간(분)'),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _SettingsSection(
-                  title: '포함 시간 비교',
-                  children: <Widget>[
-                    RadioGroup<CompensationReferenceMode>(
-                      groupValue: _mode,
-                      onChanged: _changeMode,
-                      child: Column(
-                        children: <Widget>[
-                          _ModeTile(
-                            title: '고정 포함 시간 없음',
-                            value: CompensationReferenceMode.none,
-                            selectedMode: _mode,
-                          ),
-                          _ModeTile(
-                            title: '고정 포함 시간 있음',
-                            value: CompensationReferenceMode.fixedIncluded,
-                            selectedMode: _mode,
-                          ),
-                          _ModeTile(
-                            title: '잘 모르겠음',
-                            value: CompensationReferenceMode.unknown,
-                            selectedMode: _mode,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_mode == CompensationReferenceMode.fixedIncluded)
-                      _FixedIncludedFields(
-                        afterRegularEndMinutesController:
-                            _includedAfterRegularEndController,
-                      ),
-                    TextField(
-                      controller: _memoController,
-                      decoration: const InputDecoration(
-                        labelText: '메모',
-                        helperText: '선택 입력',
-                      ),
-                      maxLines: 3,
-                      maxLength: 500,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _SettingsSection(
-                  title: '근무 태그 기준',
-                  children: <Widget>[
-                    Text(
-                      '정시 전 근무는 정시 출근 이전 구간으로 표시됩니다.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF5F6673),
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _overtimeStartController,
-                      decoration: const InputDecoration(
-                        labelText: '연장 근무 시작',
-                        helperText: '정시 퇴근 이후 시각만 입력할 수 있습니다.',
-                      ),
-                      keyboardType: TextInputType.datetime,
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _nightWorkStartController,
-                      decoration: const InputDecoration(
-                        labelText: '야간 근무 시작',
-                        helperText: '입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.',
-                      ),
-                      keyboardType: TextInputType.datetime,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                _SettingsSection(
-                  title: '고급 설정',
-                  children: <Widget>[
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else ...<Widget>[
+              _SettingsSection(
+                title: '정시 근무',
+                children: <Widget>[
+                  OutlinedButton(
+                    onPressed: _isSaving ? null : _applyPreset,
+                    child: const Text('09:00-18:00 빠른 설정'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _startController,
+                    decoration: const InputDecoration(labelText: '정시 출근'),
+                    keyboardType: TextInputType.datetime,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _endController,
+                    decoration: const InputDecoration(labelText: '정시 퇴근'),
+                    keyboardType: TextInputType.datetime,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _breakController,
+                    decoration: const InputDecoration(labelText: '휴게시간(분)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _SettingsSection(
+                title: '포함 시간 비교',
+                children: <Widget>[
+                  RadioGroup<CompensationReferenceMode>(
+                    groupValue: _mode,
+                    onChanged: _changeMode,
+                    child: Column(
                       children: <Widget>[
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                '근무 요일',
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: const Color(0xFF181D26),
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0,
-                                    ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                formatWorkRuleWeekdays(
-                                  weekdays: _selectedWeekdays,
-                                ),
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: const Color(0xFF5F6673),
-                                      letterSpacing: 0,
-                                    ),
-                              ),
-                            ],
-                          ),
+                        _ModeTile(
+                          title: '고정 포함 시간 없음',
+                          value: CompensationReferenceMode.none,
+                          selectedMode: _mode,
                         ),
-                        const SizedBox(width: 12),
-                        OutlinedButton(
-                          onPressed: _isSaving ? null : _toggleWeekdaySelector,
-                          child: Text(_showsWeekdaySelector ? '닫기' : '변경'),
+                        _ModeTile(
+                          title: '고정 포함 시간 있음',
+                          value: CompensationReferenceMode.fixedIncluded,
+                          selectedMode: _mode,
+                        ),
+                        _ModeTile(
+                          title: '잘 모르겠음',
+                          value: CompensationReferenceMode.unknown,
+                          selectedMode: _mode,
                         ),
                       ],
                     ),
-                    if (_showsWeekdaySelector) ...<Widget>[
-                      const SizedBox(height: 14),
-                      _WeekdaySelector(
-                        selectedWeekdays: _selectedWeekdays,
-                        enabled: !_isSaving,
-                        onChanged: _changeWeekdaySelection,
+                  ),
+                  if (_mode == CompensationReferenceMode.fixedIncluded)
+                    _FixedIncludedFields(
+                      afterRegularEndMinutesController:
+                          _includedAfterRegularEndController,
+                    ),
+                  TextField(
+                    controller: _memoController,
+                    decoration: const InputDecoration(
+                      labelText: '메모',
+                      helperText: '선택 입력',
+                    ),
+                    maxLines: 3,
+                    maxLength: 500,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _SettingsSection(
+                title: '근무 태그 기준',
+                children: <Widget>[
+                  Text(
+                    '정시 전 근무는 정시 출근 전 구간입니다.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF5F6673),
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _overtimeStartController,
+                    decoration: const InputDecoration(
+                      labelText: '연장 근무 시작',
+                      helperText: '정시 퇴근 이후만 입력',
+                    ),
+                    keyboardType: TextInputType.datetime,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _nightWorkStartController,
+                    decoration: const InputDecoration(
+                      labelText: '야간 근무 시작',
+                      helperText: '예: 22:00부터 8시간',
+                    ),
+                    keyboardType: TextInputType.datetime,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _SettingsSection(
+                title: '고급 설정',
+                children: <Widget>[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              '근무 요일',
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    color: const Color(0xFF181D26),
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formatWorkRuleWeekdays(
+                                weekdays: _selectedWeekdays,
+                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: const Color(0xFF5F6673),
+                                    letterSpacing: 0,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        onPressed: _isSaving ? null : _toggleWeekdaySelector,
+                        child: Text(_showsWeekdaySelector ? '닫기' : '변경'),
                       ),
                     ],
+                  ),
+                  if (_showsWeekdaySelector) ...<Widget>[
+                    const SizedBox(height: 14),
+                    _WeekdaySelector(
+                      selectedWeekdays: _selectedWeekdays,
+                      enabled: !_isSaving,
+                      onChanged: _changeWeekdaySelection,
+                    ),
                   ],
-                ),
-                if (_errorMessage != null) ...<Widget>[
-                  const SizedBox(height: 16),
-                  _SettingsMessage(message: _errorMessage!),
                 ],
+              ),
+              if (_errorMessage != null) ...<Widget>[
+                const SizedBox(height: 16),
+                _SettingsMessage(message: _errorMessage!),
               ],
             ],
-          ),
+          ],
         ),
       ),
     );
+  }
+
+  void _resetScrollPosition() {
+    _scrollResetTimer?.cancel();
+    WidgetsBinding.instance.addPostFrameCallback((Duration _) {
+      _jumpToTop();
+    });
+    _scrollResetTimer = Timer(const Duration(milliseconds: 250), _jumpToTop);
+  }
+
+  void _jumpToTop() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (mounted && _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
   }
 
   void _changeWeekdaySelection({required int weekday, required bool selected}) {

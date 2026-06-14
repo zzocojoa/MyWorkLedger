@@ -10,6 +10,7 @@ void main() {
   testWidgets('saves work rule and fixed included comparison together', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
       initialRule: null,
       saveError: null,
@@ -73,6 +74,7 @@ void main() {
   testWidgets('shows fixed included fields only for fixed included mode', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     await tester.pumpWidget(
       _buildScreen(
         workRuleRepository: _FakeWorkRuleRepository(
@@ -123,9 +125,80 @@ void main() {
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
   });
 
+  testWidgets('starts from regular work section on compact screen', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final double regularSectionTop = tester.getTopLeft(find.text('정시 근무')).dy;
+
+    expect(regularSectionTop, greaterThan(0));
+    expect(regularSectionTop, lessThan(260));
+    await tester.scrollUntilVisible(
+      find.text('근무 태그 기준'),
+      320,
+      scrollable: find
+          .descendant(
+            of: find.byType(WorkSettingsScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+      maxScrolls: 20,
+    );
+    await tester.pump();
+
+    expect(find.text('근무 태그 기준'), findsOneWidget);
+  });
+
+  testWidgets('uses short helper text for work tag fields', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('정시 퇴근 이후만 입력'), findsOneWidget);
+    expect(find.text('예: 22:00부터 8시간'), findsOneWidget);
+    expect(find.text('정시 퇴근 이후 시각만 입력할 수 있습니다.'), findsNothing);
+    expect(find.text('입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.'), findsNothing);
+  });
+
   testWidgets('keeps weekday selection collapsed until user changes it', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     await tester.pumpWidget(
       _buildScreen(
         workRuleRepository: _FakeWorkRuleRepository(
@@ -161,6 +234,7 @@ void main() {
   testWidgets('shows work rule save failure with section context', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeCompensationReferenceRepository compensationRepository =
         _FakeCompensationReferenceRepository(
           setting: null,
@@ -193,6 +267,7 @@ void main() {
   testWidgets('does not save work rule when comparison input is invalid', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
       initialRule: null,
       saveError: null,
@@ -237,6 +312,7 @@ void main() {
   testWidgets('shows comparison save failure with section context', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
       initialRule: null,
       saveError: null,
@@ -306,6 +382,13 @@ Finder _findWeekdayChip({required String label}) {
         widget.label is Text &&
         (widget.label as Text).data == label;
   });
+}
+
+void _useTallViewport({required WidgetTester tester}) {
+  tester.view.physicalSize = const Size(390, 1800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {
