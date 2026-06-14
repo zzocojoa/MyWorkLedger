@@ -9,11 +9,15 @@ final class WorkRuleParseException implements Exception {
   }
 }
 
+const int workRuleDefaultNightWorkStartTimeMinutes = 22 * 60;
+
 final class WorkRule {
   WorkRule({
     required this.id,
     required this.regularStartTimeMinutes,
     required this.regularEndTimeMinutes,
+    required this.overtimeStartTimeMinutes,
+    required this.nightWorkStartTimeMinutes,
     required this.breakMinutes,
     required List<int> workWeekdays,
     required this.createdAt,
@@ -25,6 +29,8 @@ final class WorkRule {
   final String id;
   final int regularStartTimeMinutes;
   final int regularEndTimeMinutes;
+  final int overtimeStartTimeMinutes;
+  final int nightWorkStartTimeMinutes;
   final int breakMinutes;
   final List<int> workWeekdays;
   final DateTime createdAt;
@@ -34,6 +40,8 @@ final class WorkRule {
     required String id,
     required int regularStartTimeMinutes,
     required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
     required int breakMinutes,
     required List<int> workWeekdays,
     required DateTime createdAt,
@@ -43,6 +51,8 @@ final class WorkRule {
       id: id,
       regularStartTimeMinutes: regularStartTimeMinutes,
       regularEndTimeMinutes: regularEndTimeMinutes,
+      overtimeStartTimeMinutes: overtimeStartTimeMinutes,
+      nightWorkStartTimeMinutes: nightWorkStartTimeMinutes,
       breakMinutes: breakMinutes,
       workWeekdays: workWeekdays,
       createdAt: createdAt,
@@ -55,6 +65,8 @@ final class WorkRule {
       'id': id,
       'regular_start_time_minutes': regularStartTimeMinutes,
       'regular_end_time_minutes': regularEndTimeMinutes,
+      'overtime_start_time_minutes': overtimeStartTimeMinutes,
+      'night_work_start_time_minutes': nightWorkStartTimeMinutes,
       'break_minutes': breakMinutes,
       'work_weekdays': workWeekdays,
       'created_at': createdAt.toIso8601String(),
@@ -63,10 +75,21 @@ final class WorkRule {
   }
 
   static WorkRule fromMap(Map<String, Object?> map) {
+    final int regularEndTimeMinutes = _readInt(map, 'regular_end_time_minutes');
     return WorkRule(
       id: _readString(map, 'id'),
       regularStartTimeMinutes: _readInt(map, 'regular_start_time_minutes'),
-      regularEndTimeMinutes: _readInt(map, 'regular_end_time_minutes'),
+      regularEndTimeMinutes: regularEndTimeMinutes,
+      overtimeStartTimeMinutes: _readOptionalInt(
+        map,
+        'overtime_start_time_minutes',
+        fallback: regularEndTimeMinutes,
+      ),
+      nightWorkStartTimeMinutes: _readOptionalInt(
+        map,
+        'night_work_start_time_minutes',
+        fallback: workRuleDefaultNightWorkStartTimeMinutes,
+      ),
       breakMinutes: _readInt(map, 'break_minutes'),
       workWeekdays: _readWeekdays(map, 'work_weekdays'),
       createdAt: _readDateTime(map, 'created_at'),
@@ -81,6 +104,8 @@ final class WorkRule {
             id == other.id &&
             regularStartTimeMinutes == other.regularStartTimeMinutes &&
             regularEndTimeMinutes == other.regularEndTimeMinutes &&
+            overtimeStartTimeMinutes == other.overtimeStartTimeMinutes &&
+            nightWorkStartTimeMinutes == other.nightWorkStartTimeMinutes &&
             breakMinutes == other.breakMinutes &&
             _listEquals(workWeekdays, other.workWeekdays) &&
             createdAt == other.createdAt &&
@@ -93,6 +118,8 @@ final class WorkRule {
       id,
       regularStartTimeMinutes,
       regularEndTimeMinutes,
+      overtimeStartTimeMinutes,
+      nightWorkStartTimeMinutes,
       breakMinutes,
       Object.hashAll(workWeekdays),
       createdAt,
@@ -113,11 +140,26 @@ void _validateWorkRule(WorkRule rule) {
     value: rule.regularEndTimeMinutes,
     field: 'regularEndTimeMinutes',
   );
+  _validateMinuteOfDay(
+    value: rule.overtimeStartTimeMinutes,
+    field: 'overtimeStartTimeMinutes',
+  );
+  _validateMinuteOfDay(
+    value: rule.nightWorkStartTimeMinutes,
+    field: 'nightWorkStartTimeMinutes',
+  );
   if (rule.regularEndTimeMinutes <= rule.regularStartTimeMinutes) {
     throw ArgumentError.value(
       rule.regularEndTimeMinutes,
       'regularEndTimeMinutes',
       'must be greater than regularStartTimeMinutes',
+    );
+  }
+  if (rule.overtimeStartTimeMinutes < rule.regularEndTimeMinutes) {
+    throw ArgumentError.value(
+      rule.overtimeStartTimeMinutes,
+      'overtimeStartTimeMinutes',
+      'must be greater than or equal to regularEndTimeMinutes',
     );
   }
   if (rule.breakMinutes < 0) {
@@ -188,6 +230,23 @@ String _readString(Map<String, Object?> map, String field) {
 int _readInt(Map<String, Object?> map, String field) {
   if (!map.containsKey(field)) {
     throw WorkRuleParseException('model=WorkRule field=$field rule=required');
+  }
+  final Object? value = map[field];
+  if (value is int) {
+    return value;
+  }
+  throw WorkRuleParseException(
+    'model=WorkRule field=$field value=$value rule=int',
+  );
+}
+
+int _readOptionalInt(
+  Map<String, Object?> map,
+  String field, {
+  required int fallback,
+}) {
+  if (!map.containsKey(field)) {
+    return fallback;
   }
   final Object? value = map[field];
   if (value is int) {

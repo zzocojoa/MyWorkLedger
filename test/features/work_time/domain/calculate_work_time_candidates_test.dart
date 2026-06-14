@@ -60,6 +60,36 @@ void main() {
       expect(summary.activeTagCount, 1);
     });
 
+    test('calculates overtime after configured overtime start', () {
+      final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
+        record: _record(
+          id: 'work-1',
+          workDate: DateTime(2026, 6, 12),
+          clockInAt: DateTime(2026, 6, 12, 9),
+          clockOutAt: DateTime(2026, 6, 12, 21),
+        ),
+        workRule: _weekdayRule().copyWith(
+          id: 'active-rule',
+          regularStartTimeMinutes: 540,
+          regularEndTimeMinutes: 1080,
+          overtimeStartTimeMinutes: 1200,
+          nightWorkStartTimeMinutes: 1320,
+          breakMinutes: 60,
+          workWeekdays: <int>[
+            DateTime.monday,
+            DateTime.tuesday,
+            DateTime.wednesday,
+            DateTime.thursday,
+            DateTime.friday,
+          ],
+          createdAt: DateTime.parse('2026-06-01T09:00:00'),
+          updatedAt: DateTime.parse('2026-06-12T09:00:00'),
+        ),
+      );
+
+      expect(summary.overtimeDuration, const Duration(hours: 1));
+    });
+
     test('reports no active tags for regular weekday work', () {
       final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
         record: _record(
@@ -142,6 +172,36 @@ void main() {
       expect(summary.nightWorkDuration, const Duration(hours: 8));
     });
 
+    test('calculates night work from configured start for 8 hours', () {
+      final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
+        record: _record(
+          id: 'work-1',
+          workDate: DateTime(2026, 6, 12),
+          clockInAt: DateTime(2026, 6, 12, 22),
+          clockOutAt: DateTime(2026, 6, 13, 7, 30),
+        ),
+        workRule: _weekdayRule().copyWith(
+          id: 'active-rule',
+          regularStartTimeMinutes: 540,
+          regularEndTimeMinutes: 1080,
+          overtimeStartTimeMinutes: 1080,
+          nightWorkStartTimeMinutes: 1380,
+          breakMinutes: 60,
+          workWeekdays: <int>[
+            DateTime.monday,
+            DateTime.tuesday,
+            DateTime.wednesday,
+            DateTime.thursday,
+            DateTime.friday,
+          ],
+          createdAt: DateTime.parse('2026-06-01T09:00:00'),
+          updatedAt: DateTime.parse('2026-06-12T09:00:00'),
+        ),
+      );
+
+      expect(summary.nightWorkDuration, const Duration(hours: 8));
+    });
+
     test(
       'keeps overtime and night work as separate overlapping candidates',
       () {
@@ -185,6 +245,8 @@ WorkRule _weekdayRule() {
     id: 'active-rule',
     regularStartTimeMinutes: 540,
     regularEndTimeMinutes: 1080,
+    overtimeStartTimeMinutes: 1080,
+    nightWorkStartTimeMinutes: 1320,
     breakMinutes: 60,
     workWeekdays: <int>[
       DateTime.monday,

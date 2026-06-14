@@ -62,6 +62,7 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
       : _calculateNightWorkDuration(
           clockInAt: clockInAt,
           clockOutAt: clockOutAt,
+          workRule: workRule,
         );
 
   return WorkTimeCandidateSummary(
@@ -121,19 +122,20 @@ Duration _calculateOvertimeDuration({
       'clockOutAt is required for overtime calculation',
     );
   }
-  final DateTime regularEndAt = _dateTimeAtMinuteOfDay(
+  final DateTime overtimeStartAt = _dateTimeAtMinuteOfDay(
     date: record.workDate,
-    minuteOfDay: workRule.regularEndTimeMinutes,
+    minuteOfDay: workRule.overtimeStartTimeMinutes,
   );
-  if (!clockOutAt.isAfter(regularEndAt)) {
+  if (!clockOutAt.isAfter(overtimeStartAt)) {
     return Duration.zero;
   }
-  return clockOutAt.difference(regularEndAt);
+  return clockOutAt.difference(overtimeStartAt);
 }
 
 Duration _calculateNightWorkDuration({
   required DateTime clockInAt,
   required DateTime clockOutAt,
+  required WorkRule workRule,
 }) {
   final DateTime startDate = DateTime(
     clockInAt.year,
@@ -148,11 +150,9 @@ Duration _calculateNightWorkDuration({
   Duration total = Duration.zero;
   DateTime cursor = startDate;
   while (!cursor.isAfter(endDate)) {
-    final DateTime nightStart = DateTime(
-      cursor.year,
-      cursor.month,
-      cursor.day,
-      22,
+    final DateTime nightStart = _dateTimeAtMinuteOfDay(
+      date: cursor,
+      minuteOfDay: workRule.nightWorkStartTimeMinutes,
     );
     final DateTime nightEnd = nightStart.add(const Duration(hours: 8));
     total += _overlapDuration(

@@ -114,6 +114,8 @@ final class _WidgetTestWorkRuleRepository implements WorkRuleRepository {
   Future<WorkRule> save({
     required int regularStartTimeMinutes,
     required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
     required int breakMinutes,
     required List<int> workWeekdays,
   }) async {

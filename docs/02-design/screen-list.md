@@ -13,7 +13,7 @@
 | S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무 확인과 누락 기록 추가/수정 | `WorkRecord` |
 | S-04 | 연차 관리 | `/leave` | 연차 사용 기록 추가/삭제 | `LeaveUsage`, `LeaveBalance` |
 | S-05 | 월간 요약 | `/summary` | 월간 근무시간, 선택형 근무 태그, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance` |
-| S-06 | 근무 기준 설정 | `/settings/work-rules` | 선택형 정시 출근/퇴근, 휴게시간, 평일 요일 설정 | work rule settings |
+| S-06 | 근무 기준 설정 | `/settings/work-rules` | 선택형 정시 출근/퇴근, 연장/야간 시작, 휴게시간, 평일 요일 설정 | `WorkRule` |
 | S-07 | 가격표/fake-door | `/pricing` | Report Pass/Pro 클릭 의향 측정 | `PricingIntentEvent` |
 | S-08 | 설정 | `/settings` | 근무 기준, 비교 방식, 총 연차, 알림 설정 진입 | settings |
 | S-09 | 총 연차 설정 | `/settings/leave-balance` | 올해 총 연차 직접 입력 | `LeaveBalance` |
@@ -43,7 +43,7 @@
 | 홈/오늘 기록 | 월간 요약 | 하단 `월간 요약` 버튼 |
 | 홈/오늘 기록 | 연차 관리 | 연차 버튼 |
 | 홈/오늘 기록 | 설정 | 오른쪽 상단 톱니바퀴 |
-| 설정 | 근무 기준 설정 | `근무 기준` 항목 |
+| 설정 | 근무 기준 설정 | `근무 기준` 항목. 정시 출퇴근, 연장/야간 시작, 휴게시간, 근무 요일을 설정 |
 | 설정 | 비교 방식 | `비교 방식` 항목 |
 | 설정 | 총 연차 설정 | `총 연차` 항목 |
 | 설정 | 알림 설정 | `알림` 항목 |

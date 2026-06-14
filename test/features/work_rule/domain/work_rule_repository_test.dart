@@ -31,6 +31,8 @@ void main() {
       final WorkRule rule = await repository.save(
         regularStartTimeMinutes: 540,
         regularEndTimeMinutes: 1080,
+        overtimeStartTimeMinutes: 1080,
+        nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
         breakMinutes: 60,
         workWeekdays: <int>[1, 2, 3, 4, 5],
       );
@@ -39,6 +41,8 @@ void main() {
       expect(rule.id, 'work-rule-1');
       expect(rule.regularStartTimeMinutes, 540);
       expect(rule.regularEndTimeMinutes, 1080);
+      expect(rule.overtimeStartTimeMinutes, 1080);
+      expect(rule.nightWorkStartTimeMinutes, 1320);
       expect(rule.breakMinutes, 60);
       expect(rule.workWeekdays, <int>[1, 2, 3, 4, 5]);
       expect(savedRule, rule);
@@ -56,6 +60,8 @@ void main() {
       final WorkRule firstRule = await repository.save(
         regularStartTimeMinutes: 540,
         regularEndTimeMinutes: 1080,
+        overtimeStartTimeMinutes: 1080,
+        nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
         breakMinutes: 60,
         workWeekdays: <int>[1, 2, 3, 4, 5],
       );
@@ -63,6 +69,8 @@ void main() {
       final WorkRule updatedRule = await repository.save(
         regularStartTimeMinutes: 600,
         regularEndTimeMinutes: 1140,
+        overtimeStartTimeMinutes: 1200,
+        nightWorkStartTimeMinutes: 1380,
         breakMinutes: 30,
         workWeekdays: <int>[1, 2, 3, 4],
       );
@@ -71,8 +79,44 @@ void main() {
       expect(updatedRule.createdAt, firstRule.createdAt);
       expect(updatedRule.updatedAt, DateTime.parse('2026-06-13T09:00:00'));
       expect(updatedRule.regularStartTimeMinutes, 600);
+      expect(updatedRule.overtimeStartTimeMinutes, 1200);
+      expect(updatedRule.nightWorkStartTimeMinutes, 1380);
       expect(updatedRule.workWeekdays, <int>[1, 2, 3, 4]);
     });
+
+    test(
+      'reads legacy active work rule with default tag start times',
+      () async {
+        final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+        await storage.write(
+          table: LocalStorageWorkRuleRepository.workRulesTable,
+          key: LocalStorageWorkRuleRepository.activeWorkRuleKey,
+          value: <String, Object?>{
+            'id': 'work-rule-1',
+            'regular_start_time_minutes': 540,
+            'regular_end_time_minutes': 1080,
+            'break_minutes': 60,
+            'work_weekdays': <Object?>[1, 2, 3, 4, 5],
+            'created_at': '2026-06-12T09:00:00',
+            'updated_at': '2026-06-12T09:00:00',
+          },
+        );
+        final LocalStorageWorkRuleRepository repository = _createRepository(
+          storage: storage,
+          clock: () => DateTime.parse('2026-06-12T09:00:00'),
+          idGenerator: () => 'unused-id',
+        );
+
+        final WorkRule? rule = await repository.findActive();
+
+        expect(rule, isNotNull);
+        expect(rule!.overtimeStartTimeMinutes, rule.regularEndTimeMinutes);
+        expect(
+          rule.nightWorkStartTimeMinutes,
+          workRuleDefaultNightWorkStartTimeMinutes,
+        );
+      },
+    );
 
     test('throws explicit error when stored rule cannot parse', () async {
       final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();

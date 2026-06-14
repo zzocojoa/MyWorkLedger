@@ -19,13 +19,17 @@ void main() {
     expect(find.text('정시 근무 기준'), findsNothing);
     expect(find.textContaining('급여나 법정 수당 확정값이 아닙니다.'), findsNothing);
     expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
+    expect(find.text('정시 퇴근 이후 시각만 입력할 수 있습니다.'), findsOneWidget);
+    expect(find.text('입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.'), findsOneWidget);
 
-    await tester.tap(find.text('저장'));
+    await _tapSave(tester: tester);
     await tester.pumpAndSettle();
 
     expect(repository.savedRule, isNotNull);
     expect(repository.savedRule!.regularStartTimeMinutes, 540);
     expect(repository.savedRule!.regularEndTimeMinutes, 1080);
+    expect(repository.savedRule!.overtimeStartTimeMinutes, 1080);
+    expect(repository.savedRule!.nightWorkStartTimeMinutes, 1320);
     expect(repository.savedRule!.breakMinutes, 60);
     expect(repository.savedRule!.workWeekdays, <int>[1, 2, 3, 4, 5]);
   });
@@ -36,6 +40,8 @@ void main() {
         id: 'active-rule',
         regularStartTimeMinutes: 600,
         regularEndTimeMinutes: 1140,
+        overtimeStartTimeMinutes: 1200,
+        nightWorkStartTimeMinutes: 1380,
         breakMinutes: 30,
         workWeekdays: <int>[1, 2, 3, 4],
         createdAt: DateTime(2026, 6, 1, 9),
@@ -50,6 +56,8 @@ void main() {
 
     expect(find.widgetWithText(TextField, '10:00'), findsOneWidget);
     expect(find.widgetWithText(TextField, '19:00'), findsOneWidget);
+    expect(find.widgetWithText(TextField, '20:00'), findsOneWidget);
+    expect(find.widgetWithText(TextField, '23:00'), findsOneWidget);
     expect(find.widgetWithText(TextField, '30'), findsOneWidget);
   });
 
@@ -64,7 +72,7 @@ void main() {
     await tester.pumpWidget(_buildScreen(repository: repository));
     await tester.pump();
     await tester.enterText(find.widgetWithText(TextField, '09:00'), '25:00');
-    await tester.tap(find.text('저장'));
+    await _tapSave(tester: tester);
     await tester.pump();
 
     expect(find.textContaining('근무 기준을 저장할 수 없습니다.'), findsOneWidget);
@@ -85,7 +93,7 @@ void main() {
     await tester.pumpWidget(_buildScreen(repository: repository));
     await tester.pump();
     await tester.enterText(find.widgetWithText(TextField, '60'), '30');
-    await tester.tap(find.text('저장'));
+    await _tapSave(tester: tester);
     await tester.pump();
 
     expect(find.textContaining('근무 기준을 저장할 수 없습니다.'), findsOneWidget);
@@ -96,6 +104,15 @@ void main() {
 
 Widget _buildScreen({required _FakeWorkRuleRepository repository}) {
   return MaterialApp(home: WorkRuleSettingsScreen(repository: repository));
+}
+
+Future<void> _tapSave({required WidgetTester tester}) async {
+  final Finder saveButton = find.widgetWithText(FilledButton, '저장');
+  await tester.testTextInput.receiveAction(TextInputAction.done);
+  await tester.ensureVisible(saveButton);
+  await tester.pump();
+  final FilledButton button = tester.widget<FilledButton>(saveButton);
+  button.onPressed!();
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {
@@ -114,6 +131,8 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
   Future<WorkRule> save({
     required int regularStartTimeMinutes,
     required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
     required int breakMinutes,
     required List<int> workWeekdays,
   }) async {
@@ -125,6 +144,8 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
       id: 'active-rule',
       regularStartTimeMinutes: regularStartTimeMinutes,
       regularEndTimeMinutes: regularEndTimeMinutes,
+      overtimeStartTimeMinutes: overtimeStartTimeMinutes,
+      nightWorkStartTimeMinutes: nightWorkStartTimeMinutes,
       breakMinutes: breakMinutes,
       workWeekdays: workWeekdays,
       createdAt: DateTime(2026, 6, 12, 9),

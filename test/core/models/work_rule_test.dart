@@ -8,6 +8,8 @@ void main() {
         id: 'active-rule',
         regularStartTimeMinutes: 540,
         regularEndTimeMinutes: 1080,
+        overtimeStartTimeMinutes: 1080,
+        nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
         breakMinutes: 60,
         workWeekdays: <int>[
           DateTime.monday,
@@ -25,8 +27,30 @@ void main() {
 
       expect(map['regular_start_time_minutes'], 540);
       expect(map['regular_end_time_minutes'], 1080);
+      expect(map['overtime_start_time_minutes'], 1080);
+      expect(map['night_work_start_time_minutes'], 1320);
       expect(map['break_minutes'], 60);
       expect(parsed, rule);
+    });
+
+    test('parses legacy map with default tag start times', () {
+      final Map<String, Object?> map = <String, Object?>{
+        'id': 'active-rule',
+        'regular_start_time_minutes': 540,
+        'regular_end_time_minutes': 1080,
+        'break_minutes': 60,
+        'work_weekdays': <Object?>[1, 2, 3, 4, 5],
+        'created_at': '2026-06-01T09:00:00',
+        'updated_at': '2026-06-12T09:00:00',
+      };
+
+      final WorkRule parsed = WorkRule.fromMap(map);
+
+      expect(parsed.overtimeStartTimeMinutes, parsed.regularEndTimeMinutes);
+      expect(
+        parsed.nightWorkStartTimeMinutes,
+        workRuleDefaultNightWorkStartTimeMinutes,
+      );
     });
 
     test('copyWith requires explicit values and returns a changed rule', () {
@@ -36,6 +60,8 @@ void main() {
         id: rule.id,
         regularStartTimeMinutes: 600,
         regularEndTimeMinutes: rule.regularEndTimeMinutes,
+        overtimeStartTimeMinutes: rule.overtimeStartTimeMinutes,
+        nightWorkStartTimeMinutes: rule.nightWorkStartTimeMinutes,
         breakMinutes: rule.breakMinutes,
         workWeekdays: rule.workWeekdays,
         createdAt: rule.createdAt,
@@ -85,6 +111,25 @@ void main() {
           id: 'active-rule',
           regularStartTimeMinutes: 1080,
           regularEndTimeMinutes: 540,
+          overtimeStartTimeMinutes: 540,
+          nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
+          breakMinutes: 60,
+          workWeekdays: <int>[DateTime.monday],
+          createdAt: DateTime.parse('2026-06-01T09:00:00'),
+          updatedAt: DateTime.parse('2026-06-12T09:00:00'),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('throws when overtime start is before regular end', () {
+      expect(
+        () => WorkRule(
+          id: 'active-rule',
+          regularStartTimeMinutes: 540,
+          regularEndTimeMinutes: 1080,
+          overtimeStartTimeMinutes: 1079,
+          nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
           breakMinutes: 60,
           workWeekdays: <int>[DateTime.monday],
           createdAt: DateTime.parse('2026-06-01T09:00:00'),
@@ -100,6 +145,8 @@ void main() {
           id: 'active-rule',
           regularStartTimeMinutes: 540,
           regularEndTimeMinutes: 1080,
+          overtimeStartTimeMinutes: 1080,
+          nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
           breakMinutes: 60,
           workWeekdays: <int>[DateTime.monday, DateTime.monday],
           createdAt: DateTime.parse('2026-06-01T09:00:00'),
@@ -116,6 +163,8 @@ WorkRule _createRule() {
     id: 'active-rule',
     regularStartTimeMinutes: 540,
     regularEndTimeMinutes: 1080,
+    overtimeStartTimeMinutes: 1080,
+    nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
     breakMinutes: 60,
     workWeekdays: <int>[
       DateTime.monday,
