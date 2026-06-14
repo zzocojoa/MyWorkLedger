@@ -2,7 +2,7 @@
 
 ## Scope
 
-이 문서는 `workledger-mvp`의 Phase 3 화면 목록이다. 상세 아키텍처와 구현 순서는 `docs/02-design/features/workledger-mvp.design.md`를 기준으로 한다.
+이 문서는 `workledger-mvp`의 Phase 3 화면 목록이다. 상세 아키텍처와 구현 순서는 `docs/archive/2026-06/workledger-mvp/workledger-mvp.design.md`를 기준으로 한다.
 
 ## Screens
 

@@ -21,16 +21,16 @@ WorkLedger MVP는 `main` 기준으로 계획된 MVP 기능 요구사항 19개를
 
 | Document | Purpose |
 |---|---|
-| `docs/01-plan/features/workledger-mvp.plan.md` | MVP source of truth |
+| `docs/archive/2026-06/workledger-mvp/workledger-mvp.plan.md` | MVP source of truth |
 | `docs/01-plan/schema.md` | Core data schema |
 | `docs/01-plan/glossary.md` | Product terminology |
 | `docs/01-plan/convention.md` | Flutter/Dart conventions |
-| `docs/02-design/features/workledger-mvp.design.md` | Architecture and implementation plan |
+| `docs/archive/2026-06/workledger-mvp/workledger-mvp.design.md` | Architecture and implementation plan |
 | `docs/02-design/mockup.md` | Screen states and wireframes |
 | `docs/02-design/screen-list.md` | Screen inventory |
 | `docs/02-design/user-flow.md` | User flows |
-| `docs/03-analysis/workledger-mvp.analysis.md` | Gap analysis |
-| `docs/04-report/workledger-mvp.release-readiness.md` | Android readiness evidence |
+| `docs/archive/2026-06/workledger-mvp/workledger-mvp.analysis.md` | Gap analysis |
+| `docs/archive/2026-06/workledger-mvp/workledger-mvp.release-readiness.md` | Android readiness evidence |
 
 ## Completed Functional Items
 

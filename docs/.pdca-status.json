@@ -1,21 +1,19 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-06-13T11:05:28.400Z",
-  "activeFeatures": [
-    "workledger-mvp"
-  ],
-  "primaryFeature": "workledger-mvp",
+  "lastUpdated": "2026-06-13T18:08:24Z",
+  "activeFeatures": [],
+  "primaryFeature": null,
   "features": {
     "workledger-mvp": {
-      "phase": "report",
+      "phase": "archived",
       "matchRate": 100,
       "iterationCount": 21,
       "documents": {
-        "plan": "docs/01-plan/features/workledger-mvp.plan.md",
-        "design": "docs/02-design/features/workledger-mvp.design.md",
-        "analysis": "docs/03-analysis/workledger-mvp.analysis.md",
-        "report": "docs/04-report/workledger-mvp.report.md",
-        "releaseReadiness": "docs/04-report/workledger-mvp.release-readiness.md"
+        "plan": "docs/archive/2026-06/workledger-mvp/workledger-mvp.plan.md",
+        "design": "docs/archive/2026-06/workledger-mvp/workledger-mvp.design.md",
+        "analysis": "docs/archive/2026-06/workledger-mvp/workledger-mvp.analysis.md",
+        "report": "docs/archive/2026-06/workledger-mvp/workledger-mvp.report.md",
+        "releaseReadiness": "docs/archive/2026-06/workledger-mvp/workledger-mvp.release-readiness.md"
       }
     }
   },
@@ -87,6 +85,12 @@
       "phase": "act",
       "nextPhase": "report",
       "timestamp": "2026-06-13T11:05:28.400Z"
+    },
+    {
+      "feature": "workledger-mvp",
+      "from": "report",
+      "to": "archived",
+      "timestamp": "2026-06-13T18:08:24Z"
     }
   ]
 }

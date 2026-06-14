@@ -6,7 +6,7 @@
 
 근거 파일은 다음이다.
 
-- `docs/02-design/features/workledger-mvp.design.md`
+- `docs/archive/2026-06/workledger-mvp/workledger-mvp.design.md`
 - `docs/02-design/design-system-rules.md`
 - `.lazyweb/design-research/workledger-mobile-time-tracking-2026-06-12/report.html`
 
