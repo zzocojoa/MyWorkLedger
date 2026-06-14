@@ -2,7 +2,7 @@
 
 ## Scope
 
-이 문서는 `workledger-mvp`의 Phase 2 Flutter/Dart 개발 규칙이다. 기준 문서는 `docs/01-plan/features/workledger-mvp.plan.md`, 데이터 기준은 `docs/01-plan/schema.md`, 용어 기준은 `docs/01-plan/glossary.md`다.
+이 문서는 `workledger-mvp`의 Phase 2 Flutter/Dart 개발 규칙이다. 기준 문서는 `docs/archive/2026-06/workledger-mvp/workledger-mvp.plan.md`, 데이터 기준은 `docs/01-plan/schema.md`, 용어 기준은 `docs/01-plan/glossary.md`다.
 
 MVP는 Android 우선 Flutter 앱이며 서버, 로그인, 클라우드 동기화, AI, GPS 자동 추적, 법정 연차 자동 계산, 실제 PDF/CSV 생성, 실제 결제를 포함하지 않는다.
 

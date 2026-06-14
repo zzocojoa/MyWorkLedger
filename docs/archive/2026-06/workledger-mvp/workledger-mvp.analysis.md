@@ -18,8 +18,8 @@ matchRate = 34 / 34 = 100%
 
 | Source | Purpose |
 |---|---|
-| `docs/01-plan/features/workledger-mvp.plan.md` | MVP FR/NFR/scope guard |
-| `docs/02-design/features/workledger-mvp.design.md` | 화면, 저장소, 알림, 근무 기준 설계 |
+| `docs/archive/2026-06/workledger-mvp/workledger-mvp.plan.md` | MVP FR/NFR/scope guard |
+| `docs/archive/2026-06/workledger-mvp/workledger-mvp.design.md` | 화면, 저장소, 알림, 근무 기준 설계 |
 | `docs/02-design/mockup.md` | 홈, 달력, 월간 요약, 연차, 가격 UI 상태 |
 | `docs/02-design/user-flow.md` | 핵심 사용자 흐름 |
 | `docs/02-design/screen-list.md` | 화면 목록 |
@@ -163,6 +163,6 @@ Match Rate가 100%이고 PR #5까지 `main`에 반영됐으므로 구현 gap은 
 
 ## Next Steps
 
-1. `docs/04-report/workledger-mvp.report.md`를 최종 PDCA report로 작성한다.
-2. `docs/04-report/workledger-mvp.release-readiness.md`를 현재 `main` 기준으로 갱신한다.
+1. `docs/archive/2026-06/workledger-mvp/workledger-mvp.report.md`를 최종 PDCA report로 작성한다.
+2. `docs/archive/2026-06/workledger-mvp/workledger-mvp.release-readiness.md`를 현재 `main` 기준으로 갱신한다.
 3. 필요하면 `check` 완료 후 `report` 또는 `archive` 단계 전환을 결정한다.

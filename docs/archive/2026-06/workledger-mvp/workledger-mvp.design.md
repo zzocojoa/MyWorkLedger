@@ -1,7 +1,7 @@
 # workledger-mvp - Design Document
 
 > Version: 1.0.0 | Date: 2026-06-12 | Status: Draft  
-> Level: Starter | Plan: `docs/01-plan/features/workledger-mvp.plan.md`
+> Level: Starter | Plan: `docs/archive/2026-06/workledger-mvp/workledger-mvp.plan.md`
 
 ## 1. Overview
 
