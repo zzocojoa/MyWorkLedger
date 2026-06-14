@@ -1,10 +1,10 @@
 # Gap Analysis: workledger-mvp
 
-> Date: 2026-06-13 | Phase: check | Scope: WorkLedger MVP after PR #5 merge
+> Date: 2026-06-14 | Phase: archived | Scope: WorkLedger MVP plus PR #13 comparison summary follow-up
 
 ## Match Rate: 100%
 
-계산 기준은 MVP functional requirements 19개와 구현 중 추가 설계된 근무 기준, 근무 태그, 달력 보기 안정화 항목 15개를 합친 총 34개다. 현재 `main` 기준으로 34개 항목이 모두 구현됐고, 테스트와 빌드 검증도 통과했다.
+계산 기준은 MVP functional requirements 19개와 구현 중 추가 설계된 근무 기준, 근무 태그, 달력 보기 안정화 항목 15개를 합친 총 34개다. 현재 MVP 기준 34개 항목은 모두 구현됐고, PR #13은 고정 포함 시간 비교 방식을 월간 요약에 읽기 전용 참고 카드로 연결하는 후속 개선이다.
 
 ```text
 implemented = 34
@@ -12,7 +12,7 @@ total = 34
 matchRate = 34 / 34 = 100%
 ```
 
-이번 check는 PR #5 `fix: prevent calendar overflow` merge 이후의 `main` 상태를 기준으로 한다. PR #5는 달력 화면의 작은 화면 overflow를 막고, 중복된 하단 `닫기` 버튼을 제거했으며, 날짜 선택 후 스크롤 동작에 대한 회귀 테스트를 추가했다.
+이번 check는 PR #13 `feat: show included time comparison summary` 브랜치 상태를 기준으로 한다. PR #13은 `고정 포함 시간 있음`일 때만 월간 요약에 `포함 시간 대비` 카드를 표시하고, `고정 포함 시간 없음`과 `잘 모르겠음`에서는 비교 카드를 숨긴다.
 
 ## Sources Checked
 
@@ -46,7 +46,7 @@ matchRate = 34 / 34 = 100%
 | 오늘 기록 수정 | Done | 출근/퇴근 시각, 기록 사유, 메모, 오늘 기록 삭제 |
 | 달력 보기 | Done | 날짜별 완료, 출근만 기록, 시간 누락, 기록 없음 구분 |
 | 달력 작은 화면 안정성 | Done | PR #5에서 overflow 방지와 `닫기` 버튼 제거 |
-| 월간 요약 | Done | 총 근무, 근무일, 근무 태그, 연차 요약 |
+| 월간 요약 | Done | 총 근무, 근무일, 근무 태그, 연차 요약, 조건부 포함 시간 대비 |
 | 근무 기준 설정 | Done | 정시 출근/퇴근, 휴게시간, 평일 근무 요일 |
 | 근무 태그 계산 | Done | 휴무일 근무, 정시 전 근무, 연장 근무, 야간 근무 |
 | 근무 태그 결과 카드 | Done | 0분 태그는 숨기고 실제 태그가 있을 때만 표시 |
@@ -97,6 +97,8 @@ matchRate = 34 / 34 = 100%
 | 퇴근 기록 지연 근무 태그 제외 | Done | 지연 기록은 신뢰 어려운 퇴근 구간 제외 |
 | 0분 근무 태그 숨김 | Done | 월간 요약 카드 |
 | 근무 태그 결과 카드 | Done | 실제 태그가 없으면 월간 요약 결과 카드 숨김 |
+| 포함 시간 대비 카드 | Done | `fixedIncluded` 설정일 때만 월간 요약에 실제 기록/포함 시간/초과 참고 표시 |
+| 비교 카드 숨김 | Done | `none` 또는 `unknown` 설정에서는 월간 요약 비교 카드 숨김 |
 | 달력 보기 overflow 회귀 방지 | Done | compact widget test와 실기기 smoke |
 
 ## Scope Guard
@@ -119,16 +121,15 @@ matchRate = 34 / 34 = 100%
 
 ## Verification
 
-검증은 PR #5 land 결과를 기준으로 정리했다.
+검증은 PR #13 브랜치 결과를 기준으로 정리했다.
 
 | Command or Check | Result |
 |---|---|
 | `$HOME/.local/share/flutter-stable/bin/flutter analyze` | Passed |
-| `$HOME/.local/share/flutter-stable/bin/flutter test` | Passed, 175 tests |
+| `$HOME/.local/share/flutter-stable/bin/flutter test` | Passed, 213 tests |
 | `$HOME/.local/share/flutter-stable/bin/flutter build apk --debug` | Passed |
 | `git --no-pager diff --check` | Passed |
-| PR #5 Files changed review | Passed |
-| Real device smoke, `R3CM807B7DR` | Passed |
+| PR #13 local diff review | Passed |
 | GitHub checks | Not configured |
 | Production URL / canary | Not applicable, Flutter Android app |
 
@@ -142,27 +143,28 @@ matchRate = 34 / 34 = 100%
 
 ## Post-MVP Follow-up Candidate
 
-`fixed-included-work-time`은 고정 포함 시간을 따로 기록해야 하는 사용자를 위한 후속 개선 후보로 문서화한다. 기존 MVP Match Rate 100%에는 포함하지 않는다.
+`fixed-included-work-time`은 고정 포함 시간을 따로 기록해야 하는 사용자를 위한 후속 개선이다. PR #13에서는 월간 요약에서 사용자가 저장한 비교 방식의 결과를 읽기 전용으로 확인할 수 있게 했다.
 
 | Candidate | Status | Reason |
 |---|---|---|
-| 비교 방식 설정 | Planned follow-up | 사용자가 `없음`, `있음`, `잘 모르겠음` 중 하나를 저장 |
-| 전체 데이터 반영 | Planned follow-up | 적용 시작 월 입력 없이 저장한 비교 방식을 전체 기록 기준으로 사용 |
-| 월간 요약 표시 제외 | Planned follow-up | 월간 요약에는 고정 포함 시간 비교 컨테이너를 표시하지 않음 |
+| 비교 방식 설정 | Done | 사용자가 `없음`, `있음`, `잘 모르겠음` 중 하나를 저장 |
+| 전체 데이터 반영 | Done | 적용 시작 월 입력 없이 저장한 비교 방식을 전체 기록 기준으로 사용 |
+| 월간 요약 조건부 표시 | Done | `있음`이면 `포함 시간 대비` 표시, `없음`/`잘 모르겠음`이면 숨김 |
 
 설계 원칙은 다음과 같다.
 
 - `WorkRecord`에는 고정 포함 시간 여부를 저장하지 않는다.
 - 별도 `CompensationReferenceSetting`을 월간 요약 계산 시점에만 참조한다.
 - 설정 변경은 기존 기록을 수정하거나 마이그레이션하지 않고 전체 데이터 기준으로 저장한다.
+- 월간 요약은 연장 근무, 야간 근무, 휴무일 근무별 `실제 기록`, `포함 시간`, `초과 참고`만 표시한다.
 - 확정값, 분쟁 판단, 청구 안내, 전문 자문은 범위 밖이다.
 
 ## Recommendation
 
-Match Rate가 100%이고 PR #5까지 `main`에 반영됐으므로 구현 gap은 닫힌 상태다. 다음 단계는 새 기능 구현이 아니라 PDCA report 정리와 release readiness 기록 최신화다.
+Match Rate가 100%이고 PR #13 브랜치 검증도 통과했으므로 구현 gap은 닫힌 상태다. 다음 단계는 PR #13 Files changed 확인 후 merge readiness를 판단하는 것이다.
 
 ## Next Steps
 
-1. `docs/archive/2026-06/workledger-mvp/workledger-mvp.report.md`를 최종 PDCA report로 작성한다.
-2. `docs/archive/2026-06/workledger-mvp/workledger-mvp.release-readiness.md`를 현재 `main` 기준으로 갱신한다.
-3. 필요하면 `check` 완료 후 `report` 또는 `archive` 단계 전환을 결정한다.
+1. PR #13 Files changed를 최종 확인한다.
+2. GitHub checks가 없으면 로컬 `flutter analyze`, `flutter test`, `flutter build apk --debug` 결과를 merge safety 근거로 사용한다.
+3. 이상 없으면 `$land-and-deploy`로 PR #13을 merge한다.
