@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
 import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/models/work_rule.dart';
+import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
+import 'package:workledger/features/compensation_reference/domain/compensation_reference_summary.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/monthly_summary/domain/load_monthly_summary.dart';
 import 'package:workledger/features/monthly_summary/domain/monthly_summary.dart';
@@ -47,6 +50,8 @@ void main() {
         workRecordRepository: repository,
         leaveRepository: leaveRepository,
         workRuleRepository: workRuleRepository,
+        compensationReferenceRepository:
+            _emptyCompensationReferenceRepository(),
         targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
       );
 
@@ -83,42 +88,63 @@ void main() {
       expect(viewData.compensationReferenceSummary.isVisible, isFalse);
     });
 
-    test(
-      'keeps fixed included comparison hidden from monthly summary',
-      () async {
-        final MonthlySummaryViewData viewData = await loadMonthlySummary(
-          workRecordRepository: _FakeWorkRecordRepository(
-            monthlyRecords: <WorkRecord>[
-              _record(
-                id: 'late-work',
-                clockInAt: DateTime(2026, 6, 1, 9, 0),
-                clockOutAt: DateTime(2026, 6, 1, 21, 30),
-                tags: <WorkRecordTag>[],
-              ),
-            ],
-            findByMonthError: null,
+    test('loads fixed included comparison for monthly summary', () async {
+      final MonthlySummaryViewData viewData = await loadMonthlySummary(
+        workRecordRepository: _FakeWorkRecordRepository(
+          monthlyRecords: <WorkRecord>[
+            _record(
+              id: 'late-work',
+              clockInAt: DateTime(2026, 6, 1, 9, 0),
+              clockOutAt: DateTime(2026, 6, 1, 21, 30),
+              tags: <WorkRecordTag>[],
+            ),
+          ],
+          findByMonthError: null,
+        ),
+        leaveRepository: _FakeLeaveRepository(
+          balance: null,
+          usages: <LeaveUsage>[],
+          findBalanceError: null,
+          findUsagesError: null,
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(
+          rule: _workRule(),
+          findActiveError: null,
+        ),
+        compensationReferenceRepository: _FakeCompensationReferenceRepository(
+          setting: _compensationReferenceSetting(
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedOvertimeMinutes: 120,
+            fixedIncludedNightMinutes: 0,
+            fixedIncludedHolidayMinutes: 0,
           ),
-          leaveRepository: _FakeLeaveRepository(
-            balance: null,
-            usages: <LeaveUsage>[],
-            findBalanceError: null,
-            findUsagesError: null,
-          ),
-          workRuleRepository: _FakeWorkRuleRepository(
-            rule: _workRule(),
-            findActiveError: null,
-          ),
-          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
-        );
+          findApplicableError: null,
+        ),
+        targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+      );
 
-        expect(
-          viewData.workSummary.totalWorkedDuration,
-          const Duration(hours: 12, minutes: 30),
-        );
-        expect(viewData.compensationReferenceSummary.isVisible, isFalse);
-        expect(viewData.compensationReferenceSummary.rows, isEmpty);
-      },
-    );
+      expect(
+        viewData.workSummary.totalWorkedDuration,
+        const Duration(hours: 12, minutes: 30),
+      );
+      expect(
+        viewData.compensationReferenceSummary.status,
+        CompensationReferenceSummaryStatus.available,
+      );
+      expect(viewData.compensationReferenceSummary.rows[0].label, '연장 근무');
+      expect(
+        viewData.compensationReferenceSummary.rows[0].actualDuration,
+        const Duration(hours: 3, minutes: 30),
+      );
+      expect(
+        viewData.compensationReferenceSummary.rows[0].fixedIncludedDuration,
+        const Duration(hours: 2),
+      );
+      expect(
+        viewData.compensationReferenceSummary.rows[0].excessReferenceDuration,
+        const Duration(hours: 1, minutes: 30),
+      );
+    });
 
     test(
       'separates non-workday and time candidates with break excluded total',
@@ -145,6 +171,8 @@ void main() {
             rule: _workRule(),
             findActiveError: null,
           ),
+          compensationReferenceRepository:
+              _emptyCompensationReferenceRepository(),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
 
@@ -203,6 +231,8 @@ void main() {
             rule: _workRule(),
             findActiveError: null,
           ),
+          compensationReferenceRepository:
+              _emptyCompensationReferenceRepository(),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
 
@@ -246,6 +276,8 @@ void main() {
             rule: null,
             findActiveError: null,
           ),
+          compensationReferenceRepository:
+              _emptyCompensationReferenceRepository(),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         );
 
@@ -280,6 +312,8 @@ void main() {
             rule: null,
             findActiveError: null,
           ),
+          compensationReferenceRepository:
+              _emptyCompensationReferenceRepository(),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
         throwsA(isA<WorkRecordRepositoryException>()),
@@ -308,6 +342,8 @@ void main() {
             rule: null,
             findActiveError: null,
           ),
+          compensationReferenceRepository:
+              _emptyCompensationReferenceRepository(),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
         throwsA(isA<LeaveRepositoryException>()),
@@ -333,9 +369,40 @@ void main() {
               'action=findActive rule=test failure',
             ),
           ),
+          compensationReferenceRepository:
+              _emptyCompensationReferenceRepository(),
           targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
         ),
         throwsA(isA<WorkRuleRepositoryException>()),
+      );
+    });
+
+    test('raises compensation reference repository errors', () async {
+      expect(
+        () => loadMonthlySummary(
+          workRecordRepository: _FakeWorkRecordRepository(
+            monthlyRecords: <WorkRecord>[],
+            findByMonthError: null,
+          ),
+          leaveRepository: _FakeLeaveRepository(
+            balance: null,
+            usages: <LeaveUsage>[],
+            findBalanceError: null,
+            findUsagesError: null,
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(
+            rule: _workRule(),
+            findActiveError: null,
+          ),
+          compensationReferenceRepository: _FakeCompensationReferenceRepository(
+            setting: null,
+            findApplicableError: const CompensationReferenceRepositoryException(
+              'action=findApplicableForMonth year=2026 month=6 rule=test failure',
+            ),
+          ),
+          targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
+        ),
+        throwsA(isA<CompensationReferenceRepositoryException>()),
       );
     });
   });
@@ -395,6 +462,32 @@ WorkRule _workRule() {
     workWeekdays: <int>[1, 2, 3, 4, 5],
     createdAt: DateTime(2026, 6, 1, 9),
     updatedAt: DateTime(2026, 6, 1, 9),
+  );
+}
+
+CompensationReferenceSetting _compensationReferenceSetting({
+  required CompensationReferenceMode mode,
+  required int fixedIncludedOvertimeMinutes,
+  required int fixedIncludedNightMinutes,
+  required int fixedIncludedHolidayMinutes,
+}) {
+  return CompensationReferenceSetting(
+    id: 'compensation-reference',
+    mode: mode,
+    fixedIncludedOvertimeMinutes: fixedIncludedOvertimeMinutes,
+    fixedIncludedNightMinutes: fixedIncludedNightMinutes,
+    fixedIncludedHolidayMinutes: fixedIncludedHolidayMinutes,
+    effectiveFromMonth: DateTime(2000),
+    memo: null,
+    createdAt: DateTime(2026, 6, 1, 9),
+    updatedAt: DateTime(2026, 6, 1, 9),
+  );
+}
+
+_FakeCompensationReferenceRepository _emptyCompensationReferenceRepository() {
+  return _FakeCompensationReferenceRepository(
+    setting: null,
+    findApplicableError: null,
   );
 }
 
@@ -472,6 +565,43 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<void> deleteByDate({required DateTime workDate}) async {
     throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+  }
+}
+
+final class _FakeCompensationReferenceRepository
+    implements CompensationReferenceRepository {
+  const _FakeCompensationReferenceRepository({
+    required this.setting,
+    required this.findApplicableError,
+  });
+
+  final CompensationReferenceSetting? setting;
+  final CompensationReferenceRepositoryException? findApplicableError;
+
+  @override
+  Future<CompensationReferenceSetting?> findApplicableForMonth({
+    required int year,
+    required int month,
+  }) async {
+    final CompensationReferenceRepositoryException? error = findApplicableError;
+    if (error != null) {
+      throw error;
+    }
+    return setting;
+  }
+
+  @override
+  Future<CompensationReferenceSetting> save({
+    required CompensationReferenceMode mode,
+    required int fixedIncludedOvertimeMinutes,
+    required int fixedIncludedNightMinutes,
+    required int fixedIncludedHolidayMinutes,
+    required DateTime effectiveFromMonth,
+    required String? memo,
+  }) async {
+    throw const CompensationReferenceRepositoryException(
+      'unexpected save call',
+    );
   }
 }
 

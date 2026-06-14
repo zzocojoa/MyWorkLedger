@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../core/models/pricing_intent_event.dart';
 import '../../../core/models/work_record.dart';
+import '../../compensation_reference/domain/compensation_reference_repository.dart';
+import '../../compensation_reference/domain/compensation_reference_summary.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
 import '../../pricing/domain/pricing_intent_repository.dart';
@@ -18,6 +20,7 @@ final class MonthlySummaryScreen extends StatefulWidget {
     required this.repository,
     required this.leaveRepository,
     required this.workRuleRepository,
+    required this.compensationReferenceRepository,
     required this.pricingIntentRepository,
     required this.now,
     super.key,
@@ -26,6 +29,7 @@ final class MonthlySummaryScreen extends StatefulWidget {
   final WorkRecordRepository repository;
   final LeaveRepository leaveRepository;
   final WorkRuleRepository workRuleRepository;
+  final CompensationReferenceRepository compensationReferenceRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
 
@@ -61,6 +65,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         workRecordRepository: widget.repository,
         leaveRepository: widget.leaveRepository,
         workRuleRepository: widget.workRuleRepository,
+        compensationReferenceRepository: widget.compensationReferenceRepository,
         targetMonth: _targetMonth,
       );
       if (!mounted) {
@@ -76,6 +81,8 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       _showError('연차 요약을 불러올 수 없습니다. ${error.toString()}');
     } on WorkRuleRepositoryException catch (error) {
       _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
+    } on CompensationReferenceRepositoryException catch (error) {
+      _showError('비교 방식을 불러올 수 없습니다. ${error.toString()}');
     } on MonthlySummaryException catch (error) {
       _showError('월간 요약을 계산할 수 없습니다. ${error.toString()}');
     } on LeaveSummaryException catch (error) {
@@ -208,6 +215,11 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                       .hasActiveTags) ...<Widget>[
                     const SizedBox(height: 14),
                     _WorkTimeCandidateSummaryCard(viewData: viewData),
+                  ],
+                  if (viewData.compensationReferenceSummary.status ==
+                      CompensationReferenceSummaryStatus.available) ...<Widget>[
+                    const SizedBox(height: 14),
+                    _CompensationReferenceSummaryCard(viewData: viewData),
                   ],
                   const SizedBox(height: 14),
                   _MonthlyLeaveSummaryCard(viewData: viewData),
@@ -498,6 +510,135 @@ final class _CandidateReferenceRow extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: const Color(0xFF181D26),
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+final class _CompensationReferenceSummaryCard extends StatelessWidget {
+  const _CompensationReferenceSummaryCard({required this.viewData});
+
+  final MonthlySummaryViewData viewData;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFDDDDDD)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              '포함 시간 대비',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (
+              int index = 0;
+              index < viewData.compensationReferenceSummary.rows.length;
+              index += 1
+            ) ...<Widget>[
+              if (index > 0) const SizedBox(height: 12),
+              _CompensationReferenceRow(
+                row: viewData.compensationReferenceSummary.rows[index],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _CompensationReferenceRow extends StatelessWidget {
+  const _CompensationReferenceRow({required this.row});
+
+  final CompensationReferenceComparisonRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              row.label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFF181D26),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _CompensationReferenceValueLine(
+              label: '실제 기록',
+              value: formatMonthlySummaryDuration(duration: row.actualDuration),
+            ),
+            const SizedBox(height: 6),
+            _CompensationReferenceValueLine(
+              label: '포함 시간',
+              value: formatMonthlySummaryDuration(
+                duration: row.fixedIncludedDuration,
+              ),
+            ),
+            const SizedBox(height: 6),
+            _CompensationReferenceValueLine(
+              label: '초과 참고',
+              value: formatMonthlySummaryDuration(
+                duration: row.excessReferenceDuration,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _CompensationReferenceValueLine extends StatelessWidget {
+  const _CompensationReferenceValueLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: const Color(0xFF6F737A),
+            letterSpacing: 0,
+          ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: const Color(0xFF181D26),
             fontWeight: FontWeight.w600,
             letterSpacing: 0,
