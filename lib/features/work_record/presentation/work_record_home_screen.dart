@@ -94,6 +94,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       _showError(error.toString());
     } on WorkRuleRepositoryException catch (error) {
       _showError(error.toString());
+    } on CompensationReferenceRepositoryException catch (error) {
+      _showError(error.toString());
     }
   }
 
@@ -104,6 +106,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       workRecordRepository: widget.repository,
       leaveRepository: widget.leaveRepository,
       workRuleRepository: widget.workRuleRepository,
+      compensationReferenceRepository: widget.compensationReferenceRepository,
       targetMonth: MonthlySummaryMonth(
         year: currentTime.year,
         month: currentTime.month,
@@ -210,6 +213,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
           repository: widget.repository,
           leaveRepository: widget.leaveRepository,
           workRuleRepository: widget.workRuleRepository,
+          compensationReferenceRepository:
+              widget.compensationReferenceRepository,
           pricingIntentRepository: widget.pricingIntentRepository,
           now: widget.now,
         ),

@@ -197,9 +197,9 @@ Rules:
 - 근무 기준이 없거나 모든 근무 태그가 0분이면 근무 태그 결과 카드를 표시하지 않는다.
 - MVP 현재 구현의 `WorkRecordTag`는 기존 저장 데이터 호환과 기록 사유 표시를 위해 유지하고, 월간 요약의 근무 태그 계산 근거로는 사용하지 않는다.
 
-### Post-MVP Follow-up: Fixed Included Work Time Reference
+### Follow-up: Fixed Included Work Time Reference
 
-고정 포함 시간 비교는 `workledger-mvp` 완료 범위가 아니라 후속 개선 후보로 둔다. 목적은 계약 형태를 판단하는 것이 아니라 사용자가 앞으로 참고할 비교 방식을 직접 고르는 것이다.
+고정 포함 시간 비교는 계약 형태를 판단하는 기능이 아니라, 사용자가 앞으로 참고할 비교 방식을 직접 고르는 기능이다. PR #13에서는 `고정 포함 시간 있음`일 때 월간 요약에 `포함 시간 대비` 카드를 표시한다.
 
 Data boundary:
 
@@ -219,7 +219,8 @@ Calculation policy:
   -> 활성 WorkRule 조회
   -> 현재 CompensationReferenceSetting 1건 조회
   -> 기존 WorkRecord + WorkRule 기반 근무 태그 시간 계산
-  -> 월간 요약에는 고정 포함 시간 비교 컨테이너를 표시하지 않음
+  -> 고정 포함 시간 있음이면 월간 요약에 포함 시간 대비 카드 표시
+  -> 고정 포함 시간 없음 또는 잘 모르겠음이면 비교 카드 숨김
 ```
 
 Rules:
@@ -228,7 +229,9 @@ Rules:
 - 설정 변경은 기존 기록을 수정하지 않고 전체 데이터 기준 설정으로 저장한다. 기록 마이그레이션은 하지 않는다.
 - 고정 포함 시간 입력값은 0 이상이어야 하며 30분 단위를 권장한다.
 - 적용 시작 월은 사용자에게 입력받지 않는다.
-- `unknown` 상태는 저장할 수 있지만 별도 안내 컨테이너를 월간 요약에 표시하지 않는다.
+- `fixedIncluded` 상태만 월간 요약에 `포함 시간 대비` 카드를 표시한다.
+- `none`과 `unknown` 상태는 저장할 수 있지만 월간 요약 비교 카드는 표시하지 않는다.
+- `포함 시간 대비` 카드는 연장 근무, 야간 근무, 휴무일 근무별 `실제 기록`, `포함 시간`, `초과 참고`만 표시한다.
 - 확정값, 분쟁 판단, 청구 안내, 전문 자문, 회사 근태 정확성 보장은 하지 않는다.
 
 ## 8. Persistent Notification Action Design
@@ -304,7 +307,7 @@ Summary values:
 
 근무 기준이 설정되지 않은 경우에는 총 근무시간만 표시하고 근무 태그를 계산하지 않는다. 홈의 이번 달 preview도 월간 요약과 같은 휴게시간 제외 표시용 총 근무시간을 사용한다.
 
-post-MVP에서 `CompensationReferenceSetting`이 추가되더라도 현재 월간 요약 화면에는 고정 포함 시간 비교 컨테이너를 표시하지 않는다. 설정은 기존 `WorkRecord` 원본과 MVP의 근무시간 합계나 근무 태그 계산 규칙을 바꾸지 않는다.
+`CompensationReferenceSetting`이 `fixedIncluded`이면 월간 요약 화면에 `포함 시간 대비` 카드를 표시한다. `none` 또는 `unknown`이면 비교 카드는 숨긴다. 이 설정은 기존 `WorkRecord` 원본과 MVP의 근무시간 합계나 근무 태그 계산 규칙을 바꾸지 않는다.
 
 ## 11. Pricing Fake-Door Flow
 
