@@ -18,6 +18,12 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
   final TextEditingController _endController = TextEditingController(
     text: '18:00',
   );
+  final TextEditingController _overtimeStartController = TextEditingController(
+    text: '18:00',
+  );
+  final TextEditingController _nightWorkStartController = TextEditingController(
+    text: '22:00',
+  );
   final TextEditingController _breakController = TextEditingController(
     text: '60',
   );
@@ -41,6 +47,8 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
   void dispose() {
     _startController.dispose();
     _endController.dispose();
+    _overtimeStartController.dispose();
+    _nightWorkStartController.dispose();
     _breakController.dispose();
     super.dispose();
   }
@@ -58,6 +66,12 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
         _endController.text = formatWorkRuleMinuteOfDay(
           minuteOfDay: rule.regularEndTimeMinutes,
         );
+        _overtimeStartController.text = formatWorkRuleMinuteOfDay(
+          minuteOfDay: rule.overtimeStartTimeMinutes,
+        );
+        _nightWorkStartController.text = formatWorkRuleMinuteOfDay(
+          minuteOfDay: rule.nightWorkStartTimeMinutes,
+        );
         _breakController.text = rule.breakMinutes.toString();
         _selectedWeekdays
           ..clear()
@@ -72,6 +86,8 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
     setState(() {
       _startController.text = '09:00';
       _endController.text = '18:00';
+      _overtimeStartController.text = '18:00';
+      _nightWorkStartController.text = '22:00';
       _breakController.text = '60';
       _selectedWeekdays
         ..clear()
@@ -101,6 +117,14 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
         regularEndTimeMinutes: parseWorkRuleTimeText(
           text: _endController.text,
           field: 'regularEndTimeMinutes',
+        ),
+        overtimeStartTimeMinutes: parseWorkRuleTimeText(
+          text: _overtimeStartController.text,
+          field: 'overtimeStartTimeMinutes',
+        ),
+        nightWorkStartTimeMinutes: parseWorkRuleTimeText(
+          text: _nightWorkStartController.text,
+          field: 'nightWorkStartTimeMinutes',
         ),
         breakMinutes: parseWorkRuleBreakMinutes(text: _breakController.text),
         workWeekdays: _selectedWeekdays.toList(growable: false)..sort(),
@@ -152,6 +176,24 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
               TextField(
                 controller: _endController,
                 decoration: const InputDecoration(labelText: '정시 퇴근'),
+                keyboardType: TextInputType.datetime,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _overtimeStartController,
+                decoration: const InputDecoration(
+                  labelText: '연장 근무 시작',
+                  helperText: '정시 퇴근 이후 시각만 입력할 수 있습니다.',
+                ),
+                keyboardType: TextInputType.datetime,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _nightWorkStartController,
+                decoration: const InputDecoration(
+                  labelText: '야간 근무 시작',
+                  helperText: '입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.',
+                ),
                 keyboardType: TextInputType.datetime,
               ),
               const SizedBox(height: 12),

@@ -625,6 +625,8 @@ WorkRule _workRule() {
     id: 'active-rule',
     regularStartTimeMinutes: 540,
     regularEndTimeMinutes: 1080,
+    overtimeStartTimeMinutes: 1080,
+    nightWorkStartTimeMinutes: 1320,
     breakMinutes: 60,
     workWeekdays: <int>[1, 2, 3, 4, 5],
     createdAt: DateTime(2026, 6, 1, 9),
@@ -761,6 +763,8 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
   Future<WorkRule> save({
     required int regularStartTimeMinutes,
     required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
     required int breakMinutes,
     required List<int> workWeekdays,
   }) async {

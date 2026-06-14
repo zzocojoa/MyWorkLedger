@@ -19,6 +19,7 @@
 | Entity | Purpose | Cardinality |
 |---|---|---|
 | `WorkRecord` | 날짜별 출근/퇴근/기록 사유/메모 기록 | 근무일 1개당 최대 1개 |
+| `WorkRule` | 근무 태그 계산을 위한 정시 출퇴근, 연장/야간 시작, 휴게시간, 근무 요일 설정 | 활성 기준 1개 |
 | `LeaveBalance` | 연도별 총 연차 수동 입력값 | 연도 1개당 최대 1개 |
 | `LeaveUsage` | 날짜별 연차 사용 기록 | 연도별 0개 이상 |
 | `PricingIntentEvent` | 가격표/fake-door 클릭 로그 | 제한 없음 |
@@ -92,6 +93,40 @@
 | `hasClockIn` | `clockInAt != null` | No |
 | `hasClockOut` | `clockOutAt != null` | No |
 | `isTaggedOvertime` | `tags` contains `overtime` | No |
+
+## WorkRule
+
+근무 태그 계산을 위한 선택 설정이다. 설정하지 않아도 출퇴근 기록은 사용할 수 있다.
+
+| Field | Type | Required | Unique | Default | Description |
+|---|---|---:|---:|---|---|
+| `id` | String | Yes | Yes | generated | 로컬 고유 ID |
+| `regularStartTimeMinutes` | int | Yes | No | 540 | 정시 출근 시각. 00:00부터 지난 분 |
+| `regularEndTimeMinutes` | int | Yes | No | 1080 | 정시 퇴근 시각. 00:00부터 지난 분 |
+| `overtimeStartTimeMinutes` | int | Yes | No | `regularEndTimeMinutes` | 연장 근무 시작 시각. 기존 저장 데이터에 없으면 정시 퇴근으로 채워 읽는다 |
+| `nightWorkStartTimeMinutes` | int | Yes | No | 1320 | 야간 근무 시작 시각. 기본값은 22:00이며 이 시각부터 8시간 구간을 야간 근무 기준으로 본다 |
+| `breakMinutes` | int | Yes | No | 60 | 휴게시간 분 |
+| `workWeekdays` | List<int> | Yes | No | [1,2,3,4,5] | 근무 요일. 월요일 1, 일요일 7 |
+| `createdAt` | DateTime | Yes | No | now | 생성 시각 |
+| `updatedAt` | DateTime | Yes | No | now | 마지막 수정 시각 |
+
+### WorkRule Validation
+
+- `regularStartTimeMinutes`, `regularEndTimeMinutes`, `overtimeStartTimeMinutes`, `nightWorkStartTimeMinutes`는 0 이상 1439 이하 정수여야 한다.
+- `regularEndTimeMinutes > regularStartTimeMinutes`여야 한다.
+- `overtimeStartTimeMinutes >= regularEndTimeMinutes`여야 한다.
+- `nightWorkStartTimeMinutes`부터 8시간 구간은 다음 날로 넘어갈 수 있다.
+- `breakMinutes`는 0 이상이어야 하며 30분 단위여야 한다.
+- `workWeekdays`는 1-7 사이 값만 포함하고 중복을 허용하지 않는다.
+- 기존 저장 데이터에 `overtime_start_time_minutes`, `night_work_start_time_minutes`가 없으면 `WorkRule.fromMap` 경계에서만 기본값을 채워 읽는다.
+
+### WorkRule Derived Values
+
+| Value | Rule | Stored |
+|---|---|---|
+| `earlyWorkDuration` | 실제 근무 구간 중 `regularStartTimeMinutes` 이전 구간 | No |
+| `overtimeDuration` | 실제 근무 구간 중 `overtimeStartTimeMinutes` 이후 구간 | No |
+| `nightWorkDuration` | 실제 근무 구간 중 `nightWorkStartTimeMinutes`부터 8시간 구간과 겹치는 시간 | No |
 
 ## LeaveBalance
 

@@ -35,6 +35,8 @@ final class LocalStorageWorkRuleRepository implements WorkRuleRepository {
   Future<WorkRule> save({
     required int regularStartTimeMinutes,
     required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
     required int breakMinutes,
     required List<int> workWeekdays,
   }) async {
@@ -45,6 +47,8 @@ final class LocalStorageWorkRuleRepository implements WorkRuleRepository {
             id: idGenerator(),
             regularStartTimeMinutes: regularStartTimeMinutes,
             regularEndTimeMinutes: regularEndTimeMinutes,
+            overtimeStartTimeMinutes: overtimeStartTimeMinutes,
+            nightWorkStartTimeMinutes: nightWorkStartTimeMinutes,
             breakMinutes: breakMinutes,
             workWeekdays: workWeekdays,
             createdAt: now,
@@ -54,6 +58,8 @@ final class LocalStorageWorkRuleRepository implements WorkRuleRepository {
             id: existingRule.id,
             regularStartTimeMinutes: regularStartTimeMinutes,
             regularEndTimeMinutes: regularEndTimeMinutes,
+            overtimeStartTimeMinutes: overtimeStartTimeMinutes,
+            nightWorkStartTimeMinutes: nightWorkStartTimeMinutes,
             breakMinutes: breakMinutes,
             workWeekdays: workWeekdays,
             createdAt: existingRule.createdAt,

@@ -97,6 +97,8 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
   Future<WorkRule> save({
     required int regularStartTimeMinutes,
     required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
     required int breakMinutes,
     required List<int> workWeekdays,
   }) async {
@@ -104,6 +106,8 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
       id: 'work-rule-1',
       regularStartTimeMinutes: regularStartTimeMinutes,
       regularEndTimeMinutes: regularEndTimeMinutes,
+      overtimeStartTimeMinutes: overtimeStartTimeMinutes,
+      nightWorkStartTimeMinutes: nightWorkStartTimeMinutes,
       breakMinutes: breakMinutes,
       workWeekdays: workWeekdays,
       createdAt: DateTime(2026, 6, 12),
