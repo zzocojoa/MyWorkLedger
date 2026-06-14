@@ -19,6 +19,7 @@ import '../domain/today_work_summary.dart';
 import '../domain/work_record_repository.dart';
 import 'edit_today_work_record_screen.dart';
 import 'work_record_calendar_screen.dart';
+import 'work_record_formatters.dart';
 
 final class WorkRecordHomeScreen extends StatefulWidget {
   const WorkRecordHomeScreen({
@@ -594,43 +595,4 @@ List<String> buildStatusLines({required TodayWorkSummary summary}) {
         '총 ${formatDurationForKorean(duration: workedDuration)}',
       ];
   }
-}
-
-String formatTodayLabel({required DateTime now}) {
-  return '오늘 · ${now.month}월 ${now.day}일 ${formatKoreanWeekday(value: now)}';
-}
-
-String formatKoreanWeekday({required DateTime value}) {
-  return switch (value.weekday) {
-    DateTime.monday => '월요일',
-    DateTime.tuesday => '화요일',
-    DateTime.wednesday => '수요일',
-    DateTime.thursday => '목요일',
-    DateTime.friday => '금요일',
-    DateTime.saturday => '토요일',
-    DateTime.sunday => '일요일',
-    _ => throw ArgumentError.value(value.weekday, 'weekday', 'must be 1-7'),
-  };
-}
-
-String formatClockTime({required DateTime value}) {
-  final String hour = value.hour.toString().padLeft(2, '0');
-  final String minute = value.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
-}
-
-String formatDurationForKorean({required Duration duration}) {
-  if (duration.isNegative) {
-    throw ArgumentError.value(duration, 'duration', 'must not be negative');
-  }
-
-  final int hours = duration.inHours;
-  final int minutes = duration.inMinutes.remainder(60);
-  if (hours == 0) {
-    return '$minutes분';
-  }
-  if (minutes == 0) {
-    return '$hours시간';
-  }
-  return '$hours시간 $minutes분';
 }

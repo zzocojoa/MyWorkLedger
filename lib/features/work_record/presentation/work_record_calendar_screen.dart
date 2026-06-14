@@ -5,7 +5,7 @@ import '../../monthly_summary/domain/calculate_monthly_summary.dart';
 import '../../monthly_summary/domain/monthly_summary.dart';
 import '../domain/work_record_repository.dart';
 import 'edit_today_work_record_screen.dart';
-import 'work_record_home_screen.dart';
+import 'work_record_formatters.dart';
 
 final class WorkRecordCalendarScreen extends StatefulWidget {
   const WorkRecordCalendarScreen({
@@ -645,7 +645,7 @@ List<String> _buildSelectedDateDetailLines({
       '${formatClockTime(value: clockInAt)} - ${formatClockTime(value: clockOutAt)}',
       '총 ${formatDurationForKorean(duration: workedDuration)}',
     ];
-    final String recordReasons = _formatWorkRecordRecordReasons(
+    final String recordReasons = formatEditableWorkRecordReasons(
       tags: value.tags,
     );
     if (recordReasons.isNotEmpty) {
@@ -670,23 +670,4 @@ List<String> _buildSelectedDateDetailLines({
     ];
   }
   return <String>['시간이 비어 있음'];
-}
-
-String _formatWorkRecordRecordReasons({required List<WorkRecordTag> tags}) {
-  return tags
-      .where((WorkRecordTag tag) => tag == WorkRecordTag.delayedCheckout)
-      .map(_formatWorkRecordRecordReason)
-      .join(' · ');
-}
-
-String _formatWorkRecordRecordReason(WorkRecordTag tag) {
-  return switch (tag) {
-    WorkRecordTag.delayedCheckout => '퇴근 기록 지연',
-    WorkRecordTag.overtime ||
-    WorkRecordTag.holidayWork => throw ArgumentError.value(
-      tag,
-      'tag',
-      'must be a calendar record reason tag',
-    ),
-  };
 }
