@@ -204,7 +204,7 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
               ),
               const SizedBox(height: 18),
               Text(
-                '평일 근무 요일',
+                '근무 요일',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: const Color(0xFF181D26),
                   fontWeight: FontWeight.w600,

@@ -19,6 +19,8 @@ void main() {
     expect(find.text('정시 근무 기준'), findsNothing);
     expect(find.textContaining('급여나 법정 수당 확정값이 아닙니다.'), findsNothing);
     expect(find.text('09:00-18:00 빠른 설정'), findsOneWidget);
+    expect(find.text('근무 요일'), findsOneWidget);
+    expect(find.text('평일 근무 요일'), findsNothing);
     expect(find.text('정시 퇴근 이후 시각만 입력할 수 있습니다.'), findsOneWidget);
     expect(find.text('입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.'), findsOneWidget);
 
