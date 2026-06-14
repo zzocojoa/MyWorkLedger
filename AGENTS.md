@@ -46,6 +46,7 @@
 ## Data Model Scope
 
 - `WorkRecord`: work date, clock-in time, clock-out time, tags, memo, created time, updated time.
+- `WorkRule`: regular start/end time, overtime start time, night work start time, break minutes, work weekdays, created time, updated time.
 - `LeaveBalance`: year, total leave days, manual adjustment fields if needed, created time, updated time.
 - `LeaveUsage`: usage date, used days, memo, created time, updated time.
 - `PricingIntentEvent`: event type, selected plan, occurrence time.
