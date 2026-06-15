@@ -10,6 +10,7 @@ void main() {
   testWidgets('saves work rule and fixed included comparison together', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
       initialRule: null,
       saveError: null,
@@ -73,6 +74,7 @@ void main() {
   testWidgets('shows fixed included fields only for fixed included mode', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     await tester.pumpWidget(
       _buildScreen(
         workRuleRepository: _FakeWorkRuleRepository(
@@ -123,9 +125,248 @@ void main() {
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
   });
 
+  testWidgets('starts from regular work section on compact screen', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-start',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+    final double regularSectionTop = tester.getTopLeft(find.text('정시 근무')).dy;
+
+    expect(regularSectionTop, greaterThan(0));
+    expect(regularSectionTop, lessThan(260));
+    await tester.scrollUntilVisible(
+      find.text('근무 태그 기준'),
+      320,
+      scrollable: find
+          .descendant(
+            of: find.byType(WorkSettingsScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+      maxScrolls: 20,
+    );
+    await tester.pump();
+
+    expect(find.text('근무 태그 기준'), findsOneWidget);
+  });
+
+  testWidgets('allows drag scrolling on compact screen', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    expect(scrollableState.position.pixels, 0);
+    expect(scrollableState.position.maxScrollExtent, greaterThan(0));
+
+    await tester.drag(_workSettingsScrollable(), const Offset(0, -420));
+    await tester.pump();
+
+    expect(scrollableState.position.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps scrolling when drag starts on a text field', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-scroll',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    await tester.drag(_workSettingsScrollable(), const Offset(0, -360));
+    await tester.pump();
+
+    final double positionBeforeTextFieldDrag = scrollableState.position.pixels;
+    expect(
+      positionBeforeTextFieldDrag,
+      lessThan(scrollableState.position.maxScrollExtent),
+    );
+    await tester.drag(
+      _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+      const Offset(0, -360),
+    );
+    await tester.pump();
+
+    expect(
+      scrollableState.position.pixels,
+      greaterThan(positionBeforeTextFieldDrag),
+    );
+    expect(find.text('고급 설정'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('scrolls to the last section and back on compact screen', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-bottom',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    await tester.scrollUntilVisible(
+      _findTextFieldByLabel(label: '야간 근무 시작'),
+      420,
+      scrollable: _workSettingsScrollable(),
+      maxScrolls: 20,
+    );
+    await tester.pump();
+
+    expect(find.text('근무 태그 기준'), findsOneWidget);
+    expect(_findTextFieldByLabel(label: '야간 근무 시작'), findsOneWidget);
+    expect(scrollableState.position.pixels, greaterThan(0));
+
+    scrollableState.position.jumpTo(scrollableState.position.maxScrollExtent);
+    await tester.pump();
+
+    final double bottomPosition = scrollableState.position.pixels;
+    expect(bottomPosition, scrollableState.position.maxScrollExtent);
+
+    await tester.drag(
+      _findTextFieldByLabel(label: '야간 근무 시작'),
+      const Offset(0, 520),
+    );
+    await tester.pump();
+
+    expect(scrollableState.position.pixels, lessThan(bottomPosition));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses short helper text for work tag fields', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('정시 퇴근 이후만 입력'), findsOneWidget);
+    expect(find.text('예: 22:00부터 8시간'), findsOneWidget);
+    expect(find.text('정시 퇴근 이후 시각만 입력할 수 있습니다.'), findsNothing);
+    expect(find.text('입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.'), findsNothing);
+  });
+
   testWidgets('keeps weekday selection collapsed until user changes it', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     await tester.pumpWidget(
       _buildScreen(
         workRuleRepository: _FakeWorkRuleRepository(
@@ -161,6 +402,7 @@ void main() {
   testWidgets('shows work rule save failure with section context', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeCompensationReferenceRepository compensationRepository =
         _FakeCompensationReferenceRepository(
           setting: null,
@@ -193,6 +435,7 @@ void main() {
   testWidgets('does not save work rule when comparison input is invalid', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
       initialRule: null,
       saveError: null,
@@ -237,6 +480,7 @@ void main() {
   testWidgets('shows comparison save failure with section context', (
     WidgetTester tester,
   ) async {
+    _useTallViewport(tester: tester);
     final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
       initialRule: null,
       saveError: null,
@@ -271,6 +515,11 @@ Widget _buildScreen({
   required _FakeCompensationReferenceRepository compensationRepository,
 }) {
   return MaterialApp(
+    theme: ThemeData(
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+      ),
+    ),
     home: WorkSettingsScreen(
       workRuleRepository: workRuleRepository,
       compensationReferenceRepository: compensationRepository,
@@ -292,6 +541,15 @@ Finder _findModeTile({required CompensationReferenceMode value}) {
   });
 }
 
+Finder _workSettingsScrollable() {
+  return find
+      .descendant(
+        of: find.byType(WorkSettingsScreen),
+        matching: find.byType(Scrollable),
+      )
+      .first;
+}
+
 Future<void> _tapSave({required WidgetTester tester}) async {
   final Finder saveButton = find.widgetWithText(TextButton, '저장');
   await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -306,6 +564,13 @@ Finder _findWeekdayChip({required String label}) {
         widget.label is Text &&
         (widget.label as Text).data == label;
   });
+}
+
+void _useTallViewport({required WidgetTester tester}) {
+  tester.view.physicalSize = const Size(390, 1800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {
