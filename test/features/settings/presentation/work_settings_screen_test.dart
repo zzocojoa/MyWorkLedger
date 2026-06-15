@@ -140,14 +140,22 @@ void main() {
           saveError: null,
         ),
         compensationRepository: _FakeCompensationReferenceRepository(
-          setting: null,
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-start',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
           findError: null,
           saveError: null,
         ),
       ),
     );
     await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
     final double regularSectionTop = tester.getTopLeft(find.text('정시 근무')).dy;
 
@@ -167,6 +175,166 @@ void main() {
     await tester.pump();
 
     expect(find.text('근무 태그 기준'), findsOneWidget);
+  });
+
+  testWidgets('allows drag scrolling on compact screen', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    expect(scrollableState.position.pixels, 0);
+    expect(scrollableState.position.maxScrollExtent, greaterThan(0));
+
+    await tester.drag(_workSettingsScrollable(), const Offset(0, -420));
+    await tester.pump();
+
+    expect(scrollableState.position.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps scrolling when drag starts on a text field', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-scroll',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    await tester.drag(_workSettingsScrollable(), const Offset(0, -360));
+    await tester.pump();
+
+    final double positionBeforeTextFieldDrag = scrollableState.position.pixels;
+    expect(
+      positionBeforeTextFieldDrag,
+      lessThan(scrollableState.position.maxScrollExtent),
+    );
+    await tester.drag(
+      _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+      const Offset(0, -360),
+    );
+    await tester.pump();
+
+    expect(
+      scrollableState.position.pixels,
+      greaterThan(positionBeforeTextFieldDrag),
+    );
+    expect(find.text('고급 설정'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('scrolls to the last section and back on compact screen', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-bottom',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    await tester.scrollUntilVisible(
+      _findTextFieldByLabel(label: '야간 근무 시작'),
+      420,
+      scrollable: _workSettingsScrollable(),
+      maxScrolls: 20,
+    );
+    await tester.pump();
+
+    expect(find.text('근무 태그 기준'), findsOneWidget);
+    expect(_findTextFieldByLabel(label: '야간 근무 시작'), findsOneWidget);
+    expect(scrollableState.position.pixels, greaterThan(0));
+
+    scrollableState.position.jumpTo(scrollableState.position.maxScrollExtent);
+    await tester.pump();
+
+    final double bottomPosition = scrollableState.position.pixels;
+    expect(bottomPosition, scrollableState.position.maxScrollExtent);
+
+    await tester.drag(
+      _findTextFieldByLabel(label: '야간 근무 시작'),
+      const Offset(0, 520),
+    );
+    await tester.pump();
+
+    expect(scrollableState.position.pixels, lessThan(bottomPosition));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('uses short helper text for work tag fields', (
@@ -347,6 +515,11 @@ Widget _buildScreen({
   required _FakeCompensationReferenceRepository compensationRepository,
 }) {
   return MaterialApp(
+    theme: ThemeData(
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+      ),
+    ),
     home: WorkSettingsScreen(
       workRuleRepository: workRuleRepository,
       compensationReferenceRepository: compensationRepository,
@@ -366,6 +539,15 @@ Finder _findModeTile({required CompensationReferenceMode value}) {
     return widget is RadioListTile<CompensationReferenceMode> &&
         widget.value == value;
   });
+}
+
+Finder _workSettingsScrollable() {
+  return find
+      .descendant(
+        of: find.byType(WorkSettingsScreen),
+        matching: find.byType(Scrollable),
+      )
+      .first;
 }
 
 Future<void> _tapSave({required WidgetTester tester}) async {
