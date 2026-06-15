@@ -11,8 +11,8 @@ import '../../work_rule/presentation/work_rule_settings_screen.dart';
 
 const NeverScrollableScrollPhysics _textFieldScrollPhysics =
     NeverScrollableScrollPhysics();
-const String _fixedIncludedOvertimeStartWarningMessage =
-    '고정 포함 시간은 연장 근무 태그를 줄이는 설정이 아닙니다. 연장 근무 시작을 정시 퇴근보다 늦게 두면 일부 시간이 태그에서 빠질 수 있습니다.';
+const String _fixedIncludedOvertimeStartHelperText =
+    '고정 포함 시간은 위에서 비교하고, 연장 근무 태그는 정시 퇴근부터 계산합니다.';
 
 final class WorkSettingsScreen extends StatefulWidget {
   const WorkSettingsScreen({
@@ -106,6 +106,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       setState(() {
         _applyRule(rule: rule);
         _applyCompensationReferenceSetting(setting: setting);
+        _syncOvertimeStartToRegularEnd();
         _isLoading = false;
       });
       _jumpToTopAfterLoad();
@@ -192,10 +193,14 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
         text: _endController.text,
         field: 'regularEndTimeMinutes',
       );
-      overtimeStartTimeMinutes = parseWorkRuleTimeText(
-        text: _overtimeStartController.text,
-        field: 'overtimeStartTimeMinutes',
-      );
+      if (_mode == CompensationReferenceMode.fixedIncluded) {
+        overtimeStartTimeMinutes = regularEndTimeMinutes;
+      } else {
+        overtimeStartTimeMinutes = parseWorkRuleTimeText(
+          text: _overtimeStartController.text,
+          field: 'overtimeStartTimeMinutes',
+        );
+      }
       nightWorkStartTimeMinutes = parseWorkRuleTimeText(
         text: _nightWorkStartController.text,
         field: 'nightWorkStartTimeMinutes',
@@ -310,8 +315,6 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     if (_isLoading) {
       return <Widget>[const Center(child: CircularProgressIndicator())];
     }
-    final String? fixedIncludedOvertimeStartWarning =
-        _fixedIncludedOvertimeStartWarning();
     return <Widget>[
       _SettingsSection(
         title: '정시 근무',
@@ -336,7 +339,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               decoration: const InputDecoration(labelText: '정시 퇴근'),
               keyboardType: TextInputType.datetime,
               scrollPhysics: _textFieldScrollPhysics,
-              onChanged: _handleTimingInputChanged,
+              onChanged: _handleRegularEndInputChanged,
             ),
           ),
           const SizedBox(height: 12),
@@ -469,15 +472,13 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                 labelText: '연장 근무 시작',
                 helperText: _overtimeStartHelperText(),
               ),
+              readOnly: _isFixedIncludedMode(),
+              enableInteractiveSelection: !_isFixedIncludedMode(),
               keyboardType: TextInputType.datetime,
               scrollPhysics: _textFieldScrollPhysics,
-              onChanged: _handleTimingInputChanged,
+              onChanged: _handleOvertimeStartInputChanged,
             ),
           ),
-          if (fixedIncludedOvertimeStartWarning != null) ...<Widget>[
-            const SizedBox(height: 10),
-            _SettingsNotice(message: fixedIncludedOvertimeStartWarning),
-          ],
           const SizedBox(height: 12),
           _ParentScrollDragRegion(
             child: TextField(
@@ -536,58 +537,55 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     }
     setState(() {
       _mode = mode;
+      _syncOvertimeStartToRegularEnd();
       _errorMessage = null;
     });
   }
 
-  void _handleTimingInputChanged(String value) {
+  void _handleRegularEndInputChanged(String value) {
     if (!mounted) {
       return;
     }
-    setState(() {});
+    setState(() {
+      if (_mode == CompensationReferenceMode.fixedIncluded) {
+        _overtimeStartController.text = value;
+      }
+    });
+  }
+
+  void _handleOvertimeStartInputChanged(String value) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _syncOvertimeStartToRegularEnd();
+    });
+  }
+
+  void _syncOvertimeStartToRegularEnd() {
+    if (_mode != CompensationReferenceMode.fixedIncluded) {
+      return;
+    }
+    if (_overtimeStartController.text == _endController.text) {
+      return;
+    }
+    _overtimeStartController.text = _endController.text;
+  }
+
+  bool _isFixedIncludedMode() {
+    return _mode == CompensationReferenceMode.fixedIncluded;
   }
 
   String _overtimeStartHelperText() {
     if (_mode == CompensationReferenceMode.fixedIncluded) {
-      return '보통 정시 퇴근과 같습니다. 포함 시간은 위에서 입력';
+      return _fixedIncludedOvertimeStartHelperText;
     }
     return '정시 퇴근 이후만 입력';
-  }
-
-  String? _fixedIncludedOvertimeStartWarning() {
-    if (_mode != CompensationReferenceMode.fixedIncluded) {
-      return null;
-    }
-    final int? regularEndTimeMinutes = _tryParseTimeText(
-      text: _endController.text,
-      field: 'regularEndTimeMinutes',
-    );
-    final int? overtimeStartTimeMinutes = _tryParseTimeText(
-      text: _overtimeStartController.text,
-      field: 'overtimeStartTimeMinutes',
-    );
-    if (regularEndTimeMinutes == null || overtimeStartTimeMinutes == null) {
-      return null;
-    }
-    if (overtimeStartTimeMinutes <= regularEndTimeMinutes) {
-      return null;
-    }
-    return _fixedIncludedOvertimeStartWarningMessage;
   }
 }
 
 DateTime _globalEffectiveFromMonth() {
   return DateTime(2000);
-}
-
-int? _tryParseTimeText({required String text, required String field}) {
-  try {
-    return parseWorkRuleTimeText(text: text, field: field);
-  } on ArgumentError {
-    return null;
-  } on FormatException {
-    return null;
-  }
 }
 
 final List<int> _allWeekdays = <int>[
@@ -835,34 +833,6 @@ final class _SettingsMessage extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: const Color(0xFF181D26),
             letterSpacing: 0,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-final class _SettingsNotice extends StatelessWidget {
-  const _SettingsNotice({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        border: Border.all(color: const Color(0xFFF5D48A)),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Text(
-          message,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF6B4E16),
-            letterSpacing: 0,
-            height: 1.35,
           ),
         ),
       ),

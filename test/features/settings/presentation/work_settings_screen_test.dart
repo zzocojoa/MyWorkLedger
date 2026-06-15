@@ -44,7 +44,6 @@ void main() {
     await tester.enterText(_findTextFieldByLabel(label: '정시 출근'), '08:30');
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:30');
     await tester.enterText(_findTextFieldByLabel(label: '휴게시간(분)'), '30');
-    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '18:30');
     await tester.enterText(_findTextFieldByLabel(label: '야간 근무 시작'), '22:30');
     await tester.ensureVisible(
       _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
@@ -61,7 +60,7 @@ void main() {
     expect(workRuleRepository.savedRule!.regularStartTimeMinutes, 510);
     expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1050);
     expect(workRuleRepository.savedRule!.breakMinutes, 30);
-    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1110);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1050);
     expect(workRuleRepository.savedRule!.nightWorkStartTimeMinutes, 1350);
     expect(
       compensationRepository.savedMode,
@@ -125,7 +124,45 @@ void main() {
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
   });
 
-  testWidgets('warns when fixed included time can hide overtime tags', (
+  testWidgets(
+    'keeps overtime start equal to regular end in fixed included mode',
+    (WidgetTester tester) async {
+      _useTallViewport(tester: tester);
+      await tester.pumpWidget(
+        _buildScreen(
+          workRuleRepository: _FakeWorkRuleRepository(
+            initialRule: null,
+            saveError: null,
+          ),
+          compensationRepository: _FakeCompensationReferenceRepository(
+            setting: null,
+            findError: null,
+            saveError: null,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(_textFieldText(label: '연장 근무 시작', tester: tester), '18:00');
+
+      await tester.tap(
+        _findModeTile(value: CompensationReferenceMode.fixedIncluded),
+      );
+      await tester.pump();
+      await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+      await tester.pump();
+
+      expect(_textFieldText(label: '연장 근무 시작', tester: tester), '17:00');
+      expect(
+        find.text('고정 포함 시간은 위에서 비교하고, 연장 근무 태그는 정시 퇴근부터 계산합니다.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+    },
+  );
+
+  testWidgets('makes overtime start read only in fixed included mode', (
     WidgetTester tester,
   ) async {
     _useTallViewport(tester: tester);
@@ -150,28 +187,83 @@ void main() {
     );
     await tester.pump();
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
-    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
     await tester.pump();
 
-    expect(
-      find.text(
-        '고정 포함 시간은 연장 근무 태그를 줄이는 설정이 아닙니다. 연장 근무 시작을 정시 퇴근보다 늦게 두면 일부 시간이 태그에서 빠질 수 있습니다.',
-      ),
-      findsOneWidget,
+    final TextField overtimeStartField = tester.widget<TextField>(
+      _findTextFieldByLabel(label: '연장 근무 시작'),
     );
-    expect(find.text('보통 정시 퇴근과 같습니다. 포함 시간은 위에서 입력'), findsOneWidget);
+
+    expect(overtimeStartField.readOnly, isTrue);
+    expect(overtimeStartField.enableInteractiveSelection, isFalse);
   });
 
-  testWidgets('does not warn when overtime starts at regular end', (
+  testWidgets('saves regular end as overtime start in fixed included mode', (
     WidgetTester tester,
   ) async {
     _useTallViewport(tester: tester);
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      initialRule: WorkRule(
+        id: 'work-rule-fixed',
+        regularStartTimeMinutes: 540,
+        regularEndTimeMinutes: 1080,
+        overtimeStartTimeMinutes: 1140,
+        nightWorkStartTimeMinutes: 1320,
+        breakMinutes: 60,
+        workWeekdays: <int>[
+          DateTime.monday,
+          DateTime.tuesday,
+          DateTime.wednesday,
+          DateTime.thursday,
+          DateTime.friday,
+        ],
+        createdAt: DateTime(2026, 6, 12, 9),
+        updatedAt: DateTime(2026, 6, 12, 9),
+      ),
+      saveError: null,
+    );
     await tester.pumpWidget(
       _buildScreen(
-        workRuleRepository: _FakeWorkRuleRepository(
-          initialRule: null,
+        workRuleRepository: workRuleRepository,
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-fixed',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
           saveError: null,
         ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.pump();
+
+    await _tapSave(tester: tester);
+    await tester.pumpAndSettle();
+
+    expect(workRuleRepository.savedRule, isNotNull);
+    expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1020);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1020);
+  });
+
+  testWidgets('allows custom overtime start in none or unknown mode', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      initialRule: null,
+      saveError: null,
+    );
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: workRuleRepository,
         compensationRepository: _FakeCompensationReferenceRepository(
           setting: null,
           findError: null,
@@ -182,52 +274,19 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(
-      _findModeTile(value: CompensationReferenceMode.fixedIncluded),
-    );
-    await tester.pump();
-    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
-    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '17:00');
-    await tester.pump();
-
-    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
-  });
-
-  testWidgets('does not warn when comparison mode is none or unknown', (
-    WidgetTester tester,
-  ) async {
-    _useTallViewport(tester: tester);
-    await tester.pumpWidget(
-      _buildScreen(
-        workRuleRepository: _FakeWorkRuleRepository(
-          initialRule: null,
-          saveError: null,
-        ),
-        compensationRepository: _FakeCompensationReferenceRepository(
-          setting: null,
-          findError: null,
-          saveError: null,
-        ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
-
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
     await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
-    await tester.pump();
+    final TextField overtimeStartField = tester.widget<TextField>(
+      _findTextFieldByLabel(label: '연장 근무 시작'),
+    );
+    expect(overtimeStartField.readOnly, isFalse);
 
-    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+    await _tapSave(tester: tester);
+    await tester.pumpAndSettle();
 
-    await tester.tap(_findModeTile(value: CompensationReferenceMode.none));
-    await tester.pump();
-
-    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
-
-    await tester.tap(_findModeTile(value: CompensationReferenceMode.unknown));
-    await tester.pump();
-
-    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+    expect(workRuleRepository.savedRule, isNotNull);
+    expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1020);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1140);
   });
 
   testWidgets('starts from regular work section on compact screen', (
@@ -637,6 +696,17 @@ Finder _findTextFieldByLabel({required String label}) {
   return find.byWidgetPredicate((Widget widget) {
     return widget is TextField && widget.decoration?.labelText == label;
   });
+}
+
+String _textFieldText({required String label, required WidgetTester tester}) {
+  final TextField field = tester.widget<TextField>(
+    _findTextFieldByLabel(label: label),
+  );
+  final TextEditingController? controller = field.controller;
+  if (controller == null) {
+    throw StateError('label=$label text field controller is missing');
+  }
+  return controller.text;
 }
 
 Finder _findModeTile({required CompensationReferenceMode value}) {

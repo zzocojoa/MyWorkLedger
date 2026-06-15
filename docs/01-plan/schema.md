@@ -115,6 +115,7 @@
 - `regularStartTimeMinutes`, `regularEndTimeMinutes`, `overtimeStartTimeMinutes`, `nightWorkStartTimeMinutes`는 0 이상 1439 이하 정수여야 한다.
 - `regularEndTimeMinutes > regularStartTimeMinutes`여야 한다.
 - `overtimeStartTimeMinutes >= regularEndTimeMinutes`여야 한다.
+- `CompensationReferenceSetting.mode == fixedIncluded`이면 UI 저장 경계에서 `overtimeStartTimeMinutes == regularEndTimeMinutes`만 허용한다.
 - `nightWorkStartTimeMinutes`부터 8시간 구간은 다음 날로 넘어갈 수 있다.
 - `breakMinutes`는 0 이상이어야 하며 30분 단위여야 한다.
 - `workWeekdays`는 1-7 사이 값만 포함하고 중복을 허용하지 않는다.
@@ -128,7 +129,7 @@
 | `overtimeDuration` | 실제 근무 구간 중 `overtimeStartTimeMinutes` 이후 구간 | No |
 | `nightWorkDuration` | 실제 근무 구간 중 `nightWorkStartTimeMinutes`부터 8시간 구간과 겹치는 시간 | No |
 
-`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 고정 포함 시간 비교를 켰더라도 이 값이 `regularEndTimeMinutes`보다 늦으면 정시 퇴근 이후 일부 시간이 연장 근무 태그에서 빠질 수 있으므로 UI에서 오해 방지 안내를 보여준다.
+`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 고정 포함 시간 비교를 켠 상태에서는 연장 근무 태그가 정시 퇴근부터 계산되도록 UI에서 이 값을 `regularEndTimeMinutes`와 같은 값으로 저장한다.
 
 ## LeaveBalance
 
@@ -235,7 +236,7 @@
 | `includedReferenceMinutes` | 사용자가 입력한 `fixedIncludedAfterRegularEndMinutes` | No |
 | `excessReferenceMinutes` | `max(actualAfterRegularEndMinutes - fixedIncludedAfterRegularEndMinutes, 0)` | No |
 
-`fixedIncludedAfterRegularEndMinutes`는 연장 근무가 아닌 시간을 뜻하지 않는다. 정시 이후 실제 근무 중 사용자가 따로 비교하고 싶은 참고 시간이며, `overtimeStartTimeMinutes` 저장값을 자동으로 바꾸지 않는다.
+`fixedIncludedAfterRegularEndMinutes`는 연장 근무가 아닌 시간을 뜻하지 않는다. 정시 이후 실제 근무 중 사용자가 따로 비교하고 싶은 참고 시간이며, `fixedIncluded` 모드에서도 연장 근무 태그는 정시 퇴근부터 계산한다.
 
 ## Query Patterns
 
