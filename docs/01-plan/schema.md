@@ -128,6 +128,8 @@
 | `overtimeDuration` | 실제 근무 구간 중 `overtimeStartTimeMinutes` 이후 구간 | No |
 | `nightWorkDuration` | 실제 근무 구간 중 `nightWorkStartTimeMinutes`부터 8시간 구간과 겹치는 시간 | No |
 
+`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 고정 포함 시간 비교를 켰더라도 이 값이 `regularEndTimeMinutes`보다 늦으면 정시 퇴근 이후 일부 시간이 연장 근무 태그에서 빠질 수 있으므로 UI에서 오해 방지 안내를 보여준다.
+
 ## LeaveBalance
 
 특정 연도에 사용자가 직접 입력한 총 연차 기준이다. 법정 연차 자동 계산은 하지 않는다.
@@ -232,6 +234,8 @@
 | `actualAfterRegularEndMinutes` | 기존 `WorkRecord + WorkRule` 기반 정시 퇴근 이후 실제 근무 시간 | No |
 | `includedReferenceMinutes` | 사용자가 입력한 `fixedIncludedAfterRegularEndMinutes` | No |
 | `excessReferenceMinutes` | `max(actualAfterRegularEndMinutes - fixedIncludedAfterRegularEndMinutes, 0)` | No |
+
+`fixedIncludedAfterRegularEndMinutes`는 연장 근무가 아닌 시간을 뜻하지 않는다. 정시 이후 실제 근무 중 사용자가 따로 비교하고 싶은 참고 시간이며, `overtimeStartTimeMinutes` 저장값을 자동으로 바꾸지 않는다.
 
 ## Query Patterns
 

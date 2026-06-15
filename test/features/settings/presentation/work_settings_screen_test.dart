@@ -125,6 +125,111 @@ void main() {
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
   });
 
+  testWidgets('warns when fixed included time can hide overtime tags', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(
+      _findModeTile(value: CompensationReferenceMode.fixedIncluded),
+    );
+    await tester.pump();
+    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
+    await tester.pump();
+
+    expect(
+      find.text(
+        '고정 포함 시간은 연장 근무 태그를 줄이는 설정이 아닙니다. 연장 근무 시작을 정시 퇴근보다 늦게 두면 일부 시간이 태그에서 빠질 수 있습니다.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('보통 정시 퇴근과 같습니다. 포함 시간은 위에서 입력'), findsOneWidget);
+  });
+
+  testWidgets('does not warn when overtime starts at regular end', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(
+      _findModeTile(value: CompensationReferenceMode.fixedIncluded),
+    );
+    await tester.pump();
+    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '17:00');
+    await tester.pump();
+
+    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+  });
+
+  testWidgets('does not warn when comparison mode is none or unknown', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
+    await tester.pump();
+
+    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+
+    await tester.tap(_findModeTile(value: CompensationReferenceMode.none));
+    await tester.pump();
+
+    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+
+    await tester.tap(_findModeTile(value: CompensationReferenceMode.unknown));
+    await tester.pump();
+
+    expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
+  });
+
   testWidgets('starts from regular work section on compact screen', (
     WidgetTester tester,
   ) async {
