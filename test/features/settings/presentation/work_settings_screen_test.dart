@@ -462,6 +462,59 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('keeps scrolling when drag starts on focused memo field', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: CompensationReferenceSetting(
+            id: 'compensation-setting-memo-scroll',
+            mode: CompensationReferenceMode.fixedIncluded,
+            fixedIncludedAfterRegularEndMinutes: 120,
+            effectiveFromMonth: DateTime(2000),
+            memo: null,
+            createdAt: DateTime(2026, 6, 12, 9),
+            updatedAt: DateTime(2026, 6, 12, 9),
+          ),
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final ScrollableState scrollableState = tester.state<ScrollableState>(
+      _workSettingsScrollable(),
+    );
+
+    await tester.ensureVisible(_findTextFieldByLabel(label: '메모'));
+    await tester.pump();
+
+    await tester.tap(_findTextFieldByLabel(label: '메모'));
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
+
+    final double positionBeforeMemoDrag = scrollableState.position.pixels;
+    expect(positionBeforeMemoDrag, greaterThan(0));
+
+    await tester.drag(_findTextFieldByLabel(label: '메모'), const Offset(0, 360));
+    await tester.pump();
+
+    expect(scrollableState.position.pixels, lessThan(positionBeforeMemoDrag));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('scrolls to the last section and back on compact screen', (
     WidgetTester tester,
   ) async {

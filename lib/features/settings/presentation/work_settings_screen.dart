@@ -320,32 +320,26 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             child: const Text('09:00-18:00 빠른 설정'),
           ),
           const SizedBox(height: 12),
-          _ParentScrollDragRegion(
-            child: TextField(
-              controller: _startController,
-              decoration: const InputDecoration(labelText: '정시 출근'),
-              keyboardType: TextInputType.datetime,
-              scrollPhysics: _textFieldScrollPhysics,
-            ),
+          TextField(
+            controller: _startController,
+            decoration: const InputDecoration(labelText: '정시 출근'),
+            keyboardType: TextInputType.datetime,
+            scrollPhysics: _textFieldScrollPhysics,
           ),
           const SizedBox(height: 12),
-          _ParentScrollDragRegion(
-            child: TextField(
-              controller: _endController,
-              decoration: const InputDecoration(labelText: '정시 퇴근'),
-              keyboardType: TextInputType.datetime,
-              scrollPhysics: _textFieldScrollPhysics,
-              onChanged: _handleRegularEndInputChanged,
-            ),
+          TextField(
+            controller: _endController,
+            decoration: const InputDecoration(labelText: '정시 퇴근'),
+            keyboardType: TextInputType.datetime,
+            scrollPhysics: _textFieldScrollPhysics,
+            onChanged: _handleRegularEndInputChanged,
           ),
           const SizedBox(height: 12),
-          _ParentScrollDragRegion(
-            child: TextField(
-              controller: _breakController,
-              decoration: const InputDecoration(labelText: '휴게시간(분)'),
-              keyboardType: TextInputType.number,
-              scrollPhysics: _textFieldScrollPhysics,
-            ),
+          TextField(
+            controller: _breakController,
+            decoration: const InputDecoration(labelText: '휴게시간(분)'),
+            keyboardType: TextInputType.number,
+            scrollPhysics: _textFieldScrollPhysics,
           ),
         ],
       ),
@@ -383,17 +377,15 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               excessStartMessage: _fixedIncludedExcessStartMessage(),
               onChanged: _handleFixedIncludedMinutesChanged,
             ),
-          _ParentScrollDragRegion(
-            child: TextField(
-              controller: _memoController,
-              decoration: const InputDecoration(
-                labelText: '메모',
-                helperText: '선택 입력',
-              ),
-              maxLines: 3,
-              maxLength: 500,
-              scrollPhysics: _textFieldScrollPhysics,
+          TextField(
+            controller: _memoController,
+            decoration: const InputDecoration(
+              labelText: '메모',
+              helperText: '선택 입력',
             ),
+            maxLines: 3,
+            maxLength: 500,
+            scrollPhysics: _textFieldScrollPhysics,
           ),
         ],
       ),
@@ -463,28 +455,24 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          _ParentScrollDragRegion(
-            child: TextField(
-              controller: _overtimeStartController,
-              decoration: InputDecoration(
-                labelText: '연장 근무 태그 시작',
-                helperText: _overtimeStartHelperText(),
-              ),
-              keyboardType: TextInputType.datetime,
-              scrollPhysics: _textFieldScrollPhysics,
+          TextField(
+            controller: _overtimeStartController,
+            decoration: InputDecoration(
+              labelText: '연장 근무 태그 시작',
+              helperText: _overtimeStartHelperText(),
             ),
+            keyboardType: TextInputType.datetime,
+            scrollPhysics: _textFieldScrollPhysics,
           ),
           const SizedBox(height: 12),
-          _ParentScrollDragRegion(
-            child: TextField(
-              controller: _nightWorkStartController,
-              decoration: const InputDecoration(
-                labelText: '야간 근무 시작',
-                helperText: '예: 22:00부터 8시간',
-              ),
-              keyboardType: TextInputType.datetime,
-              scrollPhysics: _textFieldScrollPhysics,
+          TextField(
+            controller: _nightWorkStartController,
+            decoration: const InputDecoration(
+              labelText: '야간 근무 시작',
+              helperText: '예: 22:00부터 8시간',
             ),
+            keyboardType: TextInputType.datetime,
+            scrollPhysics: _textFieldScrollPhysics,
           ),
         ],
       ),
@@ -661,34 +649,6 @@ bool _hasSameWeekdays({
   return true;
 }
 
-final class _ParentScrollDragRegion extends StatelessWidget {
-  const _ParentScrollDragRegion({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerMove: (PointerMoveEvent event) {
-        final ScrollableState? scrollable = Scrollable.maybeOf(context);
-        if (scrollable == null) {
-          return;
-        }
-        final ScrollPosition position = scrollable.position;
-        final double nextPixels = (position.pixels - event.delta.dy)
-            .clamp(position.minScrollExtent, position.maxScrollExtent)
-            .toDouble();
-        if (nextPixels == position.pixels) {
-          return;
-        }
-        position.jumpTo(nextPixels);
-      },
-      child: child,
-    );
-  }
-}
-
 final class _SettingsSection extends StatelessWidget {
   const _SettingsSection({required this.title, required this.children});
 
@@ -847,20 +807,18 @@ final class _MinutesField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ParentScrollDragRegion(
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          labelText: '$label(분)',
-          helperText: '예: 120분 = 정시 후 2시간',
-        ),
-        keyboardType: TextInputType.number,
-        scrollPhysics: _textFieldScrollPhysics,
-        onChanged: onChanged,
-        inputFormatters: <TextInputFormatter>[
-          FilteringTextInputFormatter.digitsOnly,
-        ],
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: '$label(분)',
+        helperText: '예: 120분 = 정시 후 2시간',
       ),
+      keyboardType: TextInputType.number,
+      scrollPhysics: _textFieldScrollPhysics,
+      onChanged: onChanged,
+      inputFormatters: <TextInputFormatter>[
+        FilteringTextInputFormatter.digitsOnly,
+      ],
     );
   }
 }
