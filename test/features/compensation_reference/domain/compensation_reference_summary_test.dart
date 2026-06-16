@@ -42,6 +42,7 @@ void main() {
       expect(summary.status, CompensationReferenceSummaryStatus.available);
       expect(summary.rows, hasLength(1));
       expect(summary.rows[0].label, '정시 이후 근무');
+      expect(summary.rows[0].excessStartTimeMinutes, 19 * 60);
       expect(summary.rows[0].actualDuration, const Duration(hours: 4));
       expect(summary.rows[0].fixedIncludedDuration, const Duration(hours: 3));
       expect(summary.rows[0].excessReferenceDuration, const Duration(hours: 1));

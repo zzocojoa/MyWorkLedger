@@ -11,6 +11,9 @@ import '../../work_rule/presentation/work_rule_settings_screen.dart';
 
 const NeverScrollableScrollPhysics _textFieldScrollPhysics =
     NeverScrollableScrollPhysics();
+const int _minutesPerDay = 24 * 60;
+const String _fixedIncludedComparisonHelperText =
+    '정시 이후 근무에서 고정 포함 시간을 뺀 뒤 남은 시간을 초과 참고로 봅니다.';
 
 final class WorkSettingsScreen extends StatefulWidget {
   const WorkSettingsScreen({
@@ -332,6 +335,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               decoration: const InputDecoration(labelText: '정시 퇴근'),
               keyboardType: TextInputType.datetime,
               scrollPhysics: _textFieldScrollPhysics,
+              onChanged: _handleRegularEndInputChanged,
             ),
           ),
           const SizedBox(height: 12),
@@ -376,6 +380,8 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             _FixedIncludedFields(
               afterRegularEndMinutesController:
                   _includedAfterRegularEndController,
+              excessStartMessage: _fixedIncludedExcessStartMessage(),
+              onChanged: _handleFixedIncludedMinutesChanged,
             ),
           _ParentScrollDragRegion(
             child: TextField(
@@ -460,9 +466,9 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
           _ParentScrollDragRegion(
             child: TextField(
               controller: _overtimeStartController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: '연장 근무 시작',
-                helperText: '정시 퇴근 이후만 입력',
+                helperText: _overtimeStartHelperText(),
               ),
               keyboardType: TextInputType.datetime,
               scrollPhysics: _textFieldScrollPhysics,
@@ -529,10 +535,83 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       _errorMessage = null;
     });
   }
+
+  void _handleRegularEndInputChanged(String _) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
+  }
+
+  void _handleFixedIncludedMinutesChanged(String _) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
+  }
+
+  String? _fixedIncludedExcessStartMessage() {
+    if (_mode != CompensationReferenceMode.fixedIncluded) {
+      return null;
+    }
+    final int? regularEndTimeMinutes = _tryParseTimeForPreview(
+      text: _endController.text,
+      field: 'regularEndTimeMinutes',
+    );
+    final int? includedAfterRegularEndMinutes = int.tryParse(
+      _includedAfterRegularEndController.text.trim(),
+    );
+    if (regularEndTimeMinutes == null ||
+        includedAfterRegularEndMinutes == null) {
+      return '초과 시작을 계산하려면 정시 퇴근과 고정 포함 시간을 입력하세요.';
+    }
+    if (includedAfterRegularEndMinutes < 0) {
+      return '초과 시작을 계산하려면 고정 포함 시간을 0 이상으로 입력하세요.';
+    }
+    return _formatFixedIncludedExcessStartMessage(
+      regularEndTimeMinutes: regularEndTimeMinutes,
+      includedAfterRegularEndMinutes: includedAfterRegularEndMinutes,
+    );
+  }
+
+  int? _tryParseTimeForPreview({required String text, required String field}) {
+    try {
+      return parseWorkRuleTimeText(text: text, field: field);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  String _overtimeStartHelperText() {
+    return '근무 태그 기준입니다';
+  }
 }
 
 DateTime _globalEffectiveFromMonth() {
   return DateTime(2000);
+}
+
+String _formatFixedIncludedExcessStartMessage({
+  required int regularEndTimeMinutes,
+  required int includedAfterRegularEndMinutes,
+}) {
+  if (includedAfterRegularEndMinutes < 0) {
+    throw ArgumentError.value(
+      includedAfterRegularEndMinutes,
+      'includedAfterRegularEndMinutes',
+      'must be non-negative',
+    );
+  }
+  final int totalMinutes =
+      regularEndTimeMinutes + includedAfterRegularEndMinutes;
+  final int minuteOfDay = totalMinutes.remainder(_minutesPerDay);
+  final String formattedTime = formatWorkRuleMinuteOfDay(
+    minuteOfDay: minuteOfDay,
+  );
+  if (totalMinutes >= _minutesPerDay) {
+    return '초과 시작 다음 날 $formattedTime';
+  }
+  return '초과 시작 $formattedTime';
 }
 
 final List<int> _allWeekdays = <int>[
@@ -717,29 +796,54 @@ final class _ModeTile extends StatelessWidget {
 }
 
 final class _FixedIncludedFields extends StatelessWidget {
-  const _FixedIncludedFields({required this.afterRegularEndMinutesController});
+  const _FixedIncludedFields({
+    required this.afterRegularEndMinutesController,
+    required this.excessStartMessage,
+    required this.onChanged,
+  });
 
   final TextEditingController afterRegularEndMinutesController;
+  final String? excessStartMessage;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final String? message = excessStartMessage;
     return Column(
       children: <Widget>[
         const SizedBox(height: 12),
         _MinutesField(
           controller: afterRegularEndMinutesController,
           label: '정시 이후 고정 포함 시간',
+          onChanged: onChanged,
         ),
+        if (message != null) ...<Widget>[
+          const SizedBox(height: 10),
+          _ComparisonPreviewMessage(message: message),
+          const SizedBox(height: 6),
+          Text(
+            _fixedIncludedComparisonHelperText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF5F6673),
+              letterSpacing: 0,
+            ),
+          ),
+        ],
       ],
     );
   }
 }
 
 final class _MinutesField extends StatelessWidget {
-  const _MinutesField({required this.controller, required this.label});
+  const _MinutesField({
+    required this.controller,
+    required this.label,
+    required this.onChanged,
+  });
 
   final TextEditingController controller;
   final String label;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -752,9 +856,41 @@ final class _MinutesField extends StatelessWidget {
         ),
         keyboardType: TextInputType.number,
         scrollPhysics: _textFieldScrollPhysics,
+        onChanged: onChanged,
         inputFormatters: <TextInputFormatter>[
           FilteringTextInputFormatter.digitsOnly,
         ],
+      ),
+    );
+  }
+}
+
+final class _ComparisonPreviewMessage extends StatelessWidget {
+  const _ComparisonPreviewMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          border: Border.all(color: const Color(0xFFDDDDDD)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF181D26),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
       ),
     );
   }

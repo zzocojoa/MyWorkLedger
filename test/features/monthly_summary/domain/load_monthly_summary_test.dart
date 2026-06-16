@@ -131,6 +131,10 @@ void main() {
       );
       expect(viewData.compensationReferenceSummary.rows[0].label, '정시 이후 근무');
       expect(
+        viewData.compensationReferenceSummary.rows[0].excessStartTimeMinutes,
+        20 * 60,
+      );
+      expect(
         viewData.compensationReferenceSummary.rows[0].actualDuration,
         const Duration(hours: 3, minutes: 30),
       );
