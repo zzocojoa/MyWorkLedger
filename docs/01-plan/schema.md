@@ -103,7 +103,7 @@
 | `id` | String | Yes | Yes | generated | 로컬 고유 ID |
 | `regularStartTimeMinutes` | int | Yes | No | 540 | 정시 출근 시각. 00:00부터 지난 분 |
 | `regularEndTimeMinutes` | int | Yes | No | 1080 | 정시 퇴근 시각. 00:00부터 지난 분 |
-| `overtimeStartTimeMinutes` | int | Yes | No | `regularEndTimeMinutes` | 연장 근무 시작 시각. 기존 저장 데이터에 없으면 정시 퇴근으로 채워 읽는다 |
+| `overtimeStartTimeMinutes` | int | Yes | No | `regularEndTimeMinutes` | 연장 근무 태그 시작 시각. 기존 저장 데이터에 없으면 정시 퇴근으로 채워 읽는다 |
 | `nightWorkStartTimeMinutes` | int | Yes | No | 1320 | 야간 근무 시작 시각. 기본값은 22:00이며 이 시각부터 8시간 구간을 야간 근무 기준으로 본다 |
 | `breakMinutes` | int | Yes | No | 60 | 휴게시간 분 |
 | `workWeekdays` | List<int> | Yes | No | [1,2,3,4,5] | 근무 요일. 월요일 1, 일요일 7 |
@@ -128,7 +128,7 @@
 | `overtimeDuration` | 실제 근무 구간 중 `overtimeStartTimeMinutes` 이후 구간 | No |
 | `nightWorkDuration` | 실제 근무 구간 중 `nightWorkStartTimeMinutes`부터 8시간 구간과 겹치는 시간 | No |
 
-`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 고정 포함 시간 비교 설정과 분리해서 저장하며, 사용자가 입력한 연장 근무 시작 시각을 유지한다.
+`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 고정 포함 시간 비교 설정과 분리해서 저장하며, 사용자가 입력한 연장 근무 태그 시작 시각을 유지한다.
 
 ## LeaveBalance
 
@@ -236,7 +236,7 @@
 | `excessStartTimeMinutes` | `regularEndTimeMinutes + fixedIncludedAfterRegularEndMinutes` | No |
 | `excessReferenceMinutes` | `max(actualAfterRegularEndMinutes - fixedIncludedAfterRegularEndMinutes, 0)` | No |
 
-`fixedIncludedAfterRegularEndMinutes`는 연장 근무가 아닌 시간을 뜻하지 않는다. 정시 이후 실제 근무 중 사용자가 따로 비교하고 싶은 참고 시간이며, `fixedIncluded` 모드에서도 연장 근무 태그 기준은 `overtimeStartTimeMinutes`를 그대로 따른다. 예를 들어 정시 퇴근이 17:00이고 고정 포함 시간이 120분이면 `초과 시작`은 19:00이다.
+`fixedIncludedAfterRegularEndMinutes`는 연장 근무가 아닌 시간을 뜻하지 않는다. 정시 이후 실제 근무 중 사용자가 따로 비교하고 싶은 참고 시간이며, `fixedIncluded` 모드에서도 연장 근무 태그 기준은 `overtimeStartTimeMinutes`를 그대로 따른다. 예를 들어 정시 퇴근이 17:00이고 고정 포함 시간이 120분이면 `초과 참고 시작`은 19:00이다.
 
 ## Query Patterns
 

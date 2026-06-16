@@ -13,7 +13,7 @@ const NeverScrollableScrollPhysics _textFieldScrollPhysics =
     NeverScrollableScrollPhysics();
 const int _minutesPerDay = 24 * 60;
 const String _fixedIncludedComparisonHelperText =
-    '정시 이후 근무에서 고정 포함 시간을 뺀 뒤 남은 시간을 초과 참고로 봅니다.';
+    '고정 포함 시간을 넘긴 부분만 초과 참고로 봅니다. 연장 근무 태그와 별도입니다.';
 
 final class WorkSettingsScreen extends StatefulWidget {
   const WorkSettingsScreen({
@@ -467,7 +467,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             child: TextField(
               controller: _overtimeStartController,
               decoration: InputDecoration(
-                labelText: '연장 근무 시작',
+                labelText: '연장 근무 태그 시작',
                 helperText: _overtimeStartHelperText(),
               ),
               keyboardType: TextInputType.datetime,
@@ -563,10 +563,10 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     );
     if (regularEndTimeMinutes == null ||
         includedAfterRegularEndMinutes == null) {
-      return '초과 시작을 계산하려면 정시 퇴근과 고정 포함 시간을 입력하세요.';
+      return '초과 참고 시작을 계산하려면 정시 퇴근과 고정 포함 시간을 입력하세요.';
     }
     if (includedAfterRegularEndMinutes < 0) {
-      return '초과 시작을 계산하려면 고정 포함 시간을 0 이상으로 입력하세요.';
+      return '초과 참고 시작을 계산하려면 고정 포함 시간을 0 이상으로 입력하세요.';
     }
     return _formatFixedIncludedExcessStartMessage(
       regularEndTimeMinutes: regularEndTimeMinutes,
@@ -583,7 +583,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
   }
 
   String _overtimeStartHelperText() {
-    return '근무 태그 기준입니다';
+    return '근무 태그 기준입니다. 초과 참고 시작과 별도입니다.';
   }
 }
 
@@ -609,9 +609,9 @@ String _formatFixedIncludedExcessStartMessage({
     minuteOfDay: minuteOfDay,
   );
   if (totalMinutes >= _minutesPerDay) {
-    return '초과 시작 다음 날 $formattedTime';
+    return '초과 참고 시작 다음 날 $formattedTime';
   }
-  return '초과 시작 $formattedTime';
+  return '초과 참고 시작 $formattedTime';
 }
 
 final List<int> _allWeekdays = <int>[

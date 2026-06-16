@@ -182,7 +182,7 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
               TextField(
                 controller: _overtimeStartController,
                 decoration: const InputDecoration(
-                  labelText: '연장 근무 시작',
+                  labelText: '연장 근무 태그 시작',
                   helperText: '정시 퇴근 이후 시각만 입력할 수 있습니다.',
                 ),
                 keyboardType: TextInputType.datetime,

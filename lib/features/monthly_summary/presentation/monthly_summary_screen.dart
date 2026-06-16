@@ -593,7 +593,7 @@ final class _CompensationReferenceRow extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _CompensationReferenceValueLine(
-              label: '초과 시작',
+              label: '초과 참고 시작',
               value: _formatCompensationReferenceMinuteOfDay(
                 minutes: row.excessStartTimeMinutes,
               ),
