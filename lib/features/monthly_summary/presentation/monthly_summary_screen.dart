@@ -15,6 +15,8 @@ import '../../work_time/domain/work_time_candidate.dart';
 import '../domain/load_monthly_summary.dart';
 import '../domain/monthly_summary.dart';
 
+const int _minutesPerDay = 24 * 60;
+
 final class MonthlySummaryScreen extends StatefulWidget {
   const MonthlySummaryScreen({
     required this.repository,
@@ -591,6 +593,13 @@ final class _CompensationReferenceRow extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _CompensationReferenceValueLine(
+              label: '초과 시작',
+              value: _formatCompensationReferenceMinuteOfDay(
+                minutes: row.excessStartTimeMinutes,
+              ),
+            ),
+            const SizedBox(height: 6),
+            _CompensationReferenceValueLine(
               label: '실제 기록',
               value: formatMonthlySummaryDuration(duration: row.actualDuration),
             ),
@@ -613,6 +622,20 @@ final class _CompensationReferenceRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatCompensationReferenceMinuteOfDay({required int minutes}) {
+  if (minutes < 0) {
+    throw ArgumentError.value(minutes, 'minutes', 'must be non-negative');
+  }
+  final int dayOffset = minutes ~/ _minutesPerDay;
+  final int minuteOfDay = minutes.remainder(_minutesPerDay);
+  final String hour = (minuteOfDay ~/ 60).toString().padLeft(2, '0');
+  final String minute = minuteOfDay.remainder(60).toString().padLeft(2, '0');
+  if (dayOffset > 0) {
+    return '다음 날 $hour:$minute';
+  }
+  return '$hour:$minute';
 }
 
 final class _CompensationReferenceValueLine extends StatelessWidget {

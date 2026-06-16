@@ -44,6 +44,9 @@ void main() {
     await tester.enterText(_findTextFieldByLabel(label: '정시 출근'), '08:30');
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:30');
     await tester.enterText(_findTextFieldByLabel(label: '휴게시간(분)'), '30');
+    await tester.ensureVisible(_findTextFieldByLabel(label: '연장 근무 시작'));
+    await tester.pump();
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
     await tester.enterText(_findTextFieldByLabel(label: '야간 근무 시작'), '22:30');
     await tester.ensureVisible(
       _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
@@ -60,7 +63,7 @@ void main() {
     expect(workRuleRepository.savedRule!.regularStartTimeMinutes, 510);
     expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1050);
     expect(workRuleRepository.savedRule!.breakMinutes, 30);
-    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1050);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1140);
     expect(workRuleRepository.savedRule!.nightWorkStartTimeMinutes, 1350);
     expect(
       compensationRepository.savedMode,
@@ -125,7 +128,7 @@ void main() {
   });
 
   testWidgets(
-    'keeps overtime start equal to regular end in fixed included mode',
+    'shows excess start from regular end plus fixed included minutes',
     (WidgetTester tester) async {
       _useTallViewport(tester: tester);
       await tester.pumpWidget(
@@ -151,18 +154,25 @@ void main() {
       );
       await tester.pump();
       await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+      await tester.ensureVisible(
+        _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+      );
+      await tester.pump();
+      await tester.enterText(
+        _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+        '120',
+      );
       await tester.pump();
 
-      expect(_textFieldText(label: '연장 근무 시작', tester: tester), '17:00');
+      expect(find.text('초과 시작 19:00'), findsOneWidget);
       expect(
-        find.text('고정 포함 시간은 위에서 비교하고, 연장 근무 태그는 정시 퇴근부터 계산합니다.'),
+        find.text('정시 이후 근무에서 고정 포함 시간을 뺀 뒤 남은 시간을 초과 참고로 봅니다.'),
         findsOneWidget,
       );
-      expect(find.textContaining('연장 근무 태그를 줄이는 설정이 아닙니다'), findsNothing);
     },
   );
 
-  testWidgets('makes overtime start read only in fixed included mode', (
+  testWidgets('keeps overtime start editable in fixed included mode', (
     WidgetTester tester,
   ) async {
     _useTallViewport(tester: tester);
@@ -187,17 +197,19 @@ void main() {
     );
     await tester.pump();
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
     await tester.pump();
 
     final TextField overtimeStartField = tester.widget<TextField>(
       _findTextFieldByLabel(label: '연장 근무 시작'),
     );
 
-    expect(overtimeStartField.readOnly, isTrue);
-    expect(overtimeStartField.enableInteractiveSelection, isFalse);
+    expect(overtimeStartField.readOnly, isFalse);
+    expect(overtimeStartField.enableInteractiveSelection, isTrue);
+    expect(_textFieldText(label: '연장 근무 시작', tester: tester), '19:00');
   });
 
-  testWidgets('saves regular end as overtime start in fixed included mode', (
+  testWidgets('preserves custom overtime start in fixed included mode', (
     WidgetTester tester,
   ) async {
     _useTallViewport(tester: tester);
@@ -243,6 +255,7 @@ void main() {
     await tester.pump();
 
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작'), '19:00');
     await tester.pump();
 
     await _tapSave(tester: tester);
@@ -250,7 +263,7 @@ void main() {
 
     expect(workRuleRepository.savedRule, isNotNull);
     expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1020);
-    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1020);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1140);
   });
 
   testWidgets('allows custom overtime start in none or unknown mode', (
@@ -521,7 +534,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('정시 퇴근 이후만 입력'), findsOneWidget);
+    expect(find.text('근무 태그 기준입니다'), findsOneWidget);
     expect(find.text('예: 22:00부터 8시간'), findsOneWidget);
     expect(find.text('정시 퇴근 이후 시각만 입력할 수 있습니다.'), findsNothing);
     expect(find.text('입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.'), findsNothing);

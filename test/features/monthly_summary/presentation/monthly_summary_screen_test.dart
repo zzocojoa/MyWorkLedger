@@ -155,6 +155,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('포함 시간 대비'), findsOneWidget);
+    expect(find.text('초과 시작'), findsOneWidget);
+    expect(find.text('20:00'), findsOneWidget);
     expect(find.text('실제 기록'), findsWidgets);
     expect(find.text('포함 시간'), findsWidgets);
     expect(find.text('초과 참고'), findsWidgets);

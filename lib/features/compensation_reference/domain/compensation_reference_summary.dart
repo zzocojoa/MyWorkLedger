@@ -25,12 +25,14 @@ final class CompensationReferenceSummary {
 final class CompensationReferenceComparisonRow {
   const CompensationReferenceComparisonRow({
     required this.label,
+    required this.excessStartTimeMinutes,
     required this.actualDuration,
     required this.fixedIncludedDuration,
     required this.excessReferenceDuration,
   });
 
   final String label;
+  final int excessStartTimeMinutes;
   final Duration actualDuration;
   final Duration fixedIncludedDuration;
   final Duration excessReferenceDuration;
@@ -98,6 +100,8 @@ CompensationReferenceComparisonRow _createAfterRegularEndComparisonRow({
   }
   return CompensationReferenceComparisonRow(
     label: '정시 이후 근무',
+    excessStartTimeMinutes:
+        workRule.regularEndTimeMinutes + fixedIncludedMinutes,
     actualDuration: actualDuration,
     fixedIncludedDuration: fixedIncludedDuration,
     excessReferenceDuration: excessReferenceDuration,
@@ -140,6 +144,13 @@ void _validateSummary(CompensationReferenceSummary summary) {
   for (final CompensationReferenceComparisonRow row in summary.rows) {
     if (row.label.isEmpty) {
       throw ArgumentError.value(row.label, 'label', 'must not be empty');
+    }
+    if (row.excessStartTimeMinutes < 0) {
+      throw ArgumentError.value(
+        row.excessStartTimeMinutes,
+        'excessStartTimeMinutes',
+        'must be non-negative',
+      );
     }
     if (row.actualDuration.isNegative) {
       throw ArgumentError.value(
