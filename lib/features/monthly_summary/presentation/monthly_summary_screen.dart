@@ -310,7 +310,7 @@ final class _MonthlyStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MonthlySummary summary = viewData.workSummary;
-    final int recordTagCount = _recordTagSummaryCount(summary: summary);
+    final int visibleTagCount = _visibleMonthlyTagCount(viewData: viewData);
     return Row(
       children: <Widget>[
         Expanded(
@@ -323,16 +323,27 @@ final class _MonthlyStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             label: '근무 태그',
-            value: viewData.workRule == null
-                ? recordTagCount > 0
-                      ? '$recordTagCount개'
-                      : '기준 미설정'
-                : '${viewData.workTimeCandidateSummary.activeTagCount}개',
+            value: visibleTagCount > 0
+                ? '$visibleTagCount개'
+                : viewData.workRule == null
+                ? '기준 미설정'
+                : '0개',
           ),
         ),
       ],
     );
   }
+}
+
+int _visibleMonthlyTagCount({required MonthlySummaryViewData viewData}) {
+  final int recordTagCount = _recordTagSummaryCount(
+    summary: viewData.workSummary,
+  );
+  final int candidateTagCount =
+      viewData.workTimeCandidateSummary.activeTagCount;
+  return candidateTagCount > recordTagCount
+      ? candidateTagCount
+      : recordTagCount;
 }
 
 final class _MonthlyLeaveSummaryCard extends StatelessWidget {

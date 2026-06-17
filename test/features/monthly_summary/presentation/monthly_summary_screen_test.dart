@@ -36,7 +36,7 @@ void main() {
     expect(find.text('이번 달 총 근무'), findsOneWidget);
     expect(find.text('0분'), findsOneWidget);
     expect(find.text('0일'), findsOneWidget);
-    expect(find.text('근무 태그'), findsOneWidget);
+    expect(find.text('근무 태그'), findsWidgets);
     expect(find.text('기준 미설정'), findsOneWidget);
     expect(find.text('근무 기준 설정'), findsNothing);
     expect(find.text('연차 요약'), findsOneWidget);
@@ -163,7 +163,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('근무 태그'), findsOneWidget);
+    expect(find.text('근무 태그'), findsWidgets);
     expect(find.text('3개'), findsOneWidget);
     expect(find.text('기준 미설정'), findsNothing);
     expect(find.text('태그별 참고'), findsOneWidget);
@@ -173,6 +173,47 @@ void main() {
     expect(find.text('10시간 30분'), findsOneWidget);
     expect(find.text('휴일근무'), findsOneWidget);
     expect(find.text('5시간'), findsOneWidget);
+  });
+
+  testWidgets('shows default work tags without saved work rule', (
+    WidgetTester tester,
+  ) async {
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      monthlyRecords: <WorkRecord>[
+        _completedRecord(
+          id: 'long-work',
+          clockInAt: DateTime(2026, 6, 17, 7, 41),
+          clockOutAt: DateTime(2026, 6, 17, 23, 41),
+          tags: <WorkRecordTag>[],
+        ),
+      ],
+      findByMonthError: null,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: const _FakeWorkRuleRepository(
+          rule: null,
+          findActiveError: null,
+        ),
+        now: DateTime(2026, 6, 17, 23, 41),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('근무 태그'), findsWidgets);
+    expect(find.text('3개'), findsOneWidget);
+    expect(find.text('기준 미설정'), findsNothing);
+    expect(find.text('정시 전 근무'), findsOneWidget);
+    expect(find.text('1시간 19분'), findsOneWidget);
+    expect(find.text('연장 근무'), findsOneWidget);
+    expect(find.text('5시간 41분'), findsOneWidget);
+    expect(find.text('야간 근무'), findsOneWidget);
+    expect(find.text('1시간 41분'), findsOneWidget);
+    expect(find.text('태그별 참고'), findsNothing);
   });
 
   testWidgets('shows included time comparison when fixed included is set', (
