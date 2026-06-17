@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/pricing_intent_event.dart';
+import '../../../core/theme/workledger_design_tokens.dart';
 import '../domain/pricing_intent_repository.dart';
 import '../domain/record_pricing_intent.dart';
 
@@ -86,12 +87,17 @@ final class _PricingFakeDoorScreenState extends State<PricingFakeDoorScreen> {
       appBar: AppBar(title: const Text('월간 리포트')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               const _PricingIntroCard(),
-              const SizedBox(height: 18),
+              const SizedBox(height: workLedgerSpacingMedium),
               _PricingPlanCard(
                 title: 'Report Pass',
                 description: '월간 리포트 1회',
@@ -103,7 +109,7 @@ final class _PricingFakeDoorScreenState extends State<PricingFakeDoorScreen> {
                   selectedPlan: PricingPlan.reportPass,
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: workLedgerSpacingMedium),
               _PricingPlanCard(
                 title: 'Pro',
                 description: '매월 리포트와 고급 요약',
@@ -116,18 +122,18 @@ final class _PricingFakeDoorScreenState extends State<PricingFakeDoorScreen> {
                 ),
               ),
               if (_successMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _PricingMessage(message: _successMessage!),
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _PricingMessage(message: _errorMessage!),
               ],
-              const SizedBox(height: 18),
+              const SizedBox(height: workLedgerSpacingMedium),
               Text(
                 '법률 자문이나 증거 효력을 보장하지 않습니다.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF41454D),
+                  color: workLedgerColorMuted,
                   letterSpacing: 0,
                 ),
               ),
@@ -146,29 +152,25 @@ final class _PricingIntroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1ED),
-        border: Border.all(color: const Color(0xFFF0C9BE)),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorSignatureCoral,
+        borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(workLedgerSpacingLarge),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               '내 근무 기록을 월말에 정리하는 리포트 기능을 준비 중입니다.',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
+              style: workLedgerTitleMediumTextStyle.copyWith(
+                color: workLedgerColorOnPrimary,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingSmall),
             Text(
               '실제 결제는 진행되지 않습니다.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF41454D),
-                letterSpacing: 0,
+              style: workLedgerBodyTextStyle.copyWith(
+                color: workLedgerColorOnPrimary,
               ),
             ),
           ],
@@ -199,49 +201,51 @@ final class _PricingPlanCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(workLedgerSpacingExtraLarge),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0,
+              style: workLedgerPricingCardTitleTextStyle.copyWith(
+                color: workLedgerColorPricingInk,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: workLedgerSpacingExtraSmall),
             Text(
               description,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
+              style: workLedgerBodyTextStyle.copyWith(
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: workLedgerSpacingExtraExtraSmall),
             Text(
               detail,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF41454D),
-                letterSpacing: 0,
+              style: workLedgerBodyTextStyle.copyWith(
+                color: workLedgerColorMuted,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: workLedgerSpacingMedium),
             Align(
               alignment: Alignment.centerLeft,
               child: FilledButton(
                 key: buttonKey,
                 onPressed: isSaving ? null : onInterest,
                 style: FilledButton.styleFrom(
+                  backgroundColor: workLedgerColorCanvas,
+                  foregroundColor: workLedgerColorPricingInk,
                   minimumSize: const Size(132, 44),
-                  shape: const StadiumBorder(),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(workLedgerRadiusPill),
+                  ),
+                  side: const BorderSide(color: workLedgerColorHairline),
+                  textStyle: workLedgerButtonTextStyle,
                 ),
                 child: const Text('관심 있음'),
               ),
@@ -262,18 +266,15 @@ final class _PricingMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            letterSpacing: 0,
-          ),
+          style: workLedgerBodyTextStyle.copyWith(color: workLedgerColorInk),
         ),
       ),
     );

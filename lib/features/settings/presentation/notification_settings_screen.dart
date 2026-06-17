@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../../core/notifications/workledger_notification_service.dart';
 
 typedef ConfigureWorkLedgerNotifications =
@@ -59,18 +61,23 @@ final class _NotificationSettingsScreenState
       appBar: AppBar(title: const Text('알림')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: const Color(0xFFDDDDDD)),
-                  borderRadius: BorderRadius.circular(10),
+                  color: workLedgerColorCanvas,
+                  border: Border.all(color: workLedgerColorHairline),
+                  borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(workLedgerSpacingMedium),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
@@ -78,20 +85,20 @@ final class _NotificationSettingsScreenState
                         '상시 알림',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(
-                              color: const Color(0xFF181D26),
-                              fontWeight: FontWeight.w600,
+                              color: workLedgerColorInk,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 0,
                             ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: workLedgerSpacingExtraSmall),
                       Text(
                         '알림에서 출근하기와 퇴근하기를 바로 실행합니다.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF41454D),
+                          color: workLedgerColorMuted,
                           letterSpacing: 0,
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: workLedgerSpacingMedium),
                       FilledButton(
                         onPressed: _isSaving ? null : _configureNotifications,
                         child: Text(_isSaving ? '설정 중' : '권한 요청 및 알림 다시 표시'),
@@ -101,11 +108,11 @@ final class _NotificationSettingsScreenState
                 ),
               ),
               if (_statusMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 Text(
                   _statusMessage!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF181D26),
+                    color: workLedgerColorInk,
                     letterSpacing: 0,
                   ),
                 ),

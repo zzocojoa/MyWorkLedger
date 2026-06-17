@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/workledger_design_tokens.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/models/compensation_reference_setting.dart';
@@ -12,6 +14,7 @@ import '../../work_rule/presentation/work_rule_settings_screen.dart';
 const NeverScrollableScrollPhysics _textFieldScrollPhysics =
     NeverScrollableScrollPhysics();
 const int _minutesPerDay = 24 * 60;
+const double _weekdaySelectorButtonWidth = 82;
 const String _fixedIncludedComparisonHelperText =
     '고정 포함 시간을 넘긴 부분만 초과 참고로 봅니다. 연장 근무 태그와 별도입니다.';
 
@@ -300,7 +303,12 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           children: _buildSettingsContent(context: context),
         ),
       ),
@@ -319,14 +327,14 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             onPressed: _isSaving ? null : _applyPreset,
             child: const Text('09:00-18:00 빠른 설정'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _startController,
             decoration: const InputDecoration(labelText: '정시 출근'),
             keyboardType: TextInputType.datetime,
             scrollPhysics: _textFieldScrollPhysics,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _endController,
             decoration: const InputDecoration(labelText: '정시 퇴근'),
@@ -334,7 +342,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             scrollPhysics: _textFieldScrollPhysics,
             onChanged: _handleRegularEndInputChanged,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _breakController,
             decoration: const InputDecoration(labelText: '휴게시간(분)'),
@@ -343,7 +351,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
           ),
         ],
       ),
-      const SizedBox(height: 18),
+      const SizedBox(height: workLedgerSpacingMedium),
       _SettingsSection(
         title: '포함 시간 비교',
         children: <Widget>[
@@ -389,7 +397,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
           ),
         ],
       ),
-      const SizedBox(height: 18),
+      const SizedBox(height: workLedgerSpacingMedium),
       _SettingsSection(
         title: '고급 설정',
         children: <Widget>[
@@ -403,25 +411,25 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                     Text(
                       '근무 요일',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF181D26),
-                        fontWeight: FontWeight.w600,
+                        color: workLedgerColorInk,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: workLedgerSpacingExtraExtraSmall),
                     Text(
                       formatWorkRuleWeekdays(weekdays: _selectedWeekdays),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF5F6673),
+                        color: workLedgerColorMuted,
                         letterSpacing: 0,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: workLedgerSpacingSmall),
               SizedBox(
-                width: 82,
+                width: _weekdaySelectorButtonWidth,
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _toggleWeekdaySelector,
                   style: OutlinedButton.styleFrom(
@@ -434,7 +442,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             ],
           ),
           if (_showsWeekdaySelector) ...<Widget>[
-            const SizedBox(height: 14),
+            const SizedBox(height: workLedgerSpacingMedium),
             _WeekdaySelector(
               selectedWeekdays: _selectedWeekdays,
               enabled: !_isSaving,
@@ -443,18 +451,18 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
           ],
         ],
       ),
-      const SizedBox(height: 18),
+      const SizedBox(height: workLedgerSpacingMedium),
       _SettingsSection(
         title: '근무 태그 기준',
         children: <Widget>[
           Text(
             '정시 전 근무는 정시 출근 전 구간입니다.',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF5F6673),
+              color: workLedgerColorMuted,
               letterSpacing: 0,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _overtimeStartController,
             decoration: InputDecoration(
@@ -464,7 +472,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             keyboardType: TextInputType.datetime,
             scrollPhysics: _textFieldScrollPhysics,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _nightWorkStartController,
             decoration: const InputDecoration(
@@ -477,7 +485,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
         ],
       ),
       if (_errorMessage != null) ...<Widget>[
-        const SizedBox(height: 16),
+        const SizedBox(height: workLedgerSpacingMedium),
         _SettingsMessage(message: _errorMessage!),
       ],
     ];
@@ -659,24 +667,24 @@ final class _SettingsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEAEAEA)),
-        borderRadius: BorderRadius.circular(8),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w700,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: workLedgerSpacingMedium),
             ...children,
           ],
         ),
@@ -704,15 +712,15 @@ final class _WeekdaySelector extends StatelessWidget {
         Text(
           '근무 요일',
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: workLedgerSpacingCompact),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: workLedgerSpacingExtraSmall,
+          runSpacing: workLedgerSpacingExtraSmall,
           children: <Widget>[
             for (final int weekday in _allWeekdays)
               FilterChip(
@@ -771,20 +779,20 @@ final class _FixedIncludedFields extends StatelessWidget {
     final String? message = excessStartMessage;
     return Column(
       children: <Widget>[
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         _MinutesField(
           controller: afterRegularEndMinutesController,
           label: '정시 이후 고정 포함 시간',
           onChanged: onChanged,
         ),
         if (message != null) ...<Widget>[
-          const SizedBox(height: 10),
+          const SizedBox(height: workLedgerSpacingCompact),
           _ComparisonPreviewMessage(message: message),
-          const SizedBox(height: 6),
+          const SizedBox(height: workLedgerSpacingDense),
           Text(
             _fixedIncludedComparisonHelperText,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF5F6673),
+              color: workLedgerColorMuted,
               letterSpacing: 0,
             ),
           ),
@@ -834,17 +842,20 @@ final class _ComparisonPreviewMessage extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          border: Border.all(color: const Color(0xFFDDDDDD)),
-          borderRadius: BorderRadius.circular(8),
+          color: workLedgerColorSurfaceSoft,
+          border: Border.all(color: workLedgerColorHairline),
+          borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: workLedgerSpacingCompact,
+            vertical: workLedgerSpacingExtraSmall,
+          ),
           child: Text(
             message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF181D26),
-              fontWeight: FontWeight.w600,
+              color: workLedgerColorInk,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
           ),
@@ -863,16 +874,16 @@ final class _SettingsMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),

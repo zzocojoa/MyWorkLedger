@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../../core/models/pricing_intent_event.dart';
 import '../../../core/models/work_record.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
@@ -192,45 +194,50 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(
+              workLedgerSpacingLarge,
+              workLedgerSpacingExtraSmall,
+              workLedgerSpacingLarge,
+              workLedgerSpacingLarge,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Text(
                   formatMonthlySummaryMonth(month: _targetMonth),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF41454D),
+                    color: workLedgerColorMuted,
                     letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: workLedgerSpacingLarge),
                 if (_isLoading && viewData == null)
                   const Center(child: CircularProgressIndicator())
                 else if (_errorMessage != null)
                   _MonthlySummaryMessage(message: _errorMessage!)
                 else if (viewData != null) ...<Widget>[
                   _TotalWorkCard(viewData: viewData),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: workLedgerSpacingMedium),
                   _MonthlyStats(viewData: viewData),
                   if (viewData
                       .workTimeCandidateSummary
                       .hasActiveTags) ...<Widget>[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: workLedgerSpacingMedium),
                     _WorkTimeCandidateSummaryCard(viewData: viewData),
                   ],
                   if (viewData.compensationReferenceSummary.status ==
                       CompensationReferenceSummaryStatus.available) ...<Widget>[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: workLedgerSpacingMedium),
                     _CompensationReferenceSummaryCard(viewData: viewData),
                   ],
-                  const SizedBox(height: 14),
+                  const SizedBox(height: workLedgerSpacingMedium),
                   _MonthlyLeaveSummaryCard(viewData: viewData),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: workLedgerSpacingLarge),
                   _MonthlyRecordList(
                     summary: viewData.workSummary,
                     onDelete: _isDeletingRecord ? null : _deleteRecord,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: workLedgerSpacingLarge),
                   FilledButton(
                     onPressed: _isRecordingPricingIntent
                         ? null
@@ -256,29 +263,29 @@ final class _TotalWorkCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF181D26),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorInk,
+        borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               '이번 달 총 근무',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withValues(alpha: 0.82),
+                color: workLedgerColorOnDarkMuted,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             Text(
               formatMonthlySummaryDuration(
                 duration: viewData.displayTotalWorkedDuration,
               ),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+                color: workLedgerColorCanvas,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
@@ -305,7 +312,7 @@ final class _MonthlyStats extends StatelessWidget {
             value: '${summary.completedWorkDayCount}일',
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: workLedgerSpacingSmall),
         Expanded(
           child: _StatTile(
             label: '근무 태그',
@@ -344,30 +351,30 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
               '연차 요약',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: workLedgerSpacingMedium),
             Row(
               children: <Widget>[
                 Expanded(
                   child: _LeaveStatBlock(label: '남은 연차', value: remainingText),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: workLedgerSpacingSmall),
                 Expanded(
                   child: _LeaveStatBlock(
                     label: '이번 달 사용 연차',
@@ -376,21 +383,21 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             Text(
               totalLine,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF41454D),
+                color: workLedgerColorMuted,
                 letterSpacing: 0,
               ),
             ),
             if (hasBalance && leaveSummary.isExceeded) ...<Widget>[
-              const SizedBox(height: 8),
+              const SizedBox(height: workLedgerSpacingExtraSmall),
               Text(
                 '초과 사용 중',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF181D26),
-                  fontWeight: FontWeight.w600,
+                  color: workLedgerColorInk,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
@@ -411,24 +418,24 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
               '근무 태그',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             _CandidateReferenceRows(summary: viewData.workTimeCandidateSummary),
           ],
         ),
@@ -450,7 +457,7 @@ final class _CandidateReferenceRows extends StatelessWidget {
     return Column(
       children: <Widget>[
         for (int index = 0; index < rows.length; index += 1) ...<Widget>[
-          if (index > 0) const SizedBox(height: 10),
+          if (index > 0) const SizedBox(height: workLedgerSpacingCompact),
           _CandidateReferenceRow(
             label: rows[index].label,
             value: formatMonthlySummaryDuration(duration: rows[index].duration),
@@ -505,15 +512,15 @@ final class _CandidateReferenceRow extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF41454D),
+            color: workLedgerColorMuted,
             letterSpacing: 0,
           ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
@@ -531,30 +538,30 @@ final class _CompensationReferenceSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
               '포함 시간 대비',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             for (
               int index = 0;
               index < viewData.compensationReferenceSummary.rows.length;
               index += 1
             ) ...<Widget>[
-              if (index > 0) const SizedBox(height: 12),
+              if (index > 0) const SizedBox(height: workLedgerSpacingSmall),
               _CompensationReferenceRow(
                 row: viewData.compensationReferenceSummary.rows[index],
               ),
@@ -575,42 +582,42 @@ final class _CompensationReferenceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
+        color: workLedgerColorSurfaceSoft,
+        borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(workLedgerSpacingSmall),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
               row.label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             _CompensationReferenceValueLine(
               label: '초과 참고 시작',
               value: _formatCompensationReferenceMinuteOfDay(
                 minutes: row.excessStartTimeMinutes,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
               label: '실제 기록',
               value: formatMonthlySummaryDuration(duration: row.actualDuration),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
               label: '포함 시간',
               value: formatMonthlySummaryDuration(
                 duration: row.fixedIncludedDuration,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
               label: '초과 참고',
               value: formatMonthlySummaryDuration(
@@ -655,15 +662,15 @@ final class _CompensationReferenceValueLine extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF6F737A),
+            color: workLedgerColorMuted,
             letterSpacing: 0,
           ),
         ),
         Text(
           value,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
@@ -686,16 +693,16 @@ final class _LeaveStatBlock extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF41454D),
+            color: workLedgerColorMuted,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: workLedgerSpacingExtraSmall),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
@@ -714,28 +721,28 @@ final class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF41454D),
+                color: workLedgerColorMuted,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: workLedgerSpacingExtraSmall),
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
@@ -764,17 +771,17 @@ final class _MonthlyRecordList extends StatelessWidget {
         Text(
           '이번 달 기록',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFDDDDDD)),
-            borderRadius: BorderRadius.circular(10),
+            color: workLedgerColorCanvas,
+            border: Border.all(color: workLedgerColorHairline),
+            borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
           ),
           child: Column(
             children: <Widget>[
@@ -799,37 +806,37 @@ final class _EmptyMonthlyRecords extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               '이번 달 기록',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             Text(
               '이 달 기록이 없습니다',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             Text(
               '출근/퇴근 기록이 쌓이면 월간 요약이 표시됩니다.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF41454D),
+                color: workLedgerColorMuted,
                 letterSpacing: 0,
               ),
             ),
@@ -857,12 +864,15 @@ final class _MonthlyRecordRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: showDivider
-              ? const BorderSide(color: Color(0xFFEAEAEA))
+              ? const BorderSide(color: workLedgerColorHairline)
               : BorderSide.none,
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: workLedgerSpacingMedium,
+          vertical: workLedgerSpacingSmall,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -873,8 +883,8 @@ final class _MonthlyRecordRow extends StatelessWidget {
                   Text(
                     formatMonthlySummaryEntryLine(entry: entry),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF181D26),
-                      fontWeight: FontWeight.w600,
+                      color: workLedgerColorInk,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0,
                     ),
                   ),
@@ -882,11 +892,11 @@ final class _MonthlyRecordRow extends StatelessWidget {
                       formatMonthlySummaryRecordReasons(
                         tags: entry.tags,
                       ).isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: workLedgerSpacingDense),
                     Text(
                       '기록 사유: ${formatMonthlySummaryRecordReasons(tags: entry.tags)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF41454D),
+                        color: workLedgerColorMuted,
                         letterSpacing: 0,
                       ),
                     ),
@@ -894,12 +904,12 @@ final class _MonthlyRecordRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: workLedgerSpacingExtraSmall),
             IconButton(
               onPressed: onDelete == null ? null : () => onDelete!(entry),
               tooltip: '근무 기록 삭제',
               icon: const Icon(Icons.delete_outline),
-              color: const Color(0xFFAA2D00),
+              color: workLedgerColorSignatureCoral,
             ),
           ],
         ),
@@ -967,16 +977,16 @@ final class _MonthlySummaryMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),

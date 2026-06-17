@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/workledger_design_tokens.dart';
 import '../features/compensation_reference/domain/compensation_reference_repository.dart';
 import '../features/leave/domain/leave_repository.dart';
 import '../features/pricing/domain/pricing_intent_repository.dart';
@@ -42,51 +43,7 @@ final class WorkLedgerApp extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF181D26),
-          primary: const Color(0xFF181D26),
-          surface: Colors.white,
-        ),
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF181D26),
-          surfaceTintColor: Colors.white,
-          elevation: 0,
-          centerTitle: false,
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF181D26),
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(54),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0,
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF181D26),
-            minimumSize: const Size.fromHeight(52),
-            side: const BorderSide(color: Color(0xFFDDDDDD)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0,
-            ),
-          ),
-        ),
-      ),
+      theme: createWorkLedgerTheme(),
       home: WorkRecordHomeScreen(
         repository: workRecordRepository,
         leaveRepository: leaveRepository,

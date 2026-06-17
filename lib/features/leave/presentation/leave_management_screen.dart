@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../../core/models/leave_usage.dart';
 import '../domain/add_leave_usage.dart';
 import '../domain/leave_repository.dart';
 import '../domain/leave_summary.dart';
 import '../domain/load_leave_summary.dart';
+
+const double _leaveUsageDateColumnWidth = 58;
+const double _leaveUsageAmountColumnWidth = 74;
 
 final class LeaveManagementScreen extends StatefulWidget {
   const LeaveManagementScreen({
@@ -148,17 +153,22 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
       appBar: AppBar(title: const Text('연차 관리')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               _YearBlock(year: _year),
-              const SizedBox(height: 18),
+              const SizedBox(height: workLedgerSpacingMedium),
               if (_isLoading && summary == null)
                 const Center(child: CircularProgressIndicator())
               else if (summary != null) ...<Widget>[
                 _LeaveSummaryCard(summary: summary),
-                const SizedBox(height: 22),
+                const SizedBox(height: workLedgerSpacingLarge),
                 _LeaveUsageForm(
                   dateController: _usageDateController,
                   daysController: _usageDaysController,
@@ -166,14 +176,14 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
                   memoController: _usageMemoController,
                   onAdd: _isLoading ? null : _addUsage,
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: workLedgerSpacingLarge),
                 _LeaveUsageList(
                   usages: summary.usages,
                   onDelete: _isDeletingUsage ? null : _deleteUsage,
                 ),
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _LeaveMessage(message: _errorMessage!),
               ],
             ],
@@ -197,16 +207,16 @@ final class _YearBlock extends StatelessWidget {
         Text(
           '기준 연도',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: const Color(0xFF41454D),
+            color: workLedgerColorMuted,
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: workLedgerSpacingDense),
         Text(
           year.toString(),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
@@ -232,45 +242,45 @@ final class _LeaveSummaryCard extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF123D2C),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorSignatureForest,
+        borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               '남은 연차',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white.withValues(alpha: 0.82),
+                color: workLedgerColorOnDarkMuted,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+                color: workLedgerColorCanvas,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             Text(
               '총 ${formatLeaveMinutes(minutes: summary.totalLeaveMinutes, includeZeroHours: true)} · 사용 ${formatLeaveMinutes(minutes: summary.usedLeaveMinutes, includeZeroHours: true)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.72),
+                color: workLedgerColorOnDarkMuted,
                 letterSpacing: 0,
               ),
             ),
             if (summary.isExceeded) ...<Widget>[
-              const SizedBox(height: 8),
+              const SizedBox(height: workLedgerSpacingExtraSmall),
               Text(
                 '초과 사용 중',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                  color: workLedgerColorCanvas,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
@@ -312,7 +322,7 @@ final class _LeaveUsageForm extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         Row(
           children: <Widget>[
             Expanded(
@@ -322,7 +332,7 @@ final class _LeaveUsageForm extends StatelessWidget {
                 label: '일',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             Expanded(
               child: _NumberField(
                 keyValue: const Key('usageHoursField'),
@@ -332,7 +342,7 @@ final class _LeaveUsageForm extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         TextField(
           key: const Key('usageMemoField'),
           controller: memoController,
@@ -341,7 +351,7 @@ final class _LeaveUsageForm extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         OutlinedButton(onPressed: onAdd, child: const Text('연차 사용 추가')),
       ],
     );
@@ -388,7 +398,7 @@ final class _LeaveUsageList extends StatelessWidget {
           Text(
             '사용 내역이 없습니다',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF41454D),
+              color: workLedgerColorMuted,
               letterSpacing: 0,
             ),
           ),
@@ -427,56 +437,56 @@ final class _LeaveUsageRow extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           bottom: showDivider
-              ? const BorderSide(color: Color(0xFFEAEAEA))
+              ? const BorderSide(color: workLedgerColorHairline)
               : BorderSide.none,
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: workLedgerSpacingCompact),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             SizedBox(
-              width: 58,
+              width: _leaveUsageDateColumnWidth,
               child: Text(
                 formatLeaveUsageDate(value: usage.usedOn),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF181D26),
-                  fontWeight: FontWeight.w600,
+                  color: workLedgerColorInk,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             SizedBox(
-              width: 74,
+              width: _leaveUsageAmountColumnWidth,
               child: Text(
                 formatLeaveMinutes(
                   minutes: usage.usedLeaveMinutes,
                   includeZeroHours: false,
                 ),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF181D26),
+                  color: workLedgerColorInk,
                   letterSpacing: 0,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             Expanded(
               child: Text(
                 usage.memo ?? '',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF41454D),
+                  color: workLedgerColorMuted,
                   letterSpacing: 0,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: workLedgerSpacingExtraSmall),
             IconButton(
               onPressed: onDelete == null ? null : () => onDelete!(usage),
               tooltip: '연차 사용 삭제',
               icon: const Icon(Icons.delete_outline),
-              color: const Color(0xFFAA2D00),
+              color: workLedgerColorSignatureCoral,
             ),
           ],
         ),
@@ -523,24 +533,24 @@ final class _SectionBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             ...children,
           ],
         ),
@@ -558,16 +568,16 @@ final class _LeaveMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),
