@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../../core/models/work_record.dart';
 import '../domain/save_work_record.dart';
 import '../domain/work_record_repository.dart';
@@ -207,7 +209,12 @@ final class _EditTodayWorkRecordScreenState
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -227,12 +234,12 @@ final class _EditTodayWorkRecordScreenState
                   label: '퇴근 시각',
                   controller: _clockOutController,
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: workLedgerSpacingMedium),
                 Text(
                   '기록 사유',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF181D26),
-                    fontWeight: FontWeight.w600,
+                    color: workLedgerColorInk,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0,
                   ),
                 ),
@@ -250,9 +257,9 @@ final class _EditTodayWorkRecordScreenState
                       )
                       .toList(),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _MemoField(controller: _memoController),
-                const SizedBox(height: 22),
+                const SizedBox(height: workLedgerSpacingLarge),
                 FilledButton(
                   onPressed: _isSaving || _isDeleting ? null : _saveRecord,
                   child: const Text('저장'),
@@ -262,7 +269,7 @@ final class _EditTodayWorkRecordScreenState
                   OutlinedButton(
                     onPressed: _isSaving || _isDeleting ? null : _deleteRecord,
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFAA2D00),
+                      foregroundColor: workLedgerColorSignatureCoral,
                     ),
                     child: const Text('기록 삭제'),
                   ),
@@ -332,17 +339,17 @@ final class _ReadOnlyValue extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
         const SizedBox(height: 8),
         DecoratedBox(
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: const Color(0xFFDDDDDD)),
-            borderRadius: BorderRadius.circular(6),
+            color: workLedgerColorCanvas,
+            border: Border.all(color: workLedgerColorHairline),
+            borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
@@ -368,7 +375,9 @@ final class _TimeField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: '09:03',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 14,
@@ -391,7 +400,9 @@ final class _MemoField extends StatelessWidget {
       maxLines: 5,
       decoration: InputDecoration(
         labelText: '메모',
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 12,
           vertical: 14,
@@ -410,16 +421,16 @@ final class _ErrorBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../domain/leave_repository.dart';
 import '../domain/leave_summary.dart';
 import '../domain/load_leave_summary.dart';
@@ -128,14 +130,19 @@ final class _LeaveBalanceSettingsScreenState
       appBar: AppBar(title: const Text('총 연차')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Text(
                 '기준 연도',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF41454D),
+                  color: workLedgerColorMuted,
                   letterSpacing: 0,
                 ),
               ),
@@ -143,12 +150,12 @@ final class _LeaveBalanceSettingsScreenState
               Text(
                 _year.toString(),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFF181D26),
-                  fontWeight: FontWeight.w600,
+                  color: workLedgerColorInk,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: workLedgerSpacingLarge),
               if (_isLoading)
                 const Center(child: CircularProgressIndicator())
               else ...<Widget>[
@@ -182,7 +189,7 @@ final class _LeaveBalanceSettingsScreenState
                 Text(
                   _errorMessage!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFAA2D00),
+                    color: workLedgerColorSignatureCoral,
                     letterSpacing: 0,
                   ),
                 ),

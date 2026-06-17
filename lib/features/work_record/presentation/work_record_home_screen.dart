@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../../core/models/work_record.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../leave/domain/leave_repository.dart';
@@ -281,14 +283,19 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Text(
                 formatTodayLabel(now: widget.now()),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF41454D),
+                  color: workLedgerColorMuted,
                   letterSpacing: 0,
                 ),
               ),
@@ -297,7 +304,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                 const Center(child: CircularProgressIndicator())
               else if (summary != null) ...<Widget>[
                 _TodayStatusCard(summary: summary),
-                const SizedBox(height: 20),
+                const SizedBox(height: workLedgerSpacingLarge),
                 FilledButton(
                   onPressed: _isLoading
                       ? null
@@ -318,12 +325,12 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                 const SizedBox(height: 16),
                 _StatusMessage(message: _errorMessage!),
               ],
-              const SizedBox(height: 28),
+              const SizedBox(height: workLedgerSpacingExtraLarge),
               _MonthlyPreview(
                 data: _monthlyPreviewData,
                 isLoading: _isPreviewLoading,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: workLedgerSpacingMedium),
               _HomeLinks(
                 onOpenMonthlySummary: _openMonthlySummary,
                 onOpenLeaveManagement: _openLeaveManagement,
@@ -355,20 +362,20 @@ final class _TodayStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               summary.statusText,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
@@ -379,7 +386,7 @@ final class _TodayStatusCard extends StatelessWidget {
                 child: Text(
                   line,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: const Color(0xFF333840),
+                    color: workLedgerColorBody,
                     letterSpacing: 0,
                   ),
                 ),
@@ -400,16 +407,16 @@ final class _StatusMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),
@@ -434,8 +441,8 @@ final class _MonthlyPreview extends StatelessWidget {
         Text(
           localizations.homeThisMonth,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: const Color(0xFF181D26),
-            fontWeight: FontWeight.w600,
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
@@ -486,19 +493,19 @@ final class _SummaryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF41454D),
+                color: workLedgerColorMuted,
                 letterSpacing: 0,
               ),
             ),
@@ -506,8 +513,8 @@ final class _SummaryTile extends StatelessWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
@@ -537,13 +544,13 @@ final class _HomeLinks extends StatelessWidget {
         TextButton(
           onPressed: onOpenMonthlySummary,
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF41454D),
+            foregroundColor: workLedgerColorMuted,
             padding: EdgeInsets.zero,
             minimumSize: const Size(0, 44),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             textStyle: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
           ),
@@ -552,13 +559,13 @@ final class _HomeLinks extends StatelessWidget {
         TextButton(
           onPressed: onOpenLeaveManagement,
           style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF41454D),
+            foregroundColor: workLedgerColorMuted,
             padding: EdgeInsets.zero,
             minimumSize: const Size(0, 44),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             textStyle: const TextStyle(
               fontSize: 14,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
           ),

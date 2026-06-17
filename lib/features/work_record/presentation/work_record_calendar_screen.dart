@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../../core/models/work_record.dart';
 import '../../monthly_summary/domain/calculate_monthly_summary.dart';
 import '../../monthly_summary/domain/monthly_summary.dart';
@@ -146,7 +148,12 @@ final class _WorkRecordCalendarScreenState
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(
+              workLedgerSpacingLarge,
+              workLedgerSpacingExtraSmall,
+              workLedgerSpacingLarge,
+              workLedgerSpacingLarge,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -155,7 +162,7 @@ final class _WorkRecordCalendarScreenState
                   onPrevious: _isLoading ? null : () => _moveMonth(-1),
                   onNext: _isLoading ? null : () => _moveMonth(1),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: workLedgerSpacingMedium),
                 if (_isLoading && summary == null)
                   const Center(child: CircularProgressIndicator())
                 else if (_errorMessage != null)
@@ -172,14 +179,14 @@ final class _WorkRecordCalendarScreenState
                       });
                     },
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: workLedgerSpacingMedium),
                   _CalendarLegend(),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: workLedgerSpacingMedium),
                   _SelectedDateDetail(
                     selectedDate: _selectedDate,
                     entry: selectedEntry,
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: workLedgerSpacingMedium),
                   FilledButton(
                     onPressed: _openEditWorkRecord,
                     child: Text(editButtonLabel),
@@ -219,8 +226,8 @@ final class _CalendarMonthHeader extends StatelessWidget {
             '${targetMonth.year}년 ${targetMonth.month}월',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFF181D26),
-              fontWeight: FontWeight.w700,
+              color: workLedgerColorInk,
+              fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
           ),
@@ -256,9 +263,9 @@ final class _CalendarGrid extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -311,8 +318,8 @@ final class _CalendarWeekdayRow extends StatelessWidget {
               weekday,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF41454D),
-                fontWeight: FontWeight.w600,
+                color: workLedgerColorMuted,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
@@ -340,14 +347,14 @@ final class _CalendarDayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color foregroundColor = isSelected
-        ? Colors.white
-        : const Color(0xFF181D26);
+        ? workLedgerColorCanvas
+        : workLedgerColorInk;
     final Color backgroundColor = isSelected
-        ? const Color(0xFF181D26)
-        : Colors.white;
+        ? workLedgerColorInk
+        : workLedgerColorCanvas;
     final BorderSide borderSide = isToday
-        ? const BorderSide(color: Color(0xFF181D26), width: 1.2)
-        : const BorderSide(color: Color(0xFFEAEAEA));
+        ? const BorderSide(color: workLedgerColorInk, width: 1.2)
+        : const BorderSide(color: workLedgerColorHairline);
 
     return Semantics(
       label: _buildCalendarDaySemanticLabel(date: date, entry: entry),
@@ -356,12 +363,12 @@ final class _CalendarDayCell extends StatelessWidget {
       child: InkWell(
         key: Key(_buildCalendarDayKey(date: date)),
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: backgroundColor,
             border: Border.fromBorderSide(borderSide),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
           ),
           child: Center(
             child: Padding(
@@ -376,7 +383,7 @@ final class _CalendarDayCell extends StatelessWidget {
                       date.day.toString(),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: foregroundColor,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0,
                       ),
                     ),
@@ -385,7 +392,7 @@ final class _CalendarDayCell extends StatelessWidget {
                       _calendarMarker(entry: entry),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: foregroundColor,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0,
                       ),
                     ),
@@ -397,7 +404,7 @@ final class _CalendarDayCell extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: foregroundColor,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: 0,
                         ),
                       ),
@@ -442,8 +449,8 @@ final class _LegendItem extends StatelessWidget {
     return Text(
       '$marker $label',
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: const Color(0xFF41454D),
-        fontWeight: FontWeight.w600,
+        color: workLedgerColorMuted,
+        fontWeight: FontWeight.w500,
         letterSpacing: 0,
       ),
     );
@@ -465,9 +472,9 @@ final class _SelectedDateDetail extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(12),
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -477,8 +484,8 @@ final class _SelectedDateDetail extends StatelessWidget {
             Text(
               _formatCalendarDateTitle(value: selectedDate),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: const Color(0xFF181D26),
-                fontWeight: FontWeight.w700,
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0,
               ),
             ),
@@ -489,7 +496,7 @@ final class _SelectedDateDetail extends StatelessWidget {
                 child: Text(
                   line,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF333840),
+                    color: workLedgerColorBody,
                     letterSpacing: 0,
                   ),
                 ),
@@ -510,16 +517,16 @@ final class _CalendarMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),

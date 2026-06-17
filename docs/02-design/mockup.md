@@ -556,7 +556,10 @@ Style notes:
 ## Implementation Notes
 
 - 화면 구현 시 `ThemeData`의 기본 surface는 white canvas로 둔다.
+- Flutter 구현의 디자인 토큰 source of truth는 `lib/core/theme/workledger_design_tokens.dart`다.
+- 색상, radius, spacing, typography는 presentation 화면에서 직접 hex나 임의 숫자로 반복하지 않고 디자인 토큰을 우선 사용한다.
 - primary CTA는 한 화면에 하나만 둔다.
 - 월간 요약, 연차, 가격 fake-door 외 화면에는 코럴/포레스트/다크 표면을 쓰지 않는다.
+- MVP Android 빌드에서는 Inter Display font asset을 번들하지 않고 플랫폼 기본 글꼴 폴백을 사용한다.
 - 설정 화면은 기존 `screen-list.md`에 남기되, MVP 핵심 mockup에서는 보조 화면으로 취급한다.
 - UI 문구는 한국어를 기본으로 작성하고, 영어 문자열 구조는 구현 단계에서 분리한다.

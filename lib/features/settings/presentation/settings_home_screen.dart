@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/presentation/leave_balance_settings_screen.dart';
@@ -29,7 +31,12 @@ final class SettingsHomeScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('설정')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           children: <Widget>[
             _SettingsRow(
               icon: Icons.schedule_outlined,
@@ -111,13 +118,13 @@ final class _SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.symmetric(vertical: workLedgerSpacingMedium),
         child: Row(
           children: <Widget>[
-            Icon(icon, color: const Color(0xFF181D26)),
-            const SizedBox(width: 14),
+            Icon(icon, color: workLedgerColorInk),
+            const SizedBox(width: workLedgerSpacingMedium),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,8 +132,8 @@ final class _SettingsRow extends StatelessWidget {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFF181D26),
-                      fontWeight: FontWeight.w600,
+                      color: workLedgerColorInk,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0,
                     ),
                   ),
@@ -134,7 +141,7 @@ final class _SettingsRow extends StatelessWidget {
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF6F737A),
+                      color: workLedgerColorMuted,
                       letterSpacing: 0,
                     ),
                   ),
@@ -142,7 +149,7 @@ final class _SettingsRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Icon(Icons.chevron_right, color: Color(0xFF8B8F96)),
+            const Icon(Icons.chevron_right, color: workLedgerColorMuted),
           ],
         ),
       ),
@@ -153,6 +160,6 @@ final class _SettingsRow extends StatelessWidget {
 final class _SettingsDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Divider(height: 1, color: Color(0xFFEAEAEA));
+    return const Divider(height: 1, color: workLedgerColorHairline);
   }
 }

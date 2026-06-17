@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/workledger_design_tokens.dart';
+
 import '../domain/work_rule_repository.dart';
 
 final class WorkRuleSettingsScreen extends StatefulWidget {
@@ -158,7 +160,12 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
       appBar: AppBar(title: const Text('근무 기준 설정')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            workLedgerSpacingLarge,
+            workLedgerSpacingExtraSmall,
+            workLedgerSpacingLarge,
+            workLedgerSpacingLarge,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -202,12 +209,12 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                 decoration: const InputDecoration(labelText: '휴게시간(분)'),
                 keyboardType: TextInputType.number,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: workLedgerSpacingMedium),
               Text(
                 '근무 요일',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF181D26),
-                  fontWeight: FontWeight.w600,
+                  color: workLedgerColorInk,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                 ),
               ),
@@ -325,16 +332,16 @@ final class _WorkRuleMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        borderRadius: BorderRadius.circular(10),
+        color: workLedgerColorSurfaceSoft,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Text(
           message,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: const Color(0xFF181D26),
+            color: workLedgerColorInk,
             letterSpacing: 0,
           ),
         ),

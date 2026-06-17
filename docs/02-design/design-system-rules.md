@@ -367,6 +367,12 @@ The pricing-page sub-system uses Inter Display at `font-weight: 475` — a custo
 ### Note on Font Substitutes
 If Haas Groot Disp and Haas Grotesk are unavailable, **Inter Display** (variable) is the closest open-source substitute for both — adjust line-height down by ~5% to match Haas's tighter cap-height. For the pricing sub-system, use Inter Display directly. On macOS / iOS, **system-ui** is sufficient; on Windows, the chain falls through to Segoe UI, which is a usable but slightly cooler substitute.
 
+### Flutter Implementation Source Of Truth
+
+WorkLedger Flutter 구현의 디자인 토큰 source of truth는 `lib/core/theme/workledger_design_tokens.dart`다. 이 파일은 `DESIGN-airtable.md`의 색상, radius, spacing, typography를 Flutter `ThemeData`와 화면별 스타일에서 재사용할 수 있는 Dart 상수로 옮긴다.
+
+MVP Android 빌드에서는 Inter Display font asset을 번들하지 않는다. 가격 sub-system은 `workLedgerPricingCardTitleTextStyle`에서 DESIGN의 20px / medium-weight / 1.3 line-height 구조를 유지하되, 실제 글꼴은 플랫폼 기본 글꼴 폴백을 사용한다. Inter Display를 추가하려면 font license와 APK 크기 증가를 별도 검토한 뒤 `pubspec.yaml`의 `flutter.fonts`에 명시한다.
+
 ## Layout
 
 ### Spacing System
