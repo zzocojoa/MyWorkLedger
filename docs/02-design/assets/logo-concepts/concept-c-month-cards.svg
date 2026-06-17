@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">WorkLedger concept C, monthly cards</title>
+  <desc id="desc">Dark square icon with three overlapping work summary cards and a white check mark.</desc>
+  <rect width="512" height="512" fill="#181d26"/>
+  <rect x="122" y="150" width="142" height="190" rx="24" fill="#f5e9d4"/>
+  <rect x="186" y="124" width="142" height="216" rx="24" fill="#fcab79"/>
+  <rect x="248" y="98" width="142" height="242" rx="24" fill="#ffffff"/>
+  <rect x="276" y="150" width="86" height="16" rx="8" fill="#181d26"/>
+  <rect x="276" y="196" width="62" height="14" rx="7" fill="#9297a0"/>
+  <path d="M262 366l42 42 94-110" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

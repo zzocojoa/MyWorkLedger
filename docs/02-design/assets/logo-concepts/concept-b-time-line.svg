@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">WorkLedger concept B, time line</title>
+  <desc id="desc">Cream square icon with a forest time line and a dark check mark.</desc>
+  <rect width="512" height="512" fill="#f5e9d4"/>
+  <circle cx="154" cy="256" r="34" fill="#0a2e0e"/>
+  <circle cx="256" cy="256" r="34" fill="#0a2e0e"/>
+  <path d="M154 256h204" fill="none" stroke="#0a2e0e" stroke-width="28" stroke-linecap="round"/>
+  <path d="M318 244l34 34 82-96" fill="none" stroke="#181d26" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="132" y="310" width="248" height="28" rx="14" fill="#181d26"/>
+</svg>

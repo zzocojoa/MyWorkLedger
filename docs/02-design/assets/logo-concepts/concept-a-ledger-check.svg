@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">WorkLedger concept A, ledger check</title>
+  <desc id="desc">Dark square icon with a white ledger sheet and a coral check mark.</desc>
+  <rect width="512" height="512" fill="#181d26"/>
+  <rect x="154" y="108" width="204" height="296" rx="26" fill="#ffffff"/>
+  <rect x="190" y="164" width="132" height="18" rx="9" fill="#181d26"/>
+  <rect x="190" y="214" width="98" height="16" rx="8" fill="#9297a0"/>
+  <rect x="190" y="260" width="78" height="16" rx="8" fill="#9297a0"/>
+  <path d="M188 330l42 42 96-112" fill="none" stroke="#aa2d00" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
