@@ -11,8 +11,8 @@
 | S-01 | 홈/오늘 기록 | `/` | 오늘 출근/퇴근 1탭 기록 | `WorkRecord` |
 | S-02 | 기록 추가/수정 | `/work-record/edit` | 선택 날짜의 출근/퇴근 시각, 기록 사유, 메모 보정 | `WorkRecord` |
 | S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무 확인과 누락 기록 추가/수정 | `WorkRecord` |
-| S-04 | 연차 관리 | `/leave` | 연차 사용 기록 추가/삭제 | `LeaveUsage`, `LeaveBalance` |
-| S-05 | 월간 요약 | `/summary` | 월간 근무시간, 선택형 근무 태그, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance` |
+| S-04 | 연차 관리 | `/leave` | 연차 사용 기록 추가/삭제/초기화 | `LeaveUsage`, `LeaveBalance` |
+| S-05 | 월간 요약 | `/summary` | 월간 근무시간, 근무 태그, 태그별 참고, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance`, `WorkRule` |
 | S-06 | 근무 설정 | `/settings/work` | 정시 근무, 포함 시간 비교, 근무 태그 기준, 근무 요일 설정 | `WorkRule`, `CompensationReferenceSetting` |
 | S-07 | 가격표/fake-door | `/pricing` | Report Pass/Pro 클릭 의향 측정 | `PricingIntentEvent` |
 | S-08 | 설정 | `/settings` | 근무 설정, 총 연차, 알림 설정 진입 | settings |
@@ -26,8 +26,8 @@
 | 홈/오늘 기록 | 오늘 기록 없음, 출근 버튼 강조 | 저장 실패, 잘못된 퇴근 시각 |
 | 기록 수정 | 선택 기록 없음 | 검증 실패, 저장 실패 |
 | 달력 보기 | 선택 월 기록 없음 | 월별 조회 실패, 요약 계산 실패 |
-| 연차 관리 | 사용 내역 없음 | 30분 단위 위반, 저장 실패 |
-| 월간 요약 | 선택 월 기록 없음 | 요약 계산 실패 |
+| 연차 관리 | 사용 내역 없음 | 총 연차 미등록, 30분 단위 위반, 저장 실패 |
+| 월간 요약 | 선택 월 기록 없음. 근무 기준이 없어도 기본 참고 기준으로 근무 태그 계산 | 요약 계산 실패 |
 | 근무 설정 | 기준 미설정 | 잘못된 시각 범위, 포함 시간 입력 오류, 저장 실패 |
 | 가격표/fake-door | 이벤트 없음 | 이벤트 저장 실패 |
 | 설정 | 설정 항목 표시 | 하위 설정 저장 실패 |

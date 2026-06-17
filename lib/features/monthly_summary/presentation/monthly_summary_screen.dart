@@ -225,6 +225,12 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                     const SizedBox(height: workLedgerSpacingMedium),
                     _WorkTimeCandidateSummaryCard(viewData: viewData),
                   ],
+                  if (_hasRecordTagSummary(
+                    summary: viewData.workSummary,
+                  )) ...<Widget>[
+                    const SizedBox(height: workLedgerSpacingMedium),
+                    _RecordTagSummaryCard(summary: viewData.workSummary),
+                  ],
                   if (viewData.compensationReferenceSummary.status ==
                       CompensationReferenceSummaryStatus.available) ...<Widget>[
                     const SizedBox(height: workLedgerSpacingMedium),
@@ -304,6 +310,7 @@ final class _MonthlyStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final MonthlySummary summary = viewData.workSummary;
+    final int visibleTagCount = _visibleMonthlyTagCount(viewData: viewData);
     return Row(
       children: <Widget>[
         Expanded(
@@ -316,14 +323,27 @@ final class _MonthlyStats extends StatelessWidget {
         Expanded(
           child: _StatTile(
             label: '근무 태그',
-            value: viewData.workRule == null
+            value: visibleTagCount > 0
+                ? '$visibleTagCount개'
+                : viewData.workRule == null
                 ? '기준 미설정'
-                : '${viewData.workTimeCandidateSummary.activeTagCount}개',
+                : '0개',
           ),
         ),
       ],
     );
   }
+}
+
+int _visibleMonthlyTagCount({required MonthlySummaryViewData viewData}) {
+  final int recordTagCount = _recordTagSummaryCount(
+    summary: viewData.workSummary,
+  );
+  final int candidateTagCount =
+      viewData.workTimeCandidateSummary.activeTagCount;
+  return candidateTagCount > recordTagCount
+      ? candidateTagCount
+      : recordTagCount;
 }
 
 final class _MonthlyLeaveSummaryCard extends StatelessWidget {
@@ -405,6 +425,114 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+final class _RecordTagSummaryCard extends StatelessWidget {
+  const _RecordTagSummaryCard({required this.summary});
+
+  final MonthlySummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<_RecordTagSummaryData> rows = _visibleRecordTagRows(
+      summary: summary,
+    );
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: workLedgerColorCanvas,
+        border: Border.all(color: workLedgerColorHairline),
+        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              '태그별 참고',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: workLedgerColorInk,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: workLedgerSpacingSmall),
+            for (int index = 0; index < rows.length; index += 1) ...<Widget>[
+              if (index > 0) const SizedBox(height: workLedgerSpacingCompact),
+              _RecordTagSummaryRow(
+                label: rows[index].label,
+                value: formatMonthlySummaryDuration(
+                  duration: rows[index].duration,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _RecordTagSummaryData {
+  const _RecordTagSummaryData({required this.label, required this.duration});
+
+  final String label;
+  final Duration duration;
+}
+
+List<_RecordTagSummaryData> _visibleRecordTagRows({
+  required MonthlySummary summary,
+}) {
+  final List<_RecordTagSummaryData> rows = <_RecordTagSummaryData>[
+    _RecordTagSummaryData(label: '야근', duration: summary.overtimeDuration),
+    _RecordTagSummaryData(
+      label: '퇴근 지연',
+      duration: summary.delayedCheckoutDuration,
+    ),
+    _RecordTagSummaryData(label: '휴일근무', duration: summary.holidayWorkDuration),
+  ];
+  return rows
+      .where((_RecordTagSummaryData row) => row.duration > Duration.zero)
+      .toList(growable: false);
+}
+
+bool _hasRecordTagSummary({required MonthlySummary summary}) {
+  return _recordTagSummaryCount(summary: summary) > 0;
+}
+
+int _recordTagSummaryCount({required MonthlySummary summary}) {
+  return _visibleRecordTagRows(summary: summary).length;
+}
+
+final class _RecordTagSummaryRow extends StatelessWidget {
+  const _RecordTagSummaryRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: <Widget>[
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: workLedgerColorMuted,
+            letterSpacing: 0,
+          ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: workLedgerColorInk,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
     );
   }
 }

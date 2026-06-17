@@ -309,13 +309,6 @@ void _validateViewData(MonthlySummaryViewData data) {
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.nightWorkDuration rule=non-negative',
     );
   }
-  if (data.workRule == null &&
-      data.workTimeCandidateSummary.status !=
-          WorkTimeCandidateStatus.unavailable) {
-    throw MonthlySummaryException(
-      'model=MonthlySummaryViewData field=workTimeCandidateSummary.status rule=unavailable when workRule is missing',
-    );
-  }
 }
 
 bool _isDateOnly(DateTime value) {

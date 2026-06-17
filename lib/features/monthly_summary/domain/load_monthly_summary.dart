@@ -35,10 +35,12 @@ Future<MonthlySummaryViewData> loadMonthlySummary({
     year: targetMonth.year,
   );
   final WorkRule? workRule = await workRuleRepository.findActive();
+  final WorkRule candidateWorkRule =
+      workRule ?? _defaultMonthlySummaryWorkRule(targetMonth: targetMonth);
   final WorkTimeCandidateSummary workTimeCandidateSummary =
       _calculateMonthlyWorkTimeCandidateSummary(
         records: records,
-        workRule: workRule,
+        workRule: candidateWorkRule,
       );
   final CompensationReferenceSetting? compensationReferenceSetting =
       await compensationReferenceRepository.findApplicableForMonth(
@@ -93,21 +95,33 @@ Duration calculateDisplayTotalWorkedDuration({
   });
 }
 
+WorkRule _defaultMonthlySummaryWorkRule({
+  required MonthlySummaryMonth targetMonth,
+}) {
+  final DateTime timestamp = DateTime(targetMonth.year, targetMonth.month);
+  return WorkRule(
+    id: 'monthly-summary-default-work-rule',
+    regularStartTimeMinutes: 9 * 60,
+    regularEndTimeMinutes: 18 * 60,
+    overtimeStartTimeMinutes: 18 * 60,
+    nightWorkStartTimeMinutes: workRuleDefaultNightWorkStartTimeMinutes,
+    breakMinutes: 60,
+    workWeekdays: <int>[
+      DateTime.monday,
+      DateTime.tuesday,
+      DateTime.wednesday,
+      DateTime.thursday,
+      DateTime.friday,
+    ],
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  );
+}
+
 WorkTimeCandidateSummary _calculateMonthlyWorkTimeCandidateSummary({
   required List<WorkRecord> records,
-  required WorkRule? workRule,
+  required WorkRule workRule,
 }) {
-  if (workRule == null) {
-    return const WorkTimeCandidateSummary(
-      status: WorkTimeCandidateStatus.unavailable,
-      nonWorkdayDuration: Duration.zero,
-      earlyWorkDuration: Duration.zero,
-      overtimeDuration: Duration.zero,
-      nightWorkDuration: Duration.zero,
-      reason: 'workRuleMissing',
-    );
-  }
-
   return records.fold(
     const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.available,
