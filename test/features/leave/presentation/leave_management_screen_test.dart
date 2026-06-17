@@ -124,6 +124,20 @@ void main() {
     expect(find.text('06-26'), findsOneWidget);
     expect(find.text('총 15일 0시간 · 사용 1일 0시간'), findsOneWidget);
 
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-27',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '0');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '4');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('06-27'), findsOneWidget);
+    expect(find.text('13일 4시간'), findsOneWidget);
+    expect(find.text('총 15일 0시간 · 사용 1일 4시간'), findsOneWidget);
+
     await tester.tap(find.widgetWithText(TextButton, '리셋'));
     await tester.pumpAndSettle();
     expect(find.text('연차 사용 내역을 초기화할까요?'), findsOneWidget);
@@ -135,8 +149,11 @@ void main() {
     expect(await repository.findUsagesByYear(year: 2026), isEmpty);
     expect(find.text('15일'), findsOneWidget);
     expect(find.text('총 15일 0시간 · 사용 0시간'), findsOneWidget);
+    expect(find.text('13일 4시간'), findsNothing);
+    expect(find.text('총 15일 0시간 · 사용 1일 4시간'), findsNothing);
     expect(find.text('사용 내역이 없습니다'), findsOneWidget);
     expect(find.text('06-26'), findsNothing);
+    expect(find.text('06-27'), findsNothing);
   });
 
   testWidgets('deletes leave usage after confirmation and refreshes summary', (

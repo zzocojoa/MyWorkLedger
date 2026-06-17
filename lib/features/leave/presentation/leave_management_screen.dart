@@ -79,6 +79,22 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     }
   }
 
+  Future<void> _refreshSummaryAfterUsageChange() async {
+    final LeaveSummary summary = await loadLeaveSummary(
+      repository: widget.repository,
+      year: _year,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _summary = summary;
+      _errorMessage = null;
+      _isLoading = false;
+      _isDeletingUsage = false;
+    });
+  }
+
   Future<void> _addUsage() async {
     final LeaveSummary? summary = _summary;
     if (summary == null || summary.totalLeaveMinutes <= 0) {
@@ -139,14 +155,10 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
       for (final LeaveUsage usage in summary.usages) {
         await widget.repository.deleteUsage(id: usage.id);
       }
-      await _loadSummary();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isDeletingUsage = false;
-      });
+      await _refreshSummaryAfterUsageChange();
     } on LeaveRepositoryException catch (error) {
+      _showError('연차 사용 내역을 초기화할 수 없습니다. ${error.toString()}');
+    } on LeaveSummaryException catch (error) {
       _showError('연차 사용 내역을 초기화할 수 없습니다. ${error.toString()}');
     }
   }
@@ -170,14 +182,10 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
 
     try {
       await widget.repository.deleteUsage(id: usage.id);
-      await _loadSummary();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isDeletingUsage = false;
-      });
+      await _refreshSummaryAfterUsageChange();
     } on LeaveRepositoryException catch (error) {
+      _showError('연차 사용을 삭제할 수 없습니다. ${error.toString()}');
+    } on LeaveSummaryException catch (error) {
       _showError('연차 사용을 삭제할 수 없습니다. ${error.toString()}');
     }
   }
