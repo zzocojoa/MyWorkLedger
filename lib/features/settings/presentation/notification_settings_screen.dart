@@ -77,7 +77,7 @@ final class _NotificationSettingsScreenState
                   borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(workLedgerSpacingMedium),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[

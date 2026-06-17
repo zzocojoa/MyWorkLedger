@@ -671,7 +671,7 @@ final class _SettingsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[

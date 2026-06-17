@@ -268,7 +268,7 @@ final class _CalendarGrid extends StatelessWidget {
         borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(workLedgerSpacingCompact),
         child: Column(
           children: <Widget>[
             const _CalendarWeekdayRow(),
@@ -480,7 +480,7 @@ final class _SelectedDateDetail extends StatelessWidget {
         borderRadius: BorderRadius.circular(workLedgerRadiusLarge),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(workLedgerSpacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
