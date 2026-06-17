@@ -41,7 +41,7 @@ final class SettingsHomeScreen extends StatelessWidget {
             _SettingsRow(
               icon: Icons.schedule_outlined,
               title: '근무 설정',
-              subtitle: '정시, 연장/야간, 포괄임금 시간',
+              subtitle: '정시, 연장/야간, 포함 시간 비교',
               onTap: () => _openWorkSettings(context: context),
             ),
             _SettingsDivider(),

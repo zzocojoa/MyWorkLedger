@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../../../core/input/clock_time_input.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../domain/work_rule_repository.dart';
@@ -180,18 +178,12 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                 controller: _startController,
                 decoration: const InputDecoration(labelText: '정시 출근'),
                 keyboardType: TextInputType.datetime,
-                inputFormatters: const <TextInputFormatter>[
-                  ClockTimeInputFormatter(),
-                ],
               ),
               const SizedBox(height: workLedgerSpacingSmall),
               TextField(
                 controller: _endController,
                 decoration: const InputDecoration(labelText: '정시 퇴근'),
                 keyboardType: TextInputType.datetime,
-                inputFormatters: const <TextInputFormatter>[
-                  ClockTimeInputFormatter(),
-                ],
               ),
               const SizedBox(height: workLedgerSpacingSmall),
               TextField(
@@ -201,9 +193,6 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                   helperText: '정시 퇴근 이후 시각만 입력할 수 있습니다.',
                 ),
                 keyboardType: TextInputType.datetime,
-                inputFormatters: const <TextInputFormatter>[
-                  ClockTimeInputFormatter(),
-                ],
               ),
               const SizedBox(height: workLedgerSpacingSmall),
               TextField(
@@ -213,9 +202,6 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                   helperText: '입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.',
                 ),
                 keyboardType: TextInputType.datetime,
-                inputFormatters: const <TextInputFormatter>[
-                  ClockTimeInputFormatter(),
-                ],
               ),
               const SizedBox(height: workLedgerSpacingSmall),
               TextField(
@@ -290,11 +276,10 @@ final List<int> _allWeekdays = <int>[
 ];
 
 int parseWorkRuleTimeText({required String text, required String field}) {
-  final String normalizedText = normalizeClockInput(value: text);
   final RegExp pattern = RegExp(r'^(\d{1,2}):(\d{2})$');
-  final RegExpMatch? match = pattern.firstMatch(normalizedText);
+  final RegExpMatch? match = pattern.firstMatch(text.trim());
   if (match == null) {
-    throw FormatException('field=$field value=$text rule=HH:mm or HMM');
+    throw FormatException('field=$field value=$text rule=HH:mm');
   }
   final int hour = int.parse(match.group(1)!);
   final int minute = int.parse(match.group(2)!);

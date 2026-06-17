@@ -299,11 +299,6 @@ void _validateViewData(MonthlySummaryViewData data) {
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.nonWorkdayDuration rule=non-negative',
     );
   }
-  if (data.workTimeCandidateSummary.regularWorkDuration.isNegative) {
-    throw MonthlySummaryException(
-      'model=MonthlySummaryViewData field=workTimeCandidateSummary.regularWorkDuration rule=non-negative',
-    );
-  }
   if (data.workTimeCandidateSummary.earlyWorkDuration.isNegative) {
     throw MonthlySummaryException(
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.earlyWorkDuration rule=non-negative',
@@ -312,6 +307,13 @@ void _validateViewData(MonthlySummaryViewData data) {
   if (data.workTimeCandidateSummary.nightWorkDuration.isNegative) {
     throw MonthlySummaryException(
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.nightWorkDuration rule=non-negative',
+    );
+  }
+  if (data.workRule == null &&
+      data.workTimeCandidateSummary.status !=
+          WorkTimeCandidateStatus.unavailable) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.status rule=unavailable when workRule is missing',
     );
   }
 }

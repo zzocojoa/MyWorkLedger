@@ -68,23 +68,16 @@ final class TodayWorkSummary {
 
 TodayWorkSummary buildTodayWorkSummary({
   required WorkRecord? record,
-  required List<WorkRecord> currentMonthRecords,
   required DateTime now,
 }) {
-  final TodayWorkSecondaryAction? calendarAction =
-      currentMonthRecords.isNotEmpty
-      ? TodayWorkSecondaryAction.viewCalendar
-      : null;
-  final String? calendarButtonLabel = calendarAction == null ? null : '달력 보기';
-
   if (record == null) {
     return TodayWorkSummary(
       status: TodayWorkStatus.beforeClockIn,
       statusText: '아직 출근 전',
       primaryAction: TodayWorkPrimaryAction.clockIn,
       primaryButtonLabel: '출근하기',
-      secondaryAction: calendarAction,
-      secondaryButtonLabel: calendarButtonLabel,
+      secondaryAction: null,
+      secondaryButtonLabel: null,
       elapsedDuration: null,
       workedDuration: null,
       record: null,
@@ -99,8 +92,8 @@ TodayWorkSummary buildTodayWorkSummary({
       statusText: '아직 출근 전',
       primaryAction: TodayWorkPrimaryAction.clockIn,
       primaryButtonLabel: '출근하기',
-      secondaryAction: calendarAction,
-      secondaryButtonLabel: calendarButtonLabel,
+      secondaryAction: null,
+      secondaryButtonLabel: null,
       elapsedDuration: null,
       workedDuration: null,
       record: record,

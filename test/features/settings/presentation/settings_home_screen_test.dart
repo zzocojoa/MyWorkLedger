@@ -33,7 +33,7 @@ void main() {
 
     expect(find.byType(WorkSettingsScreen), findsOneWidget);
     expect(find.text('정시 근무'), findsOneWidget);
-    expect(find.text('포괄임금 시간'), findsOneWidget);
+    expect(find.text('포함 시간 비교'), findsOneWidget);
   });
 
   testWidgets('opens total leave settings', (WidgetTester tester) async {

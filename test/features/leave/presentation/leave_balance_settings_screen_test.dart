@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:workledger/core/theme/workledger_design_tokens.dart';
 import 'package:workledger/features/leave/data/local_storage_leave_repository.dart';
 import 'package:workledger/features/leave/presentation/leave_balance_settings_screen.dart';
 
@@ -18,7 +17,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('totalLeaveDaysField')), '15');
     await tester.enterText(find.byKey(const Key('totalLeaveHoursField')), '0');
-    await tester.tap(find.widgetWithText(TextButton, '저장'));
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
     await tester.pumpAndSettle();
 
     final balance = await repository.findBalanceByYear(year: 2026);
@@ -39,48 +38,16 @@ void main() {
       find.byKey(const Key('totalLeaveHoursField')),
       '0.25',
     );
-    await tester.tap(find.widgetWithText(TextButton, '저장'));
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
     await tester.pump();
 
     expect(find.textContaining('총 연차를 저장할 수 없습니다.'), findsOneWidget);
     expect(find.textContaining('30분 단위'), findsOneWidget);
   });
-
-  testWidgets('uses the same app bar save button pattern as work settings', (
-    WidgetTester tester,
-  ) async {
-    final LocalStorageLeaveRepository repository = _createRepository();
-
-    await tester.pumpWidget(_buildScreen(repository: repository));
-    await tester.pump();
-    await tester.pump();
-
-    expect(find.widgetWithText(TextButton, '저장'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, '저장'), findsNothing);
-  });
-
-  testWidgets('does not place full width save button in compact body', (
-    WidgetTester tester,
-  ) async {
-    tester.view.physicalSize = const Size(360, 360);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final LocalStorageLeaveRepository repository = _createRepository();
-
-    await tester.pumpWidget(_buildScreen(repository: repository));
-    await tester.pump();
-    await tester.pump();
-
-    expect(find.widgetWithText(TextButton, '저장'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, '저장'), findsNothing);
-    expect(tester.takeException(), isNull);
-  });
 }
 
 Widget _buildScreen({required LocalStorageLeaveRepository repository}) {
   return MaterialApp(
-    theme: createWorkLedgerTheme(),
     home: LeaveBalanceSettingsScreen(
       repository: repository,
       now: () => DateTime(2026, 6, 12, 9),

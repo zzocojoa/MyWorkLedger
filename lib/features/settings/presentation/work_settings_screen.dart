@@ -1,10 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../../../core/input/clock_time_input.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/models/compensation_reference_setting.dart';
 import '../../../core/models/work_rule.dart';
@@ -18,7 +17,6 @@ const int _minutesPerDay = 24 * 60;
 const double _weekdaySelectorButtonWidth = 82;
 const String _fixedIncludedComparisonHelperText =
     '고정 포함 시간을 넘긴 부분만 초과 참고로 봅니다. 연장 근무 태그와 별도입니다.';
-const String _compensationReferenceSectionTitle = '포괄임금 시간';
 
 final class WorkSettingsScreen extends StatefulWidget {
   const WorkSettingsScreen({
@@ -58,6 +56,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
   );
   final TextEditingController _includedAfterRegularEndController =
       TextEditingController(text: '0');
+  final TextEditingController _memoController = TextEditingController();
   final Set<int> _selectedWeekdays = <int>{
     DateTime.monday,
     DateTime.tuesday,
@@ -88,6 +87,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     _nightWorkStartController.dispose();
     _breakController.dispose();
     _includedAfterRegularEndController.dispose();
+    _memoController.dispose();
     super.dispose();
   }
 
@@ -116,7 +116,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     } on WorkRuleRepositoryException catch (error) {
       _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
     } on CompensationReferenceRepositoryException catch (error) {
-      _showError('포괄임금 시간을 불러올 수 없습니다. ${error.toString()}');
+      _showError('포함 시간 비교를 불러올 수 없습니다. ${error.toString()}');
     }
   }
 
@@ -152,6 +152,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     _includedAfterRegularEndController.text = setting
         .fixedIncludedAfterRegularEndMinutes
         .toString();
+    _memoController.text = setting.memo ?? '';
   }
 
   void _applyPreset() {
@@ -225,18 +226,6 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     }
 
     try {
-      _validateOvertimeStartAfterIncludedReference(
-        mode: _mode,
-        regularEndTimeMinutes: regularEndTimeMinutes,
-        includedAfterRegularEndMinutes: includedAfterRegularEndMinutes,
-        overtimeStartTimeMinutes: overtimeStartTimeMinutes,
-      );
-    } on FormatException catch (error) {
-      _showError(error.message);
-      return;
-    }
-
-    try {
       await widget.workRuleRepository.save(
         regularStartTimeMinutes: regularStartTimeMinutes,
         regularEndTimeMinutes: regularEndTimeMinutes,
@@ -258,16 +247,16 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             ? includedAfterRegularEndMinutes
             : 0,
         effectiveFromMonth: _globalEffectiveFromMonth(),
-        memo: null,
+        memo: _memoController.text,
       );
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop(true);
     } on ArgumentError catch (error) {
-      _showError('포괄임금 시간을 저장할 수 없습니다. ${error.message}');
+      _showError('포함 시간 비교를 저장할 수 없습니다. ${error.message}');
     } on CompensationReferenceRepositoryException catch (error) {
-      _showError('포괄임금 시간을 저장할 수 없습니다. ${error.toString()}');
+      _showError('포함 시간 비교를 저장할 수 없습니다. ${error.toString()}');
     }
   }
 
@@ -343,9 +332,6 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             controller: _startController,
             decoration: const InputDecoration(labelText: '정시 출근'),
             keyboardType: TextInputType.datetime,
-            inputFormatters: const <TextInputFormatter>[
-              ClockTimeInputFormatter(),
-            ],
             scrollPhysics: _textFieldScrollPhysics,
           ),
           const SizedBox(height: workLedgerSpacingSmall),
@@ -353,9 +339,6 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             controller: _endController,
             decoration: const InputDecoration(labelText: '정시 퇴근'),
             keyboardType: TextInputType.datetime,
-            inputFormatters: const <TextInputFormatter>[
-              ClockTimeInputFormatter(),
-            ],
             scrollPhysics: _textFieldScrollPhysics,
             onChanged: _handleRegularEndInputChanged,
           ),
@@ -370,7 +353,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       ),
       const SizedBox(height: workLedgerSpacingMedium),
       _SettingsSection(
-        title: _compensationReferenceSectionTitle,
+        title: '포함 시간 비교',
         children: <Widget>[
           RadioGroup<CompensationReferenceMode>(
             groupValue: _mode,
@@ -378,12 +361,12 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             child: Column(
               children: <Widget>[
                 _ModeTile(
-                  title: '미포함',
+                  title: '고정 포함 시간 없음',
                   value: CompensationReferenceMode.none,
                   selectedMode: _mode,
                 ),
                 _ModeTile(
-                  title: '포함',
+                  title: '고정 포함 시간 있음',
                   value: CompensationReferenceMode.fixedIncluded,
                   selectedMode: _mode,
                 ),
@@ -402,6 +385,16 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               excessStartMessage: _fixedIncludedExcessStartMessage(),
               onChanged: _handleFixedIncludedMinutesChanged,
             ),
+          TextField(
+            controller: _memoController,
+            decoration: const InputDecoration(
+              labelText: '메모',
+              helperText: '선택 입력',
+            ),
+            maxLines: 3,
+            maxLength: 500,
+            scrollPhysics: _textFieldScrollPhysics,
+          ),
         ],
       ),
       const SizedBox(height: workLedgerSpacingMedium),
@@ -462,26 +455,31 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       _SettingsSection(
         title: '근무 태그 기준',
         children: <Widget>[
+          Text(
+            '정시 전 근무는 정시 출근 전 구간입니다.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: workLedgerColorMuted,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _overtimeStartController,
-            decoration: const InputDecoration(labelText: '연장 근무 시작 시간'),
+            decoration: InputDecoration(
+              labelText: '연장 근무 태그 시작',
+              helperText: _overtimeStartHelperText(),
+            ),
             keyboardType: TextInputType.datetime,
-            inputFormatters: const <TextInputFormatter>[
-              ClockTimeInputFormatter(),
-            ],
             scrollPhysics: _textFieldScrollPhysics,
           ),
           const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _nightWorkStartController,
             decoration: const InputDecoration(
-              labelText: '야간 근무 시작 시간',
+              labelText: '야간 근무 시작',
               helperText: '예: 22:00부터 8시간',
             ),
             keyboardType: TextInputType.datetime,
-            inputFormatters: const <TextInputFormatter>[
-              ClockTimeInputFormatter(),
-            ],
             scrollPhysics: _textFieldScrollPhysics,
           ),
         ],
@@ -579,6 +577,10 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       return null;
     }
   }
+
+  String _overtimeStartHelperText() {
+    return '근무 태그 기준입니다. 초과 참고 시작과 별도입니다.';
+  }
 }
 
 DateTime _globalEffectiveFromMonth() {
@@ -606,36 +608,6 @@ String _formatFixedIncludedExcessStartMessage({
     return '초과 참고 시작 다음 날 $formattedTime';
   }
   return '초과 참고 시작 $formattedTime';
-}
-
-void _validateOvertimeStartAfterIncludedReference({
-  required CompensationReferenceMode mode,
-  required int regularEndTimeMinutes,
-  required int includedAfterRegularEndMinutes,
-  required int overtimeStartTimeMinutes,
-}) {
-  if (mode != CompensationReferenceMode.fixedIncluded) {
-    return;
-  }
-  final int minimumStartMinutes =
-      regularEndTimeMinutes + includedAfterRegularEndMinutes;
-  if (minimumStartMinutes >= _minutesPerDay) {
-    final String formattedMinimumStart = formatWorkRuleMinuteOfDay(
-      minuteOfDay: minimumStartMinutes.remainder(_minutesPerDay),
-    );
-    throw FormatException(
-      '연장 근무 시작 시간은 포괄임금 시간 이후여야 하지만 초과 참고 시작이 다음 날 $formattedMinimumStart입니다. 정시 퇴근 또는 포괄임금 시간을 조정해 주세요.',
-    );
-  }
-  if (overtimeStartTimeMinutes >= minimumStartMinutes) {
-    return;
-  }
-  final String formattedMinimumStart = formatWorkRuleMinuteOfDay(
-    minuteOfDay: minimumStartMinutes,
-  );
-  throw FormatException(
-    '연장 근무 시작 시간은 포괄임금 시간 이후인 $formattedMinimumStart부터 입력할 수 있습니다.',
-  );
 }
 
 final List<int> _allWeekdays = <int>[

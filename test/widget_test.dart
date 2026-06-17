@@ -47,10 +47,6 @@ void main() {
     );
     expect(Localizations.localeOf(context), const Locale('ko'));
     expect(AppLocalizations.of(context).homeMonthlySummary, '월간 요약');
-    expect(
-      AppLocalizations.of(context).monthlySummaryCompensationReferenceTitle,
-      '포괄임금 시간 대비',
-    );
     expect(AppLocalizations.supportedLocales, contains(const Locale('en')));
   });
 }

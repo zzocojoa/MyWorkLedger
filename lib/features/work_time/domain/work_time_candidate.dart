@@ -4,7 +4,6 @@ final class WorkTimeCandidateSummary {
   const WorkTimeCandidateSummary({
     required this.status,
     required this.nonWorkdayDuration,
-    required this.regularWorkDuration,
     required this.earlyWorkDuration,
     required this.overtimeDuration,
     required this.nightWorkDuration,
@@ -13,7 +12,6 @@ final class WorkTimeCandidateSummary {
 
   final WorkTimeCandidateStatus status;
   final Duration nonWorkdayDuration;
-  final Duration regularWorkDuration;
   final Duration earlyWorkDuration;
   final Duration overtimeDuration;
   final Duration nightWorkDuration;
@@ -30,7 +28,6 @@ final class WorkTimeCandidateSummary {
   int get activeTagCount {
     final List<Duration> durations = <Duration>[
       nonWorkdayDuration,
-      regularWorkDuration,
       earlyWorkDuration,
       overtimeDuration,
       nightWorkDuration,

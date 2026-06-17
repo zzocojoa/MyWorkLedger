@@ -81,37 +81,6 @@ void main() {
     expect(find.text('총 3시간 42분'), findsOneWidget);
   });
 
-  testWidgets('keeps calendar action when previous monthly record exists', (
-    WidgetTester tester,
-  ) async {
-    final DateTime now = DateTime(2026, 6, 17, 9, 0);
-    final WorkRecord previousRecord = _workRecordWithId(
-      id: 'record-2026-06-16',
-      clockInAt: DateTime(2026, 6, 16, 9, 0),
-      clockOutAt: DateTime(2026, 6, 16, 18, 0),
-      now: DateTime(2026, 6, 16, 18, 0),
-    );
-    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
-      initialRecord: null,
-      monthlyRecords: <WorkRecord>[previousRecord],
-      now: () => now,
-    );
-
-    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
-    await tester.pump();
-
-    expect(find.text('아직 출근 전'), findsOneWidget);
-    expect(find.text('출근하기'), findsOneWidget);
-    expect(find.text('달력 보기'), findsOneWidget);
-
-    await tester.tap(find.text('달력 보기'));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(WorkRecordCalendarScreen), findsOneWidget);
-    expect(find.text('2026년 6월'), findsOneWidget);
-    expect(find.text('6월 17일 수요일'), findsOneWidget);
-  });
-
   testWidgets('shows after clock-out state', (WidgetTester tester) async {
     final DateTime now = DateTime(2026, 6, 12, 19, 0);
     final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(

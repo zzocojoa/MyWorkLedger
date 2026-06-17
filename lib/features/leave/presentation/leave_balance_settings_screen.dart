@@ -127,15 +127,7 @@ final class _LeaveBalanceSettingsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('총 연차'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: _isLoading || _isSaving ? null : _saveTotalLeave,
-            child: Text(_isSaving ? '저장 중' : '저장'),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('총 연차')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
@@ -185,6 +177,11 @@ final class _LeaveBalanceSettingsScreenState
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: workLedgerSpacingMedium),
+                FilledButton(
+                  onPressed: _isSaving ? null : _saveTotalLeave,
+                  child: Text(_isSaving ? '저장 중' : '저장'),
                 ),
               ],
               if (_errorMessage != null) ...<Widget>[

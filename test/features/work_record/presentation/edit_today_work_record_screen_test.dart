@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:workledger/core/input/clock_time_input.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/edit_today_work_record_screen.dart';
@@ -44,78 +43,6 @@ void main() {
     ]);
     expect(repository.record!.memo, '배포 대응 후 퇴근');
   });
-
-  testWidgets('saves edited today work record with numeric time shorthand', (
-    WidgetTester tester,
-  ) async {
-    final DateTime now = DateTime(2026, 6, 12, 20, 0);
-    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
-      initialRecord: _workRecord(
-        clockInAt: DateTime(2026, 6, 12, 9, 3),
-        clockOutAt: DateTime(2026, 6, 12, 18, 42),
-        tags: <WorkRecordTag>[],
-        memo: null,
-      ),
-      now: () => now,
-    );
-
-    await tester.pumpWidget(
-      _buildScreen(repository: repository, now: now, workDate: now),
-    );
-    await tester.pump();
-
-    await tester.enterText(find.byKey(const Key('clockInTimeField')), '930');
-    await tester.enterText(find.byKey(const Key('clockOutTimeField')), '1840');
-    await tester.tap(find.widgetWithText(FilledButton, '저장'));
-    await tester.pump();
-
-    expect(repository.upsertByDateCallCount, 1);
-    expect(repository.record!.clockInAt, DateTime(2026, 6, 12, 9, 30));
-    expect(repository.record!.clockOutAt, DateTime(2026, 6, 12, 18, 40));
-  });
-
-  test('normalizes clock input from HH:mm and numeric shorthand', () {
-    final DateTime workDate = DateTime(2026, 6, 12);
-
-    expect(
-      parseClockInput(value: '9:30', workDate: workDate, fieldLabel: '출근 시각'),
-      DateTime(2026, 6, 12, 9, 30),
-    );
-    expect(
-      parseClockInput(value: '930', workDate: workDate, fieldLabel: '출근 시각'),
-      DateTime(2026, 6, 12, 9, 30),
-    );
-    expect(
-      parseClockInput(value: '0930', workDate: workDate, fieldLabel: '출근 시각'),
-      DateTime(2026, 6, 12, 9, 30),
-    );
-  });
-
-  test(
-    'formats four digit clock input while keeping three digits editable',
-    () {
-      const ClockTimeInputFormatter formatter = ClockTimeInputFormatter();
-
-      expect(
-        formatter
-            .formatEditUpdate(
-              const TextEditingValue(text: ''),
-              const TextEditingValue(text: '930'),
-            )
-            .text,
-        '930',
-      );
-      expect(
-        formatter
-            .formatEditUpdate(
-              const TextEditingValue(text: '930'),
-              const TextEditingValue(text: '0930'),
-            )
-            .text,
-        '09:30',
-      );
-    },
-  );
 
   testWidgets('keeps input and shows error when clock-out is before clock-in', (
     WidgetTester tester,

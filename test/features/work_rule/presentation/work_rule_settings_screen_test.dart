@@ -63,12 +63,6 @@ void main() {
     expect(find.widgetWithText(TextField, '30'), findsOneWidget);
   });
 
-  test('parseWorkRuleTimeText accepts HH:mm and numeric shorthand', () {
-    expect(parseWorkRuleTimeText(text: '9:30', field: 'regularStart'), 570);
-    expect(parseWorkRuleTimeText(text: '930', field: 'regularStart'), 570);
-    expect(parseWorkRuleTimeText(text: '0930', field: 'regularStart'), 570);
-  });
-
   testWidgets('keeps input visible when validation fails', (
     WidgetTester tester,
   ) async {

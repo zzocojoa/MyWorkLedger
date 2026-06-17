@@ -145,36 +145,6 @@ abstract class AppLocalizations {
   /// In ko, this message translates to:
   /// **'연차 관리'**
   String get homeLeaveManagement;
-
-  /// Monthly summary compensation reference card title.
-  ///
-  /// In ko, this message translates to:
-  /// **'포괄임금 시간 대비'**
-  String get monthlySummaryCompensationReferenceTitle;
-
-  /// Monthly summary compensation reference start time label.
-  ///
-  /// In ko, this message translates to:
-  /// **'포괄임금 포함 시간'**
-  String get monthlySummaryCompensationReferenceStartLabel;
-
-  /// Monthly summary actual recorded duration label.
-  ///
-  /// In ko, this message translates to:
-  /// **'실제 기록'**
-  String get monthlySummaryCompensationActualLabel;
-
-  /// Monthly summary fixed included duration label.
-  ///
-  /// In ko, this message translates to:
-  /// **'포괄임금 시간'**
-  String get monthlySummaryCompensationIncludedDurationLabel;
-
-  /// Monthly summary excess reference duration label.
-  ///
-  /// In ko, this message translates to:
-  /// **'초과 참고'**
-  String get monthlySummaryCompensationExcessReferenceLabel;
 }
 
 class _AppLocalizationsDelegate

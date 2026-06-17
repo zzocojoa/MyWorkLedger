@@ -19,7 +19,6 @@ void main() {
 
       expect(summary.status, WorkTimeCandidateStatus.unavailable);
       expect(summary.nonWorkdayDuration, Duration.zero);
-      expect(summary.regularWorkDuration, Duration.zero);
       expect(summary.earlyWorkDuration, Duration.zero);
       expect(summary.overtimeDuration, Duration.zero);
       expect(summary.nightWorkDuration, Duration.zero);
@@ -54,12 +53,11 @@ void main() {
 
       expect(summary.status, WorkTimeCandidateStatus.available);
       expect(summary.nonWorkdayDuration, Duration.zero);
-      expect(summary.regularWorkDuration, const Duration(hours: 8));
       expect(summary.earlyWorkDuration, Duration.zero);
       expect(summary.overtimeDuration, const Duration(hours: 2, minutes: 30));
       expect(summary.nightWorkDuration, Duration.zero);
       expect(summary.hasActiveTags, isTrue);
-      expect(summary.activeTagCount, 2);
+      expect(summary.activeTagCount, 1);
     });
 
     test('calculates overtime after configured overtime start', () {
@@ -89,11 +87,10 @@ void main() {
         ),
       );
 
-      expect(summary.regularWorkDuration, const Duration(hours: 8));
       expect(summary.overtimeDuration, const Duration(hours: 1));
     });
 
-    test('calculates weekday regular work with break excluded', () {
+    test('reports no active tags for regular weekday work', () {
       final WorkTimeCandidateSummary summary = calculateWorkTimeCandidates(
         record: _record(
           id: 'work-1',
@@ -105,9 +102,8 @@ void main() {
       );
 
       expect(summary.status, WorkTimeCandidateStatus.available);
-      expect(summary.regularWorkDuration, const Duration(hours: 8));
-      expect(summary.hasActiveTags, isTrue);
-      expect(summary.activeTagCount, 1);
+      expect(summary.hasActiveTags, isFalse);
+      expect(summary.activeTagCount, 0);
     });
 
     test('calculates weekday early work before regular start', () {
@@ -121,7 +117,6 @@ void main() {
         workRule: _weekdayRule(),
       );
 
-      expect(summary.regularWorkDuration, const Duration(hours: 8));
       expect(summary.earlyWorkDuration, const Duration(hours: 1, minutes: 34));
       expect(summary.overtimeDuration, const Duration(hours: 3, minutes: 26));
       expect(summary.nightWorkDuration, Duration.zero);
@@ -139,7 +134,6 @@ void main() {
       );
 
       expect(summary.nonWorkdayDuration, const Duration(hours: 13));
-      expect(summary.regularWorkDuration, Duration.zero);
       expect(summary.earlyWorkDuration, const Duration(hours: 1, minutes: 34));
       expect(summary.overtimeDuration, const Duration(hours: 3, minutes: 26));
       expect(summary.nightWorkDuration, Duration.zero);
@@ -158,7 +152,6 @@ void main() {
       );
 
       expect(summary.nonWorkdayDuration, Duration.zero);
-      expect(summary.regularWorkDuration, const Duration(hours: 8));
       expect(summary.earlyWorkDuration, const Duration(hours: 1, minutes: 34));
       expect(summary.overtimeDuration, Duration.zero);
       expect(summary.nightWorkDuration, Duration.zero);

@@ -82,10 +82,6 @@ void main() {
         Duration.zero,
       );
       expect(
-        viewData.workTimeCandidateSummary.regularWorkDuration,
-        const Duration(hours: 8),
-      );
-      expect(
         viewData.workTimeCandidateSummary.overtimeDuration,
         const Duration(hours: 2, minutes: 30),
       );
@@ -192,10 +188,6 @@ void main() {
           const Duration(hours: 13),
         );
         expect(
-          viewData.workTimeCandidateSummary.regularWorkDuration,
-          Duration.zero,
-        );
-        expect(
           viewData.workTimeCandidateSummary.earlyWorkDuration,
           const Duration(hours: 1, minutes: 34),
         );
@@ -209,54 +201,6 @@ void main() {
         );
       },
     );
-
-    test('calculates default work tags when work rule is missing', () async {
-      final MonthlySummaryViewData viewData = await loadMonthlySummary(
-        workRecordRepository: _FakeWorkRecordRepository(
-          monthlyRecords: <WorkRecord>[
-            _record(
-              id: 'long-work',
-              clockInAt: DateTime(2026, 6, 17, 7, 41),
-              clockOutAt: DateTime(2026, 6, 17, 23, 41),
-              tags: <WorkRecordTag>[],
-            ),
-          ],
-          findByMonthError: null,
-        ),
-        leaveRepository: _FakeLeaveRepository(
-          balance: null,
-          usages: <LeaveUsage>[],
-          findBalanceError: null,
-          findUsagesError: null,
-        ),
-        workRuleRepository: const _FakeWorkRuleRepository(
-          rule: null,
-          findActiveError: null,
-        ),
-        compensationReferenceRepository:
-            _emptyCompensationReferenceRepository(),
-        targetMonth: const MonthlySummaryMonth(year: 2026, month: 6),
-      );
-
-      expect(viewData.workRule, isNull);
-      expect(
-        viewData.workTimeCandidateSummary.regularWorkDuration,
-        const Duration(hours: 8),
-      );
-      expect(
-        viewData.workTimeCandidateSummary.earlyWorkDuration,
-        const Duration(hours: 1, minutes: 19),
-      );
-      expect(
-        viewData.workTimeCandidateSummary.overtimeDuration,
-        const Duration(hours: 5, minutes: 41),
-      );
-      expect(
-        viewData.workTimeCandidateSummary.nightWorkDuration,
-        const Duration(hours: 1, minutes: 41),
-      );
-      expect(viewData.workTimeCandidateSummary.activeTagCount, 4);
-    });
 
     test(
       'combines early work and excludes delayed checkout overtime',
@@ -299,10 +243,6 @@ void main() {
           const Duration(hours: 1, minutes: 34),
         );
         expect(
-          viewData.workTimeCandidateSummary.regularWorkDuration,
-          const Duration(hours: 16),
-        );
-        expect(
           viewData.workTimeCandidateSummary.overtimeDuration,
           const Duration(hours: 3, minutes: 26),
         );
@@ -314,7 +254,7 @@ void main() {
     );
 
     test(
-      'keeps raw total and calculates default candidates when work rule is missing',
+      'returns unavailable work time candidates when work rule is missing',
       () async {
         final MonthlySummaryViewData viewData = await loadMonthlySummary(
           workRecordRepository: _FakeWorkRecordRepository(
@@ -348,16 +288,8 @@ void main() {
           viewData.displayTotalWorkedDuration,
           const Duration(hours: 11, minutes: 30),
         );
-        expect(viewData.workTimeCandidateSummary.isAvailable, isTrue);
-        expect(viewData.workTimeCandidateSummary.reason, isNull);
-        expect(
-          viewData.workTimeCandidateSummary.regularWorkDuration,
-          const Duration(hours: 8),
-        );
-        expect(
-          viewData.workTimeCandidateSummary.overtimeDuration,
-          const Duration(hours: 2, minutes: 30),
-        );
+        expect(viewData.workTimeCandidateSummary.isAvailable, isFalse);
+        expect(viewData.workTimeCandidateSummary.reason, 'workRuleMissing');
       },
     );
 

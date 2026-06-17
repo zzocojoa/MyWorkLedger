@@ -199,7 +199,6 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
       MaterialPageRoute<bool>(
         builder: (BuildContext context) => WorkRecordCalendarScreen(
           repository: widget.repository,
-          workRuleRepository: widget.workRuleRepository,
           now: widget.now,
         ),
       ),
