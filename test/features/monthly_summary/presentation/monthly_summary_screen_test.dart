@@ -13,6 +13,7 @@ import 'package:workledger/features/pricing/domain/pricing_intent_repository.dar
 import 'package:workledger/features/pricing/presentation/pricing_fake_door_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
+import 'package:workledger/l10n/app_localizations.dart';
 
 void main() {
   testWidgets('shows empty monthly summary state', (WidgetTester tester) async {
@@ -45,10 +46,49 @@ void main() {
     expect(find.text('이번 달 사용 연차'), findsOneWidget);
     expect(find.text('연차 관리에서 올해 총 연차를 먼저 입력하세요'), findsOneWidget);
     expect(find.text('이 달 기록이 없습니다'), findsOneWidget);
-    expect(find.text('월간 리포트 만들기'), findsOneWidget);
+    expect(find.text('Report'), findsOneWidget);
+    expect(find.text('월간 리포트 만들기'), findsNothing);
     expect(find.text('홈으로'), findsNothing);
     expect(repository.requestedYear, 2026);
     expect(repository.requestedMonth, 6);
+  });
+
+  testWidgets('filters records to the current month when month changes', (
+    WidgetTester tester,
+  ) async {
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      monthlyRecords: <WorkRecord>[
+        _completedRecord(
+          id: 'july-work',
+          clockInAt: DateTime(2026, 7, 31, 9, 0),
+          clockOutAt: DateTime(2026, 7, 31, 18, 0),
+          tags: <WorkRecordTag>[],
+        ),
+        _completedRecord(
+          id: 'august-work',
+          clockInAt: DateTime(2026, 8, 2, 10, 0),
+          clockOutAt: DateTime(2026, 8, 2, 14, 0),
+          tags: <WorkRecordTag>[],
+        ),
+      ],
+      findByMonthError: null,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: _emptyLeaveRepository(),
+        now: DateTime(2026, 8, 1, 9, 0),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.requestedYear, 2026);
+    expect(repository.requestedMonth, 8);
+    expect(find.text('2026-08'), findsOneWidget);
+    expect(find.text('08-02 10:00-14:00'), findsOneWidget);
+    expect(find.text('07-31 09:00-18:00'), findsNothing);
   });
 
   testWidgets('shows completed monthly records and tag labels', (
@@ -106,7 +146,9 @@ void main() {
     expect(find.text('휴게시간을 제외한 개인 참고용 기록입니다'), findsNothing);
     expect(find.text('2일'), findsOneWidget);
     expect(find.text('근무 태그'), findsWidgets);
-    expect(find.text('1개'), findsOneWidget);
+    expect(find.text('2개'), findsOneWidget);
+    expect(find.text('정시 근무'), findsOneWidget);
+    expect(find.text('15시간 50분'), findsOneWidget);
     expect(find.text('2시간 50분'), findsOneWidget);
     expect(find.text('13일 4시간'), findsOneWidget);
     expect(find.text('이번 달 사용 연차'), findsOneWidget);
@@ -205,8 +247,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('근무 태그'), findsWidgets);
-    expect(find.text('3개'), findsOneWidget);
+    expect(find.text('4개'), findsOneWidget);
     expect(find.text('기준 미설정'), findsNothing);
+    expect(find.text('정시 근무'), findsOneWidget);
+    expect(find.text('8시간'), findsOneWidget);
     expect(find.text('정시 전 근무'), findsOneWidget);
     expect(find.text('1시간 19분'), findsOneWidget);
     expect(find.text('연장 근무'), findsOneWidget);
@@ -250,11 +294,11 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('포함 시간 대비'), findsOneWidget);
-    expect(find.text('초과 참고 시작'), findsOneWidget);
+    expect(find.text('포괄임금 시간 대비'), findsOneWidget);
+    expect(find.text('포괄임금 포함 시간'), findsOneWidget);
     expect(find.text('20:00'), findsOneWidget);
     expect(find.text('실제 기록'), findsWidgets);
-    expect(find.text('포함 시간'), findsWidgets);
+    expect(find.text('포괄임금 시간'), findsWidgets);
     expect(find.text('초과 참고'), findsWidgets);
     expect(find.text('정시 이후 근무'), findsWidgets);
     expect(find.text('3시간 30분'), findsWidgets);
@@ -297,7 +341,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('포함 시간 대비'), findsNothing);
+    expect(find.text('포괄임금 시간 대비'), findsNothing);
     expect(find.text('초과 참고'), findsNothing);
   });
 
@@ -343,9 +387,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('근무 태그'), findsWidgets);
-      expect(find.text('3개'), findsOneWidget);
+      expect(find.text('4개'), findsOneWidget);
       expect(find.text('휴무일 근무'), findsOneWidget);
       expect(find.text('3시간 15분'), findsOneWidget);
+      expect(find.text('정시 근무'), findsOneWidget);
+      expect(find.text('8시간'), findsOneWidget);
       expect(find.text('정시 전 근무'), findsOneWidget);
       expect(find.text('1시간 34분'), findsOneWidget);
       expect(find.text('연장 근무'), findsOneWidget);
@@ -356,7 +402,7 @@ void main() {
     },
   );
 
-  testWidgets('hides work tag result card when work rule has no active tags', (
+  testWidgets('shows regular work tag when work stays in regular time', (
     WidgetTester tester,
   ) async {
     final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
@@ -385,11 +431,12 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('8시간'), findsOneWidget);
+    expect(find.text('8시간'), findsWidgets);
     expect(find.text('1일'), findsOneWidget);
-    expect(find.text('0개'), findsOneWidget);
+    expect(find.text('1개'), findsOneWidget);
     expect(find.text('정시 기준 외 근무 없음'), findsNothing);
     expect(find.text('이번 달 기록은 설정한 근무 기준 안에 있습니다.'), findsNothing);
+    expect(find.text('정시 근무'), findsOneWidget);
     expect(find.text('휴무일 근무'), findsNothing);
     expect(find.text('정시 전 근무'), findsNothing);
     expect(find.text('연장 근무'), findsNothing);
@@ -622,9 +669,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.ensureVisible(find.text('월간 리포트 만들기'));
-    await tester.pump();
-    await tester.tap(find.text('월간 리포트 만들기'));
+    await tester.tap(find.text('Report'));
     await tester.pumpAndSettle();
 
     expect(find.byType(PricingFakeDoorScreen), findsOneWidget);
@@ -678,9 +723,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.ensureVisible(find.text('월간 리포트 만들기'));
-    await tester.pump();
-    await tester.tap(find.text('월간 리포트 만들기'));
+    await tester.tap(find.text('Report'));
     await tester.pump();
     await tester.pump();
 
@@ -725,6 +768,9 @@ Widget _buildScreenWithPricingRepository({
   required DateTime now,
 }) {
   return MaterialApp(
+    locale: const Locale('ko'),
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
     home: MonthlySummaryScreen(
       repository: repository,
       leaveRepository: leaveRepository,

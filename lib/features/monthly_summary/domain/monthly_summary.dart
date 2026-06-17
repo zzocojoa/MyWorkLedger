@@ -299,6 +299,11 @@ void _validateViewData(MonthlySummaryViewData data) {
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.nonWorkdayDuration rule=non-negative',
     );
   }
+  if (data.workTimeCandidateSummary.regularWorkDuration.isNegative) {
+    throw MonthlySummaryException(
+      'model=MonthlySummaryViewData field=workTimeCandidateSummary.regularWorkDuration rule=non-negative',
+    );
+  }
   if (data.workTimeCandidateSummary.earlyWorkDuration.isNegative) {
     throw MonthlySummaryException(
       'model=MonthlySummaryViewData field=workTimeCandidateSummary.earlyWorkDuration rule=non-negative',

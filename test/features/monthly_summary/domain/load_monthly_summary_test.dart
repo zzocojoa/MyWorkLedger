@@ -82,6 +82,10 @@ void main() {
         Duration.zero,
       );
       expect(
+        viewData.workTimeCandidateSummary.regularWorkDuration,
+        const Duration(hours: 8),
+      );
+      expect(
         viewData.workTimeCandidateSummary.overtimeDuration,
         const Duration(hours: 2, minutes: 30),
       );
@@ -188,6 +192,10 @@ void main() {
           const Duration(hours: 13),
         );
         expect(
+          viewData.workTimeCandidateSummary.regularWorkDuration,
+          Duration.zero,
+        );
+        expect(
           viewData.workTimeCandidateSummary.earlyWorkDuration,
           const Duration(hours: 1, minutes: 34),
         );
@@ -232,6 +240,10 @@ void main() {
 
       expect(viewData.workRule, isNull);
       expect(
+        viewData.workTimeCandidateSummary.regularWorkDuration,
+        const Duration(hours: 8),
+      );
+      expect(
         viewData.workTimeCandidateSummary.earlyWorkDuration,
         const Duration(hours: 1, minutes: 19),
       );
@@ -243,7 +255,7 @@ void main() {
         viewData.workTimeCandidateSummary.nightWorkDuration,
         const Duration(hours: 1, minutes: 41),
       );
-      expect(viewData.workTimeCandidateSummary.activeTagCount, 3);
+      expect(viewData.workTimeCandidateSummary.activeTagCount, 4);
     });
 
     test(
@@ -285,6 +297,10 @@ void main() {
         expect(
           viewData.workTimeCandidateSummary.earlyWorkDuration,
           const Duration(hours: 1, minutes: 34),
+        );
+        expect(
+          viewData.workTimeCandidateSummary.regularWorkDuration,
+          const Duration(hours: 16),
         );
         expect(
           viewData.workTimeCandidateSummary.overtimeDuration,
@@ -334,6 +350,10 @@ void main() {
         );
         expect(viewData.workTimeCandidateSummary.isAvailable, isTrue);
         expect(viewData.workTimeCandidateSummary.reason, isNull);
+        expect(
+          viewData.workTimeCandidateSummary.regularWorkDuration,
+          const Duration(hours: 8),
+        );
         expect(
           viewData.workTimeCandidateSummary.overtimeDuration,
           const Duration(hours: 2, minutes: 30),

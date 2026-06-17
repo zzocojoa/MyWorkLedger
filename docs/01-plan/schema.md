@@ -12,7 +12,7 @@
 - 잔여연차는 저장하지 않고 `LeaveBalance.totalLeaveMinutes - sum(LeaveUsage.usedLeaveMinutes)`로 계산한다.
 - 연차량은 부동소수점 오차를 피하기 위해 분 단위 정수로 저장한다. 표시 시 1일을 480분으로 환산한다.
 - 가격 의향 이벤트는 실제 결제 이벤트가 아니라 fake-door 클릭 로그다.
-- 고정 포함 시간 비교 설정은 근무 기록과 분리한다. 설정 변경은 기존 `WorkRecord`를 수정하지 않고 월간 요약 계산 시점에만 반영한다.
+- 포괄임금 시간 설정은 근무 기록과 분리한다. 설정 변경은 기존 `WorkRecord`를 수정하지 않고 월간 요약 계산 시점에만 반영한다.
 
 ## Entity Summary
 
@@ -23,7 +23,7 @@
 | `LeaveBalance` | 연도별 총 연차 수동 입력값 | 연도 1개당 최대 1개 |
 | `LeaveUsage` | 날짜별 연차 사용 기록 | 연도별 0개 이상 |
 | `PricingIntentEvent` | 가격표/fake-door 클릭 로그 | 제한 없음 |
-| `CompensationReferenceSetting` | 고정 포함 시간 비교용 후속 설정 | 적용 시작 월 1개당 최대 1개 |
+| `CompensationReferenceSetting` | 포괄임금 시간용 후속 설정 | 적용 시작 월 1개당 최대 1개 |
 
 ## Enum Definitions
 
@@ -39,7 +39,7 @@
 
 | Value | Meaning |
 |---|---|
-| `reportButtonTapped` | 월간 리포트 만들기 버튼 클릭 |
+| `reportButtonTapped` | 월간 요약 Report 버튼 클릭 |
 | `pricingScreenViewed` | 가격표 화면 도달 |
 | `reportPassTapped` | Report Pass 선택 클릭 |
 | `proPlanTapped` | Pro 선택 클릭 |
@@ -56,8 +56,8 @@
 
 | Value | Korean Label | Meaning |
 |---|---|---|
-| `none` | 고정 포함 시간 없음 | 실제 기록만 표시하고 고정 포함 시간 비교는 숨김 |
-| `fixedIncluded` | 고정 포함 시간 있음 | 실제 기록과 사용자가 입력한 고정 포함 시간을 비교 |
+| `none` | 미포함 | 실제 기록만 표시하고 포괄임금 시간 비교는 숨김 |
+| `fixedIncluded` | 포함 | 실제 기록과 사용자가 입력한 고정 포함 시간을 비교 |
 | `unknown` | 잘 모르겠음 | 실제 기록만 표시하고 설정 안내 문구를 표시 |
 
 ## WorkRecord
@@ -103,8 +103,8 @@
 | `id` | String | Yes | Yes | generated | 로컬 고유 ID |
 | `regularStartTimeMinutes` | int | Yes | No | 540 | 정시 출근 시각. 00:00부터 지난 분 |
 | `regularEndTimeMinutes` | int | Yes | No | 1080 | 정시 퇴근 시각. 00:00부터 지난 분 |
-| `overtimeStartTimeMinutes` | int | Yes | No | `regularEndTimeMinutes` | 연장 근무 태그 시작 시각. 기존 저장 데이터에 없으면 정시 퇴근으로 채워 읽는다 |
-| `nightWorkStartTimeMinutes` | int | Yes | No | 1320 | 야간 근무 시작 시각. 기본값은 22:00이며 이 시각부터 8시간 구간을 야간 근무 기준으로 본다 |
+| `overtimeStartTimeMinutes` | int | Yes | No | `regularEndTimeMinutes` | 연장 근무 시작 시간. 기존 저장 데이터에 없으면 정시 퇴근으로 채워 읽는다 |
+| `nightWorkStartTimeMinutes` | int | Yes | No | 1320 | 야간 근무 시작 시간. 기본값은 22:00이며 이 시각부터 8시간 구간을 야간 근무 기준으로 본다 |
 | `breakMinutes` | int | Yes | No | 60 | 휴게시간 분 |
 | `workWeekdays` | List<int> | Yes | No | [1,2,3,4,5] | 근무 요일. 월요일 1, 일요일 7 |
 | `createdAt` | DateTime | Yes | No | now | 생성 시각 |
@@ -115,6 +115,7 @@
 - `regularStartTimeMinutes`, `regularEndTimeMinutes`, `overtimeStartTimeMinutes`, `nightWorkStartTimeMinutes`는 0 이상 1439 이하 정수여야 한다.
 - `regularEndTimeMinutes > regularStartTimeMinutes`여야 한다.
 - `overtimeStartTimeMinutes >= regularEndTimeMinutes`여야 한다.
+- 포괄임금 시간이 `포함`이면 `overtimeStartTimeMinutes >= regularEndTimeMinutes + fixedIncludedAfterRegularEndMinutes`여야 한다.
 - `nightWorkStartTimeMinutes`부터 8시간 구간은 다음 날로 넘어갈 수 있다.
 - `breakMinutes`는 0 이상이어야 하며 30분 단위여야 한다.
 - `workWeekdays`는 1-7 사이 값만 포함하고 중복을 허용하지 않는다.
@@ -124,11 +125,13 @@
 
 | Value | Rule | Stored |
 |---|---|---|
+| `nonWorkdayDuration` | 근무 요일이 아닌 날짜의 휴게시간 제외 근무 구간 | No |
+| `regularWorkDuration` | 근무 요일의 정시 출근-정시 퇴근 구간과 실제 근무가 겹친 시간에서 휴게시간을 제외한 시간 | No |
 | `earlyWorkDuration` | 실제 근무 구간 중 `regularStartTimeMinutes` 이전 구간 | No |
 | `overtimeDuration` | 실제 근무 구간 중 `overtimeStartTimeMinutes` 이후 구간 | No |
 | `nightWorkDuration` | 실제 근무 구간 중 `nightWorkStartTimeMinutes`부터 8시간 구간과 겹치는 시간 | No |
 
-`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 고정 포함 시간 비교 설정과 분리해서 저장하며, 사용자가 입력한 연장 근무 태그 시작 시각을 유지한다.
+`overtimeStartTimeMinutes`는 근무 태그 계산 기준이다. 포괄임금 시간 설정과 분리해서 저장하며, 사용자가 입력한 연장 근무 시작 시간을 유지한다.
 
 ## LeaveBalance
 
@@ -213,7 +216,7 @@
 | `mode` | CompensationReferenceMode | Yes | No | `unknown` | 비교 방식 선택값 |
 | `fixedIncludedAfterRegularEndMinutes` | int | Yes | No | 0 | 정시 퇴근 이후 고정 포함 시간 |
 | `effectiveFromMonth` | Date | Yes | Yes | 2000-01-01 | UI 입력 없이 전체 데이터에 적용하기 위한 내부 기준 월 |
-| `memo` | String? | No | No | null | 사용자가 남긴 참고 메모 |
+| `memo` | String? | No | No | null | 호환용 참고 메모. 현재 근무 설정 화면에서는 입력받지 않는다 |
 | `createdAt` | DateTime | Yes | No | now | 생성 시각 |
 | `updatedAt` | DateTime | Yes | No | now | 마지막 수정 시각 |
 
@@ -224,8 +227,8 @@
 - 고정 포함 시간 값은 30분 단위 입력을 권장한다.
 - `effectiveFromMonth`는 월 단위 날짜이며, 현재 UI에서는 입력받지 않고 전체 데이터 반영 기준으로 저장한다.
 - 같은 `effectiveFromMonth`의 `CompensationReferenceSetting`은 1개만 허용한다.
-- `mode != fixedIncluded`이면 고정 포함 시간 비교는 비활성화하고 시간 필드는 계산에 사용하지 않는다.
-- `memo`는 비어 있거나 500자 이하 문자열이어야 한다.
+- `mode != fixedIncluded`이면 포괄임금 시간 비교는 비활성화하고 시간 필드는 계산에 사용하지 않는다.
+- `memo`는 비어 있거나 500자 이하 문자열이어야 하며, 현재 근무 설정 화면은 저장 시 `null`을 사용한다.
 - 이 설정은 확정값, 분쟁 판단, 청구 안내, 전문 자문을 의미하지 않는다.
 
 ### CompensationReferenceSetting Derived Values
@@ -244,11 +247,11 @@
 
 | Screen/Flow | Query |
 |---|---|
-| 홈/오늘 기록 | 오늘 `workDate`의 `WorkRecord` 1건 조회 |
+| 홈/오늘 기록 | 오늘 `workDate`의 `WorkRecord` 1건 조회, 현재 월 `WorkRecord` 목록 조회 |
 | 기록 수정 | 선택한 `WorkRecord.id` 조회 후 수정 |
 | 연차 관리 | 현재 연도 `LeaveBalance`와 해당 연도 `LeaveUsage` 목록 조회 |
 | 월간 요약 | 월 범위의 `WorkRecord`, `LeaveUsage` 목록 조회 |
-| 월간 고정 포함 시간 비교 | 전체 데이터 기준으로 저장된 `CompensationReferenceSetting` 1건 조회 |
+| 월간 포괄임금 시간 비교 | 전체 데이터 기준으로 저장된 `CompensationReferenceSetting` 1건 조회 |
 | 가격표/fake-door | `PricingIntentEvent` 생성 및 최근 이벤트 목록 조회 |
 
 ## Initial Index Plan
@@ -259,7 +262,7 @@
 | `leave_balances` | unique `year` | 연도별 총 연차 기준 조회 |
 | `leave_usages` | `used_on` | 월간/연간 연차 사용 조회 |
 | `pricing_intent_events` | `occurred_at` | 클릭 이벤트 시계열 확인 |
-| `compensation_reference_settings` | unique `effective_from_month` | 월간 요약의 고정 포함 시간 비교 기준 조회 |
+| `compensation_reference_settings` | unique `effective_from_month` | 월간 요약의 포괄임금 시간 비교 기준 조회 |
 
 ## Non-Goals
 

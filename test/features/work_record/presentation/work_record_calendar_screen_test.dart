@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
+import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
 
 void main() {
   testWidgets('shows completed record detail for selected today', (
@@ -240,6 +242,36 @@ void main() {
     expect(repository.requestedMonths, <String>['2026-06', '2026-06']);
   });
 
+  testWidgets('adds previous record with numeric time shorthand', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('calendar-day-2026-06-11')));
+    await tester.pump();
+    await tester.ensureVisible(find.text('기록 추가'));
+    await tester.pump();
+    await tester.tap(find.text('기록 추가'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('clockInTimeField')), '930');
+    await tester.enterText(find.byKey(const Key('clockOutTimeField')), '1730');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('6월 11일 목요일'), findsOneWidget);
+    expect(find.text('09:30 - 17:30'), findsOneWidget);
+    expect(find.text('총 8시간'), findsOneWidget);
+  });
+
   testWidgets('shows edit action for an existing previous record', (
     WidgetTester tester,
   ) async {
@@ -339,6 +371,43 @@ void main() {
     expect(find.text('총 9시간'), findsOneWidget);
   });
 
+  testWidgets('shows monthly work tag summary after moving month', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 30, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      records: <WorkRecord>[
+        _workRecord(
+          id: 'work-2026-07-01',
+          workDate: DateTime(2026, 7, 1),
+          clockInAt: DateTime(2026, 7, 1, 8, 30),
+          clockOutAt: DateTime(2026, 7, 1, 21, 0),
+          tags: <WorkRecordTag>[],
+          memo: null,
+        ),
+      ],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('근무 태그'), findsNothing);
+
+    await tester.tap(find.byTooltip('다음 달'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('2026년 7월'), findsOneWidget);
+    expect(find.text('근무 태그'), findsOneWidget);
+    expect(find.text('정시 전 근무'), findsOneWidget);
+    expect(find.text('30분'), findsOneWidget);
+    expect(find.text('연장 근무'), findsOneWidget);
+    expect(find.text('3시간'), findsOneWidget);
+    expect(repository.requestedMonths, <String>['2026-06', '2026-07']);
+  });
+
   testWidgets('shows Korean error when repository fails', (
     WidgetTester tester,
   ) async {
@@ -405,9 +474,15 @@ void main() {
 Widget _buildScreen({
   required _FakeWorkRecordRepository repository,
   required DateTime now,
+  _FakeWorkRuleRepository? workRuleRepository,
 }) {
   return MaterialApp(
-    home: WorkRecordCalendarScreen(repository: repository, now: () => now),
+    home: WorkRecordCalendarScreen(
+      repository: repository,
+      workRuleRepository:
+          workRuleRepository ?? _FakeWorkRuleRepository(rule: _workRule()),
+      now: () => now,
+    ),
   );
 }
 
@@ -459,6 +534,7 @@ final class _CalendarResultHostState extends State<_CalendarResultHost> {
       MaterialPageRoute<bool>(
         builder: (BuildContext context) => WorkRecordCalendarScreen(
           repository: widget.repository,
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
           now: () => widget.now,
         ),
       ),
@@ -469,6 +545,26 @@ final class _CalendarResultHostState extends State<_CalendarResultHost> {
       });
     }
   }
+}
+
+WorkRule _workRule() {
+  return WorkRule(
+    id: 'work-rule',
+    regularStartTimeMinutes: 9 * 60,
+    regularEndTimeMinutes: 18 * 60,
+    overtimeStartTimeMinutes: 18 * 60,
+    nightWorkStartTimeMinutes: 22 * 60,
+    breakMinutes: 60,
+    workWeekdays: <int>[
+      DateTime.monday,
+      DateTime.tuesday,
+      DateTime.wednesday,
+      DateTime.thursday,
+      DateTime.friday,
+    ],
+    createdAt: DateTime(2026, 1, 1, 9),
+    updatedAt: DateTime(2026, 1, 1, 9),
+  );
 }
 
 WorkRecord _workRecord({
@@ -628,5 +724,28 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<void> deleteByDate({required DateTime workDate}) async {
     throw const WorkRecordRepositoryException('unexpected deleteByDate call');
+  }
+}
+
+final class _FakeWorkRuleRepository implements WorkRuleRepository {
+  const _FakeWorkRuleRepository({required this.rule});
+
+  final WorkRule? rule;
+
+  @override
+  Future<WorkRule?> findActive() async {
+    return rule;
+  }
+
+  @override
+  Future<WorkRule> save({
+    required int regularStartTimeMinutes,
+    required int regularEndTimeMinutes,
+    required int overtimeStartTimeMinutes,
+    required int nightWorkStartTimeMinutes,
+    required int breakMinutes,
+    required List<int> workWeekdays,
+  }) async {
+    throw const WorkRuleRepositoryException('unexpected save call');
   }
 }

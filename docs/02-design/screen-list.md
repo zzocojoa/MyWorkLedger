@@ -10,10 +10,10 @@
 |---|---|---|---|---|
 | S-01 | 홈/오늘 기록 | `/` | 오늘 출근/퇴근 1탭 기록 | `WorkRecord` |
 | S-02 | 기록 추가/수정 | `/work-record/edit` | 선택 날짜의 출근/퇴근 시각, 기록 사유, 메모 보정 | `WorkRecord` |
-| S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무 확인과 누락 기록 추가/수정 | `WorkRecord` |
+| S-03 | 달력 보기 | `/work-record/calendar` | 이번 달 날짜별 근무 기록 유무, 월별 근무 태그, 누락 기록 추가/수정 | `WorkRecord`, `WorkRule` |
 | S-04 | 연차 관리 | `/leave` | 연차 사용 기록 추가/삭제/초기화 | `LeaveUsage`, `LeaveBalance` |
 | S-05 | 월간 요약 | `/summary` | 월간 근무시간, 근무 태그, 태그별 참고, 연차 요약 | `WorkRecord`, `LeaveUsage`, `LeaveBalance`, `WorkRule` |
-| S-06 | 근무 설정 | `/settings/work` | 정시 근무, 포함 시간 비교, 근무 태그 기준, 근무 요일 설정 | `WorkRule`, `CompensationReferenceSetting` |
+| S-06 | 근무 설정 | `/settings/work` | 정시 근무, 포괄임금 시간, 근무 태그 기준, 근무 요일 설정 | `WorkRule`, `CompensationReferenceSetting` |
 | S-07 | 가격표/fake-door | `/pricing` | Report Pass/Pro 클릭 의향 측정 | `PricingIntentEvent` |
 | S-08 | 설정 | `/settings` | 근무 설정, 총 연차, 알림 설정 진입 | settings |
 | S-09 | 총 연차 설정 | `/settings/leave-balance` | 올해 총 연차 직접 입력 | `LeaveBalance` |
@@ -39,15 +39,15 @@
 | From | To | Trigger |
 |---|---|---|
 | 홈/오늘 기록 | 기록 수정 | 오늘 기록 카드 또는 수정 버튼 |
-| 홈/오늘 기록 | 달력 보기 | 퇴근 후 `달력 보기` 보조 버튼 |
+| 홈/오늘 기록 | 달력 보기 | 현재 월 기록이 있을 때 `달력 보기` 보조 버튼 |
 | 홈/오늘 기록 | 월간 요약 | 하단 `월간 요약` 버튼 |
 | 홈/오늘 기록 | 연차 관리 | 연차 버튼 |
 | 홈/오늘 기록 | 설정 | 오른쪽 상단 톱니바퀴 |
-| 설정 | 근무 설정 | `근무 설정` 항목. 정시 근무, 포함 시간 비교, 근무 태그 기준, 근무 요일을 설정 |
+| 설정 | 근무 설정 | `근무 설정` 항목. 정시 근무, 포괄임금 시간, 근무 태그 기준, 근무 요일을 설정 |
 | 설정 | 총 연차 설정 | `총 연차` 항목 |
 | 설정 | 알림 설정 | `알림` 항목 |
 | 달력 보기 | 기록 추가/수정 | 선택 날짜에 기록이 없으면 `기록 추가`, 기존 기록이 있으면 `기록 수정` |
-| 월간 요약 | 가격표/fake-door | 월간 리포트 만들기 버튼 |
+| 월간 요약 | 가격표/fake-door | 상단 오른쪽 `Report` 버튼 |
 | 설정 | 홈/오늘 기록 | 뒤로가기 |
 
 ## Out Of Scope Screens

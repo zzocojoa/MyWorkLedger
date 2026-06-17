@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/workledger_design_tokens.dart';
-
 import '../../../core/models/pricing_intent_event.dart';
 import '../../../core/models/work_record.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../compensation_reference/domain/compensation_reference_summary.dart';
 import '../../leave/domain/leave_repository.dart';
@@ -13,7 +13,7 @@ import '../../pricing/domain/record_pricing_intent.dart';
 import '../../pricing/presentation/pricing_fake_door_screen.dart';
 import '../../work_record/domain/work_record_repository.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
-import '../../work_time/domain/work_time_candidate.dart';
+import '../../work_time/presentation/work_time_candidate_summary_card.dart';
 import '../domain/load_monthly_summary.dart';
 import '../domain/monthly_summary.dart';
 
@@ -191,6 +191,17 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
         appBar: AppBar(
           title: const Text('월간 요약'),
           leading: BackButton(onPressed: _closeScreen),
+          actions: <Widget>[
+            TextButton(
+              onPressed:
+                  _isLoading ||
+                      _errorMessage != null ||
+                      _isRecordingPricingIntent
+                  ? null
+                  : _openPricingFakeDoor,
+              child: const Text('Report'),
+            ),
+          ],
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -223,7 +234,9 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                       .workTimeCandidateSummary
                       .hasActiveTags) ...<Widget>[
                     const SizedBox(height: workLedgerSpacingMedium),
-                    _WorkTimeCandidateSummaryCard(viewData: viewData),
+                    WorkTimeCandidateSummaryCard(
+                      summary: viewData.workTimeCandidateSummary,
+                    ),
                   ],
                   if (_hasRecordTagSummary(
                     summary: viewData.workSummary,
@@ -242,13 +255,6 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                   _MonthlyRecordList(
                     summary: viewData.workSummary,
                     onDelete: _isDeletingRecord ? null : _deleteRecord,
-                  ),
-                  const SizedBox(height: workLedgerSpacingLarge),
-                  FilledButton(
-                    onPressed: _isRecordingPricingIntent
-                        ? null
-                        : _openPricingFakeDoor,
-                    child: const Text('월간 리포트 만들기'),
                   ),
                 ],
               ],
@@ -537,126 +543,6 @@ final class _RecordTagSummaryRow extends StatelessWidget {
   }
 }
 
-final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
-  const _WorkTimeCandidateSummaryCard({required this.viewData});
-
-  final MonthlySummaryViewData viewData;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: workLedgerColorCanvas,
-        border: Border.all(color: workLedgerColorHairline),
-        borderRadius: BorderRadius.circular(workLedgerRadiusMedium),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(workLedgerSpacingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              '근무 태그',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: workLedgerColorInk,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0,
-              ),
-            ),
-            const SizedBox(height: workLedgerSpacingSmall),
-            _CandidateReferenceRows(summary: viewData.workTimeCandidateSummary),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-final class _CandidateReferenceRows extends StatelessWidget {
-  const _CandidateReferenceRows({required this.summary});
-
-  final WorkTimeCandidateSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<_CandidateReferenceData> rows = _visibleCandidateRows(
-      summary: summary,
-    );
-    return Column(
-      children: <Widget>[
-        for (int index = 0; index < rows.length; index += 1) ...<Widget>[
-          if (index > 0) const SizedBox(height: workLedgerSpacingCompact),
-          _CandidateReferenceRow(
-            label: rows[index].label,
-            value: formatMonthlySummaryDuration(duration: rows[index].duration),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-final class _CandidateReferenceData {
-  const _CandidateReferenceData({required this.label, required this.duration});
-
-  final String label;
-  final Duration duration;
-}
-
-List<_CandidateReferenceData> _visibleCandidateRows({
-  required WorkTimeCandidateSummary summary,
-}) {
-  final List<_CandidateReferenceData> rows = <_CandidateReferenceData>[
-    _CandidateReferenceData(
-      label: '휴무일 근무',
-      duration: summary.nonWorkdayDuration,
-    ),
-    _CandidateReferenceData(
-      label: '정시 전 근무',
-      duration: summary.earlyWorkDuration,
-    ),
-    _CandidateReferenceData(label: '연장 근무', duration: summary.overtimeDuration),
-    _CandidateReferenceData(
-      label: '야간 근무',
-      duration: summary.nightWorkDuration,
-    ),
-  ];
-  return rows
-      .where((_CandidateReferenceData row) => row.duration > Duration.zero)
-      .toList(growable: false);
-}
-
-final class _CandidateReferenceRow extends StatelessWidget {
-  const _CandidateReferenceRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: <Widget>[
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: workLedgerColorMuted,
-            letterSpacing: 0,
-          ),
-        ),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: workLedgerColorInk,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 final class _CompensationReferenceSummaryCard extends StatelessWidget {
   const _CompensationReferenceSummaryCard({required this.viewData});
 
@@ -664,6 +550,7 @@ final class _CompensationReferenceSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations localizations = AppLocalizations.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: workLedgerColorCanvas,
@@ -676,7 +563,7 @@ final class _CompensationReferenceSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              '포함 시간 대비',
+              localizations.monthlySummaryCompensationReferenceTitle,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: workLedgerColorInk,
                 fontWeight: FontWeight.w500,
@@ -708,6 +595,7 @@ final class _CompensationReferenceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations localizations = AppLocalizations.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: workLedgerColorSurfaceSoft,
@@ -728,26 +616,29 @@ final class _CompensationReferenceRow extends StatelessWidget {
             ),
             const SizedBox(height: workLedgerSpacingCompact),
             _CompensationReferenceValueLine(
-              label: '초과 참고 시작',
+              label:
+                  localizations.monthlySummaryCompensationReferenceStartLabel,
               value: _formatCompensationReferenceMinuteOfDay(
                 minutes: row.excessStartTimeMinutes,
               ),
             ),
             const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
-              label: '실제 기록',
+              label: localizations.monthlySummaryCompensationActualLabel,
               value: formatMonthlySummaryDuration(duration: row.actualDuration),
             ),
             const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
-              label: '포함 시간',
+              label:
+                  localizations.monthlySummaryCompensationIncludedDurationLabel,
               value: formatMonthlySummaryDuration(
                 duration: row.fixedIncludedDuration,
               ),
             ),
             const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
-              label: '초과 참고',
+              label:
+                  localizations.monthlySummaryCompensationExcessReferenceLabel,
               value: formatMonthlySummaryDuration(
                 duration: row.excessReferenceDuration,
               ),

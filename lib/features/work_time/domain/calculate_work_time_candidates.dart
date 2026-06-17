@@ -10,6 +10,7 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
     return const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.unavailable,
       nonWorkdayDuration: Duration.zero,
+      regularWorkDuration: Duration.zero,
       earlyWorkDuration: Duration.zero,
       overtimeDuration: Duration.zero,
       nightWorkDuration: Duration.zero,
@@ -23,6 +24,7 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
     return const WorkTimeCandidateSummary(
       status: WorkTimeCandidateStatus.unavailable,
       nonWorkdayDuration: Duration.zero,
+      regularWorkDuration: Duration.zero,
       earlyWorkDuration: Duration.zero,
       overtimeDuration: Duration.zero,
       nightWorkDuration: Duration.zero,
@@ -50,6 +52,14 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
           breakMinutes: workRule.breakMinutes,
         )
       : Duration.zero;
+  final Duration regularWorkDuration = isWorkWeekday
+      ? _calculateRegularWorkDuration(
+          clockInAt: clockInAt,
+          clockOutAt: clockOutAt,
+          workDate: record.workDate,
+          workRule: workRule,
+        )
+      : Duration.zero;
   final Duration earlyWorkDuration = _calculateEarlyWorkDuration(
     record: record,
     workRule: workRule,
@@ -68,10 +78,37 @@ WorkTimeCandidateSummary calculateWorkTimeCandidates({
   return WorkTimeCandidateSummary(
     status: WorkTimeCandidateStatus.available,
     nonWorkdayDuration: nonWorkdayDuration,
+    regularWorkDuration: regularWorkDuration,
     earlyWorkDuration: earlyWorkDuration,
     overtimeDuration: overtimeDuration,
     nightWorkDuration: nightWorkDuration,
     reason: null,
+  );
+}
+
+Duration _calculateRegularWorkDuration({
+  required DateTime clockInAt,
+  required DateTime clockOutAt,
+  required DateTime workDate,
+  required WorkRule workRule,
+}) {
+  final DateTime regularStartAt = _dateTimeAtMinuteOfDay(
+    date: workDate,
+    minuteOfDay: workRule.regularStartTimeMinutes,
+  );
+  final DateTime regularEndAt = _dateTimeAtMinuteOfDay(
+    date: workDate,
+    minuteOfDay: workRule.regularEndTimeMinutes,
+  );
+  final Duration regularOverlapDuration = _overlapDuration(
+    leftStart: clockInAt,
+    leftEnd: clockOutAt,
+    rightStart: regularStartAt,
+    rightEnd: regularEndAt,
+  );
+  return _subtractBreakDuration(
+    duration: regularOverlapDuration,
+    breakMinutes: workRule.breakMinutes,
   );
 }
 
@@ -81,11 +118,21 @@ Duration _calculateAdjustedWorkedDuration({
   required int breakMinutes,
 }) {
   final Duration workedDuration = clockOutAt.difference(clockInAt);
+  return _subtractBreakDuration(
+    duration: workedDuration,
+    breakMinutes: breakMinutes,
+  );
+}
+
+Duration _subtractBreakDuration({
+  required Duration duration,
+  required int breakMinutes,
+}) {
   final Duration breakDuration = Duration(minutes: breakMinutes);
-  if (workedDuration <= breakDuration) {
+  if (duration <= breakDuration) {
     return Duration.zero;
   }
-  return workedDuration - breakDuration;
+  return duration - breakDuration;
 }
 
 Duration _calculateEarlyWorkDuration({

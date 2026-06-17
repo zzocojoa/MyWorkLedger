@@ -31,5 +31,25 @@
   "homeLeaveManagement": "연차 관리",
   "@homeLeaveManagement": {
     "description": "Home link to the leave management screen."
+  },
+  "monthlySummaryCompensationReferenceTitle": "포괄임금 시간 대비",
+  "@monthlySummaryCompensationReferenceTitle": {
+    "description": "Monthly summary compensation reference card title."
+  },
+  "monthlySummaryCompensationReferenceStartLabel": "포괄임금 포함 시간",
+  "@monthlySummaryCompensationReferenceStartLabel": {
+    "description": "Monthly summary compensation reference start time label."
+  },
+  "monthlySummaryCompensationActualLabel": "실제 기록",
+  "@monthlySummaryCompensationActualLabel": {
+    "description": "Monthly summary actual recorded duration label."
+  },
+  "monthlySummaryCompensationIncludedDurationLabel": "포괄임금 시간",
+  "@monthlySummaryCompensationIncludedDurationLabel": {
+    "description": "Monthly summary fixed included duration label."
+  },
+  "monthlySummaryCompensationExcessReferenceLabel": "초과 참고",
+  "@monthlySummaryCompensationExcessReferenceLabel": {
+    "description": "Monthly summary excess reference duration label."
   }
 }
