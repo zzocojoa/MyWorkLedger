@@ -81,7 +81,7 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
 
   Future<void> _addUsage() async {
     final LeaveSummary? summary = _summary;
-    if (summary == null || summary.balance == null) {
+    if (summary == null || summary.totalLeaveMinutes <= 0) {
       _showError('총 연차에서 올해 총 연차를 먼저 등록한 뒤 연차 사용을 추가해 주세요.');
       return;
     }

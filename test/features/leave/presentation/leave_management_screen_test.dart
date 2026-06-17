@@ -77,6 +77,30 @@ void main() {
     expect(find.text('사용 내역이 없습니다'), findsOneWidget);
   });
 
+  testWidgets('blocks leave usage when total leave is saved as zero', (
+    WidgetTester tester,
+  ) async {
+    final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 0);
+
+    await tester.pumpWidget(_buildScreen(repository: repository));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-10',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+
+    expect(find.textContaining('총 연차에서 올해 총 연차를 먼저 등록'), findsOneWidget);
+    expect(await repository.findUsagesByYear(year: 2026), isEmpty);
+    expect(find.text('사용 내역이 없습니다'), findsOneWidget);
+  });
+
   testWidgets('resets registered leave usage amounts from app bar action', (
     WidgetTester tester,
   ) async {
