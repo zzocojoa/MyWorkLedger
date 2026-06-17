@@ -115,9 +115,64 @@ void main() {
     expect(find.text('연차 관리에서 올해 총 연차를 먼저 입력하세요'), findsNothing);
     expect(find.text('이번 달 기록'), findsOneWidget);
     expect(find.text('06-01 09:00-20:30'), findsOneWidget);
-    expect(find.text('야근'), findsNothing);
+    expect(find.text('태그별 참고'), findsOneWidget);
+    expect(find.text('야근'), findsOneWidget);
+    expect(find.text('11시간 30분'), findsOneWidget);
     expect(find.textContaining('기록 사유:'), findsNothing);
     expect(find.text('06-03 09:10-18:20'), findsOneWidget);
+  });
+
+  testWidgets('shows saved record tag summary without work rule', (
+    WidgetTester tester,
+  ) async {
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      monthlyRecords: <WorkRecord>[
+        _completedRecord(
+          id: 'overtime',
+          clockInAt: DateTime(2026, 6, 1, 9, 0),
+          clockOutAt: DateTime(2026, 6, 1, 21, 0),
+          tags: <WorkRecordTag>[WorkRecordTag.overtime],
+        ),
+        _completedRecord(
+          id: 'delayed',
+          clockInAt: DateTime(2026, 6, 2, 9, 0),
+          clockOutAt: DateTime(2026, 6, 2, 19, 30),
+          tags: <WorkRecordTag>[WorkRecordTag.delayedCheckout],
+        ),
+        _completedRecord(
+          id: 'holiday',
+          clockInAt: DateTime(2026, 6, 6, 10, 0),
+          clockOutAt: DateTime(2026, 6, 6, 15, 0),
+          tags: <WorkRecordTag>[WorkRecordTag.holidayWork],
+        ),
+      ],
+      findByMonthError: null,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: _emptyLeaveRepository(),
+        workRuleRepository: const _FakeWorkRuleRepository(
+          rule: null,
+          findActiveError: null,
+        ),
+        now: DateTime(2026, 6, 12, 9, 0),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('근무 태그'), findsOneWidget);
+    expect(find.text('3개'), findsOneWidget);
+    expect(find.text('기준 미설정'), findsNothing);
+    expect(find.text('태그별 참고'), findsOneWidget);
+    expect(find.text('야근'), findsOneWidget);
+    expect(find.text('12시간'), findsOneWidget);
+    expect(find.text('퇴근 지연'), findsOneWidget);
+    expect(find.text('10시간 30분'), findsOneWidget);
+    expect(find.text('휴일근무'), findsOneWidget);
+    expect(find.text('5시간'), findsOneWidget);
   });
 
   testWidgets('shows included time comparison when fixed included is set', (
