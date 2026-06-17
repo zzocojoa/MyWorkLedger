@@ -8,7 +8,7 @@ import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
 import '../../leave/domain/load_leave_summary.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
-import '../../work_time/domain/calculate_work_time_candidates.dart';
+import '../../work_time/domain/calculate_monthly_work_time_candidate_summary.dart';
 import '../../work_time/domain/work_time_candidate.dart';
 import '../../work_record/domain/work_record_repository.dart';
 import 'calculate_monthly_summary.dart';
@@ -35,10 +35,15 @@ Future<MonthlySummaryViewData> loadMonthlySummary({
     year: targetMonth.year,
   );
   final WorkRule? workRule = await workRuleRepository.findActive();
+  final WorkRule candidateWorkRule =
+      workRule ??
+      buildDefaultWorkTimeCandidateRule(
+        timestamp: DateTime(targetMonth.year, targetMonth.month),
+      );
   final WorkTimeCandidateSummary workTimeCandidateSummary =
-      _calculateMonthlyWorkTimeCandidateSummary(
+      calculateMonthlyWorkTimeCandidateSummary(
         records: records,
-        workRule: workRule,
+        workRule: candidateWorkRule,
       );
   final CompensationReferenceSetting? compensationReferenceSetting =
       await compensationReferenceRepository.findApplicableForMonth(
@@ -91,51 +96,4 @@ Duration calculateDisplayTotalWorkedDuration({
         : Duration.zero;
     return total + adjustedDuration;
   });
-}
-
-WorkTimeCandidateSummary _calculateMonthlyWorkTimeCandidateSummary({
-  required List<WorkRecord> records,
-  required WorkRule? workRule,
-}) {
-  if (workRule == null) {
-    return const WorkTimeCandidateSummary(
-      status: WorkTimeCandidateStatus.unavailable,
-      nonWorkdayDuration: Duration.zero,
-      earlyWorkDuration: Duration.zero,
-      overtimeDuration: Duration.zero,
-      nightWorkDuration: Duration.zero,
-      reason: 'workRuleMissing',
-    );
-  }
-
-  return records.fold(
-    const WorkTimeCandidateSummary(
-      status: WorkTimeCandidateStatus.available,
-      nonWorkdayDuration: Duration.zero,
-      earlyWorkDuration: Duration.zero,
-      overtimeDuration: Duration.zero,
-      nightWorkDuration: Duration.zero,
-      reason: null,
-    ),
-    (WorkTimeCandidateSummary total, WorkRecord record) {
-      final WorkTimeCandidateSummary candidate = calculateWorkTimeCandidates(
-        record: record,
-        workRule: workRule,
-      );
-      if (!candidate.isAvailable) {
-        return total;
-      }
-      return WorkTimeCandidateSummary(
-        status: WorkTimeCandidateStatus.available,
-        nonWorkdayDuration:
-            total.nonWorkdayDuration + candidate.nonWorkdayDuration,
-        earlyWorkDuration:
-            total.earlyWorkDuration + candidate.earlyWorkDuration,
-        overtimeDuration: total.overtimeDuration + candidate.overtimeDuration,
-        nightWorkDuration:
-            total.nightWorkDuration + candidate.nightWorkDuration,
-        reason: null,
-      );
-    },
-  );
 }

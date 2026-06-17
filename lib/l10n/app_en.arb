@@ -7,5 +7,10 @@
   "homeRemainingLeave": "Remaining leave",
   "homePreparing": "Preparing",
   "homeMonthlySummary": "Monthly summary",
-  "homeLeaveManagement": "Leave"
+  "homeLeaveManagement": "Leave",
+  "monthlySummaryCompensationReferenceTitle": "Included salary hours comparison",
+  "monthlySummaryCompensationReferenceStartLabel": "Included salary time",
+  "monthlySummaryCompensationActualLabel": "Actual record",
+  "monthlySummaryCompensationIncludedDurationLabel": "Included salary hours",
+  "monthlySummaryCompensationExcessReferenceLabel": "Excess reference"
 }
