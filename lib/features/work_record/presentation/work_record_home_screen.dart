@@ -299,7 +299,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: workLedgerSpacingLarge),
               if (_isLoading && summary == null)
                 const Center(child: CircularProgressIndicator())
               else if (summary != null) ...<Widget>[
@@ -312,7 +312,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                   child: Text(summary.primaryButtonLabel),
                 ),
                 if (summary.secondaryButtonLabel != null) ...<Widget>[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: workLedgerSpacingCompact),
                   OutlinedButton(
                     onPressed: _isLoading
                         ? null
@@ -322,7 +322,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
                 ],
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _StatusMessage(message: _errorMessage!),
               ],
               const SizedBox(height: workLedgerSpacingExtraLarge),
@@ -379,10 +379,10 @@ final class _TodayStatusCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             for (final String line in buildStatusLines(summary: summary))
               Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.only(bottom: workLedgerSpacingDense),
                 child: Text(
                   line,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -446,7 +446,7 @@ final class _MonthlyPreview extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         Row(
           children: <Widget>[
             Expanded(
@@ -455,7 +455,7 @@ final class _MonthlyPreview extends StatelessWidget {
                 value: _resolveTotalWorkedText(localizations: localizations),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             Expanded(
               child: _SummaryTile(
                 label: localizations.homeRemainingLeave,
@@ -509,7 +509,7 @@ final class _SummaryTile extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: workLedgerSpacingExtraSmall),
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(

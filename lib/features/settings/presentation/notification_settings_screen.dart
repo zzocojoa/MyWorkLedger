@@ -90,7 +90,7 @@ final class _NotificationSettingsScreenState
                               letterSpacing: 0,
                             ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: workLedgerSpacingExtraSmall),
                       Text(
                         '알림에서 출근하기와 퇴근하기를 바로 실행합니다.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -108,7 +108,7 @@ final class _NotificationSettingsScreenState
                 ),
               ),
               if (_statusMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 Text(
                   _statusMessage!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

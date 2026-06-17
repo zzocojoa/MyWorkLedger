@@ -122,11 +122,11 @@ final class _PricingFakeDoorScreenState extends State<PricingFakeDoorScreen> {
                 ),
               ),
               if (_successMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _PricingMessage(message: _successMessage!),
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _PricingMessage(message: _errorMessage!),
               ],
               const SizedBox(height: workLedgerSpacingMedium),
@@ -216,7 +216,7 @@ final class _PricingPlanCard extends StatelessWidget {
                 color: workLedgerColorPricingInk,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: workLedgerSpacingExtraSmall),
             Text(
               description,
               style: workLedgerBodyTextStyle.copyWith(
@@ -224,7 +224,7 @@ final class _PricingPlanCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: workLedgerSpacingExtraExtraSmall),
             Text(
               detail,
               style: workLedgerBodyTextStyle.copyWith(

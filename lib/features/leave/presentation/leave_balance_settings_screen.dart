@@ -146,7 +146,7 @@ final class _LeaveBalanceSettingsScreenState
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: workLedgerSpacingDense),
               Text(
                 _year.toString(),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -168,7 +168,7 @@ final class _LeaveBalanceSettingsScreenState
                         label: '일',
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: workLedgerSpacingSmall),
                     Expanded(
                       child: _LeaveBalanceNumberField(
                         keyValue: const Key('totalLeaveHoursField'),
@@ -178,14 +178,14 @@ final class _LeaveBalanceSettingsScreenState
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 FilledButton(
                   onPressed: _isSaving ? null : _saveTotalLeave,
                   child: Text(_isSaving ? '저장 중' : '저장'),
                 ),
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 Text(
                   _errorMessage!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

@@ -222,13 +222,13 @@ final class _EditTodayWorkRecordScreenState
                 const Center(child: CircularProgressIndicator())
               else ...<Widget>[
                 _ReadOnlyValue(label: '근무일', value: formatDateOnly(targetDate)),
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _TimeField(
                   key: const Key('clockInTimeField'),
                   label: '출근 시각',
                   controller: _clockInController,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _TimeField(
                   key: const Key('clockOutTimeField'),
                   label: '퇴근 시각',
@@ -243,7 +243,7 @@ final class _EditTodayWorkRecordScreenState
                     letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: workLedgerSpacingCompact),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -265,7 +265,7 @@ final class _EditTodayWorkRecordScreenState
                   child: const Text('저장'),
                 ),
                 if (record != null) ...<Widget>[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: workLedgerSpacingCompact),
                   OutlinedButton(
                     onPressed: _isSaving || _isDeleting ? null : _deleteRecord,
                     style: OutlinedButton.styleFrom(
@@ -276,7 +276,7 @@ final class _EditTodayWorkRecordScreenState
                 ],
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _ErrorBox(message: _errorMessage!),
               ],
             ],
@@ -344,7 +344,7 @@ final class _ReadOnlyValue extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: workLedgerSpacingExtraSmall),
         DecoratedBox(
           decoration: BoxDecoration(
             color: workLedgerColorCanvas,
@@ -352,7 +352,10 @@ final class _ReadOnlyValue extends StatelessWidget {
             borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+            padding: const EdgeInsets.symmetric(
+              horizontal: workLedgerSpacingSmall,
+              vertical: workLedgerSpacingFieldVertical,
+            ),
             child: Text(value),
           ),
         ),

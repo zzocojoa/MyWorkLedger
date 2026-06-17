@@ -12,6 +12,9 @@ void main() {
     expect(workLedgerButtonTextStyle.fontWeight, FontWeight.w500);
     expect(workLedgerPricingCardTitleTextStyle.fontWeight, FontWeight.w500);
     expect(workLedgerPricingCardTitleTextStyle.fontFamily, isNull);
+    expect(workLedgerSpacingExtraExtraSmall, 4);
+    expect(workLedgerSpacingCompact, 10);
+    expect(workLedgerSpacingFieldVertical, 13);
     expect(theme.dividerTheme.color, workLedgerColorHairline);
     expect(theme.listTileTheme.iconColor, workLedgerColorInk);
   });

@@ -137,7 +137,7 @@ final class _SettingsRow extends StatelessWidget {
                       letterSpacing: 0,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: workLedgerSpacingExtraExtraSmall),
                   Text(
                     subtitle,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -148,7 +148,7 @@ final class _SettingsRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             const Icon(Icons.chevron_right, color: workLedgerColorMuted),
           ],
         ),

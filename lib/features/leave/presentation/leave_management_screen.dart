@@ -180,7 +180,7 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
                 ),
               ],
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _LeaveMessage(message: _errorMessage!),
               ],
             ],
@@ -208,7 +208,7 @@ final class _YearBlock extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: workLedgerSpacingDense),
         Text(
           year.toString(),
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -254,7 +254,7 @@ final class _LeaveSummaryCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -263,7 +263,7 @@ final class _LeaveSummaryCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             Text(
               '총 ${formatLeaveMinutes(minutes: summary.totalLeaveMinutes, includeZeroHours: true)} · 사용 ${formatLeaveMinutes(minutes: summary.usedLeaveMinutes, includeZeroHours: true)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -272,7 +272,7 @@ final class _LeaveSummaryCard extends StatelessWidget {
               ),
             ),
             if (summary.isExceeded) ...<Widget>[
-              const SizedBox(height: 8),
+              const SizedBox(height: workLedgerSpacingExtraSmall),
               Text(
                 '초과 사용 중',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -319,7 +319,7 @@ final class _LeaveUsageForm extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         Row(
           children: <Widget>[
             Expanded(
@@ -329,7 +329,7 @@ final class _LeaveUsageForm extends StatelessWidget {
                 label: '일',
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             Expanded(
               child: _NumberField(
                 keyValue: const Key('usageHoursField'),
@@ -339,7 +339,7 @@ final class _LeaveUsageForm extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         TextField(
           key: const Key('usageMemoField'),
           controller: memoController,
@@ -348,7 +348,7 @@ final class _LeaveUsageForm extends StatelessWidget {
             border: OutlineInputBorder(),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         OutlinedButton(onPressed: onAdd, child: const Text('연차 사용 추가')),
       ],
     );
@@ -439,7 +439,7 @@ final class _LeaveUsageRow extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: workLedgerSpacingCompact),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -454,7 +454,7 @@ final class _LeaveUsageRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             SizedBox(
               width: 74,
               child: Text(
@@ -468,7 +468,7 @@ final class _LeaveUsageRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: workLedgerSpacingSmall),
             Expanded(
               child: Text(
                 usage.memo ?? '',
@@ -478,7 +478,7 @@ final class _LeaveUsageRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: workLedgerSpacingExtraSmall),
             IconButton(
               onPressed: onDelete == null ? null : () => onDelete!(usage),
               tooltip: '연차 사용 삭제',
@@ -547,7 +547,7 @@ final class _SectionBox extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             ...children,
           ],
         ),

@@ -326,14 +326,14 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             onPressed: _isSaving ? null : _applyPreset,
             child: const Text('09:00-18:00 빠른 설정'),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _startController,
             decoration: const InputDecoration(labelText: '정시 출근'),
             keyboardType: TextInputType.datetime,
             scrollPhysics: _textFieldScrollPhysics,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _endController,
             decoration: const InputDecoration(labelText: '정시 퇴근'),
@@ -341,7 +341,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             scrollPhysics: _textFieldScrollPhysics,
             onChanged: _handleRegularEndInputChanged,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _breakController,
             decoration: const InputDecoration(labelText: '휴게시간(분)'),
@@ -415,7 +415,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                         letterSpacing: 0,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: workLedgerSpacingExtraExtraSmall),
                     Text(
                       formatWorkRuleWeekdays(weekdays: _selectedWeekdays),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -426,7 +426,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: workLedgerSpacingSmall),
               SizedBox(
                 width: 82,
                 child: OutlinedButton(
@@ -461,7 +461,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               letterSpacing: 0,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _overtimeStartController,
             decoration: InputDecoration(
@@ -471,7 +471,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             keyboardType: TextInputType.datetime,
             scrollPhysics: _textFieldScrollPhysics,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: workLedgerSpacingSmall),
           TextField(
             controller: _nightWorkStartController,
             decoration: const InputDecoration(
@@ -484,7 +484,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
         ],
       ),
       if (_errorMessage != null) ...<Widget>[
-        const SizedBox(height: 16),
+        const SizedBox(height: workLedgerSpacingMedium),
         _SettingsMessage(message: _errorMessage!),
       ],
     ];
@@ -716,7 +716,7 @@ final class _WeekdaySelector extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: workLedgerSpacingCompact),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -778,16 +778,16 @@ final class _FixedIncludedFields extends StatelessWidget {
     final String? message = excessStartMessage;
     return Column(
       children: <Widget>[
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         _MinutesField(
           controller: afterRegularEndMinutesController,
           label: '정시 이후 고정 포함 시간',
           onChanged: onChanged,
         ),
         if (message != null) ...<Widget>[
-          const SizedBox(height: 10),
+          const SizedBox(height: workLedgerSpacingCompact),
           _ComparisonPreviewMessage(message: message),
-          const SizedBox(height: 6),
+          const SizedBox(height: workLedgerSpacingDense),
           Text(
             _fixedIncludedComparisonHelperText,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -846,7 +846,10 @@ final class _ComparisonPreviewMessage extends StatelessWidget {
           borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: workLedgerSpacingCompact,
+            vertical: workLedgerSpacingExtraSmall,
+          ),
           child: Text(
             message,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(

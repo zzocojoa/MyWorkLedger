@@ -22,8 +22,14 @@ const double workLedgerRadiusMedium = 10;
 const double workLedgerRadiusLarge = 12;
 const double workLedgerRadiusPill = 9999;
 
+const double workLedgerSpacingHairline = 2;
+const double workLedgerSpacingCalendarMarker = 3;
+const double workLedgerSpacingExtraExtraSmall = 4;
+const double workLedgerSpacingDense = 6;
 const double workLedgerSpacingExtraSmall = 8;
+const double workLedgerSpacingCompact = 10;
 const double workLedgerSpacingSmall = 12;
+const double workLedgerSpacingFieldVertical = 13;
 const double workLedgerSpacingMedium = 16;
 const double workLedgerSpacingLarge = 24;
 const double workLedgerSpacingExtraLarge = 32;

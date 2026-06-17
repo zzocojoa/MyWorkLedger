@@ -272,7 +272,7 @@ final class _CalendarGrid extends StatelessWidget {
         child: Column(
           children: <Widget>[
             const _CalendarWeekdayRow(),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             GridView.builder(
               itemCount: cells.length,
               shrinkWrap: true,
@@ -372,7 +372,10 @@ final class _CalendarDayCell extends StatelessWidget {
           ),
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              padding: const EdgeInsets.symmetric(
+                vertical: workLedgerSpacingExtraExtraSmall,
+                horizontal: workLedgerSpacingHairline,
+              ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Column(
@@ -387,7 +390,7 @@ final class _CalendarDayCell extends StatelessWidget {
                         letterSpacing: 0,
                       ),
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: workLedgerSpacingCalendarMarker),
                     Text(
                       _calendarMarker(entry: entry),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -397,7 +400,7 @@ final class _CalendarDayCell extends StatelessWidget {
                       ),
                     ),
                     if (isToday) ...<Widget>[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: workLedgerSpacingHairline),
                       Text(
                         '오늘',
                         maxLines: 1,
@@ -489,10 +492,10 @@ final class _SelectedDateDetail extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             for (final String line in lines)
               Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.only(bottom: workLedgerSpacingDense),
                 child: Text(
                   line,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

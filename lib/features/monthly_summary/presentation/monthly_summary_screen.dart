@@ -232,12 +232,12 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
                   ],
                   const SizedBox(height: workLedgerSpacingMedium),
                   _MonthlyLeaveSummaryCard(viewData: viewData),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: workLedgerSpacingLarge),
                   _MonthlyRecordList(
                     summary: viewData.workSummary,
                     onDelete: _isDeletingRecord ? null : _deleteRecord,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: workLedgerSpacingLarge),
                   FilledButton(
                     onPressed: _isRecordingPricingIntent
                         ? null
@@ -278,7 +278,7 @@ final class _TotalWorkCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             Text(
               formatMonthlySummaryDuration(
                 duration: viewData.displayTotalWorkedDuration,
@@ -312,7 +312,7 @@ final class _MonthlyStats extends StatelessWidget {
             value: '${summary.completedWorkDayCount}일',
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: workLedgerSpacingSmall),
         Expanded(
           child: _StatTile(
             label: '근무 태그',
@@ -374,7 +374,7 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
                 Expanded(
                   child: _LeaveStatBlock(label: '남은 연차', value: remainingText),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: workLedgerSpacingSmall),
                 Expanded(
                   child: _LeaveStatBlock(
                     label: '이번 달 사용 연차',
@@ -383,7 +383,7 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             Text(
               totalLine,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -392,7 +392,7 @@ final class _MonthlyLeaveSummaryCard extends StatelessWidget {
               ),
             ),
             if (hasBalance && leaveSummary.isExceeded) ...<Widget>[
-              const SizedBox(height: 8),
+              const SizedBox(height: workLedgerSpacingExtraSmall),
               Text(
                 '초과 사용 중',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -435,7 +435,7 @@ final class _WorkTimeCandidateSummaryCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             _CandidateReferenceRows(summary: viewData.workTimeCandidateSummary),
           ],
         ),
@@ -457,7 +457,7 @@ final class _CandidateReferenceRows extends StatelessWidget {
     return Column(
       children: <Widget>[
         for (int index = 0; index < rows.length; index += 1) ...<Widget>[
-          if (index > 0) const SizedBox(height: 10),
+          if (index > 0) const SizedBox(height: workLedgerSpacingCompact),
           _CandidateReferenceRow(
             label: rows[index].label,
             value: formatMonthlySummaryDuration(duration: rows[index].duration),
@@ -555,13 +555,13 @@ final class _CompensationReferenceSummaryCard extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             for (
               int index = 0;
               index < viewData.compensationReferenceSummary.rows.length;
               index += 1
             ) ...<Widget>[
-              if (index > 0) const SizedBox(height: 12),
+              if (index > 0) const SizedBox(height: workLedgerSpacingSmall),
               _CompensationReferenceRow(
                 row: viewData.compensationReferenceSummary.rows[index],
               ),
@@ -598,26 +598,26 @@ final class _CompensationReferenceRow extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: workLedgerSpacingCompact),
             _CompensationReferenceValueLine(
               label: '초과 참고 시작',
               value: _formatCompensationReferenceMinuteOfDay(
                 minutes: row.excessStartTimeMinutes,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
               label: '실제 기록',
               value: formatMonthlySummaryDuration(duration: row.actualDuration),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
               label: '포함 시간',
               value: formatMonthlySummaryDuration(
                 duration: row.fixedIncludedDuration,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             _CompensationReferenceValueLine(
               label: '초과 참고',
               value: formatMonthlySummaryDuration(
@@ -697,7 +697,7 @@ final class _LeaveStatBlock extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: workLedgerSpacingExtraSmall),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -737,7 +737,7 @@ final class _StatTile extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: workLedgerSpacingExtraSmall),
             Text(
               value,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -776,7 +776,7 @@ final class _MonthlyRecordList extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: workLedgerSpacingSmall),
         DecoratedBox(
           decoration: BoxDecoration(
             color: workLedgerColorCanvas,
@@ -823,7 +823,7 @@ final class _EmptyMonthlyRecords extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: workLedgerSpacingSmall),
             Text(
               '이 달 기록이 없습니다',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -832,7 +832,7 @@ final class _EmptyMonthlyRecords extends StatelessWidget {
                 letterSpacing: 0,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: workLedgerSpacingDense),
             Text(
               '출근/퇴근 기록이 쌓이면 월간 요약이 표시됩니다.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -892,7 +892,7 @@ final class _MonthlyRecordRow extends StatelessWidget {
                       formatMonthlySummaryRecordReasons(
                         tags: entry.tags,
                       ).isNotEmpty) ...<Widget>[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: workLedgerSpacingDense),
                     Text(
                       '기록 사유: ${formatMonthlySummaryRecordReasons(tags: entry.tags)}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -904,7 +904,7 @@ final class _MonthlyRecordRow extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: workLedgerSpacingExtraSmall),
             IconButton(
               onPressed: onDelete == null ? null : () => onDelete!(entry),
               tooltip: '근무 기록 삭제',

@@ -173,19 +173,19 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                 onPressed: _isSaving ? null : _applyPreset,
                 child: const Text('09:00-18:00 빠른 설정'),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: workLedgerSpacingMedium),
               TextField(
                 controller: _startController,
                 decoration: const InputDecoration(labelText: '정시 출근'),
                 keyboardType: TextInputType.datetime,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: workLedgerSpacingSmall),
               TextField(
                 controller: _endController,
                 decoration: const InputDecoration(labelText: '정시 퇴근'),
                 keyboardType: TextInputType.datetime,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: workLedgerSpacingSmall),
               TextField(
                 controller: _overtimeStartController,
                 decoration: const InputDecoration(
@@ -194,7 +194,7 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                 ),
                 keyboardType: TextInputType.datetime,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: workLedgerSpacingSmall),
               TextField(
                 controller: _nightWorkStartController,
                 decoration: const InputDecoration(
@@ -203,7 +203,7 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                 ),
                 keyboardType: TextInputType.datetime,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: workLedgerSpacingSmall),
               TextField(
                 controller: _breakController,
                 decoration: const InputDecoration(labelText: '휴게시간(분)'),
@@ -218,7 +218,7 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                   letterSpacing: 0,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: workLedgerSpacingCompact),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -242,15 +242,15 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
                 ],
               ),
               if (_errorMessage != null) ...<Widget>[
-                const SizedBox(height: 16),
+                const SizedBox(height: workLedgerSpacingMedium),
                 _WorkRuleMessage(message: _errorMessage!),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: workLedgerSpacingLarge),
               FilledButton(
                 onPressed: _isSaving ? null : _save,
                 child: const Text('저장'),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: workLedgerSpacingCompact),
               OutlinedButton(
                 onPressed: _isSaving
                     ? null
