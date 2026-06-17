@@ -8,6 +8,9 @@ import '../domain/leave_repository.dart';
 import '../domain/leave_summary.dart';
 import '../domain/load_leave_summary.dart';
 
+const double _leaveUsageDateColumnWidth = 58;
+const double _leaveUsageAmountColumnWidth = 74;
+
 final class LeaveManagementScreen extends StatefulWidget {
   const LeaveManagementScreen({
     required this.repository,
@@ -444,7 +447,7 @@ final class _LeaveUsageRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             SizedBox(
-              width: 58,
+              width: _leaveUsageDateColumnWidth,
               child: Text(
                 formatLeaveUsageDate(value: usage.usedOn),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -456,7 +459,7 @@ final class _LeaveUsageRow extends StatelessWidget {
             ),
             const SizedBox(width: workLedgerSpacingSmall),
             SizedBox(
-              width: 74,
+              width: _leaveUsageAmountColumnWidth,
               child: Text(
                 formatLeaveMinutes(
                   minutes: usage.usedLeaveMinutes,

@@ -14,6 +14,7 @@ import '../../work_rule/presentation/work_rule_settings_screen.dart';
 const NeverScrollableScrollPhysics _textFieldScrollPhysics =
     NeverScrollableScrollPhysics();
 const int _minutesPerDay = 24 * 60;
+const double _weekdaySelectorButtonWidth = 82;
 const String _fixedIncludedComparisonHelperText =
     '고정 포함 시간을 넘긴 부분만 초과 참고로 봅니다. 연장 근무 태그와 별도입니다.';
 
@@ -428,7 +429,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               ),
               const SizedBox(width: workLedgerSpacingSmall),
               SizedBox(
-                width: 82,
+                width: _weekdaySelectorButtonWidth,
                 child: OutlinedButton(
                   onPressed: _isSaving ? null : _toggleWeekdaySelector,
                   style: OutlinedButton.styleFrom(
@@ -718,8 +719,8 @@ final class _WeekdaySelector extends StatelessWidget {
         ),
         const SizedBox(height: workLedgerSpacingCompact),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: workLedgerSpacingExtraSmall,
+          runSpacing: workLedgerSpacingExtraSmall,
           children: <Widget>[
             for (final int weekday in _allWeekdays)
               FilterChip(

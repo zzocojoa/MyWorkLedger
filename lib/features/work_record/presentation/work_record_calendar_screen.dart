@@ -279,8 +279,8 @@ final class _CalendarGrid extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 7,
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 4,
+                mainAxisSpacing: workLedgerSpacingDense,
+                crossAxisSpacing: workLedgerSpacingExtraExtraSmall,
                 childAspectRatio: 0.58,
               ),
               itemBuilder: (BuildContext context, int index) {
@@ -429,8 +429,8 @@ final class _CalendarLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 12,
-      runSpacing: 8,
+      spacing: workLedgerSpacingSmall,
+      runSpacing: workLedgerSpacingExtraSmall,
       children: const <Widget>[
         _LegendItem(marker: '●', label: '완료'),
         _LegendItem(marker: '◐', label: '출근만 기록'),

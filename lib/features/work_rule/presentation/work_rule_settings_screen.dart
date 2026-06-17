@@ -220,8 +220,8 @@ final class _WorkRuleSettingsScreenState extends State<WorkRuleSettingsScreen> {
               ),
               const SizedBox(height: workLedgerSpacingCompact),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: workLedgerSpacingExtraSmall,
+                runSpacing: workLedgerSpacingExtraSmall,
                 children: <Widget>[
                   for (final int weekday in _allWeekdays)
                     FilterChip(

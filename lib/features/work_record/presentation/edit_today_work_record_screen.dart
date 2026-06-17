@@ -245,8 +245,8 @@ final class _EditTodayWorkRecordScreenState
                 ),
                 const SizedBox(height: workLedgerSpacingCompact),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: workLedgerSpacingExtraSmall,
+                  runSpacing: workLedgerSpacingExtraSmall,
                   children: editableWorkRecordReasonTags
                       .map(
                         (WorkRecordTag tag) => FilterChip(
@@ -382,8 +382,8 @@ final class _TimeField extends StatelessWidget {
           borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
+          horizontal: workLedgerSpacingSmall,
+          vertical: workLedgerSpacingFieldVertical,
         ),
       ),
     );
@@ -407,8 +407,8 @@ final class _MemoField extends StatelessWidget {
           borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 14,
+          horizontal: workLedgerSpacingSmall,
+          vertical: workLedgerSpacingFieldVertical,
         ),
       ),
     );
