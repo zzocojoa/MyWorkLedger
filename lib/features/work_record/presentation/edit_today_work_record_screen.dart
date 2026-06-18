@@ -5,6 +5,7 @@ import '../../../core/input/clock_time_input.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
 import '../domain/save_work_record.dart';
 import '../domain/work_record_repository.dart';
 import 'work_record_formatters.dart';
@@ -14,12 +15,14 @@ final class EditTodayWorkRecordScreen extends StatefulWidget {
     required this.repository,
     required this.now,
     required this.workDate,
+    required this.refreshPersistentNotification,
     super.key,
   });
 
   final WorkRecordRepository repository;
   final DateTime Function() now;
   final DateTime workDate;
+  final RefreshWorkLedgerPersistentNotification refreshPersistentNotification;
 
   @override
   State<EditTodayWorkRecordScreen> createState() =>
@@ -126,6 +129,7 @@ final class _EditTodayWorkRecordScreenState
           memo: memoText.isEmpty ? null : memoText,
         ),
       );
+      await widget.refreshPersistentNotification();
       if (!mounted) {
         return;
       }
@@ -136,6 +140,8 @@ final class _EditTodayWorkRecordScreenState
       _showError(_saveWorkRecordErrorMessage(error: error));
     } on WorkRecordRepositoryException catch (error) {
       _showError('저장할 수 없습니다. ${error.message}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError('상시 알림을 갱신할 수 없습니다. ${error.toString()}');
     } on ArgumentError catch (error) {
       _showError('저장할 수 없습니다. ${error.message}');
     }
@@ -160,12 +166,15 @@ final class _EditTodayWorkRecordScreenState
 
     try {
       await widget.repository.deleteByDate(workDate: record.workDate);
+      await widget.refreshPersistentNotification();
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop(true);
     } on WorkRecordRepositoryException catch (error) {
       _showError('삭제할 수 없습니다. ${error.message}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError('상시 알림을 갱신할 수 없습니다. ${error.toString()}');
     }
   }
 

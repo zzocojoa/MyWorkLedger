@@ -48,6 +48,37 @@ void main() {
     expect(find.text('출근 09:00'), findsOneWidget);
   });
 
+  testWidgets('shows notification refresh failure after clock-in', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        configureNotifications: () async {
+          throw const WorkLedgerNotificationException(
+            'action=configure rule=test failure',
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.clockInCallCount, 1);
+    expect(find.textContaining('action=configure'), findsOneWidget);
+  });
+
   testWidgets('shows working state and clocks out', (
     WidgetTester tester,
   ) async {
@@ -486,6 +517,7 @@ Widget _buildScreen({
   required DateTime now,
   _FakeLeaveRepository? leaveRepository,
   _FakeWorkRuleRepository? workRuleRepository,
+  Future<WorkLedgerNotificationSetupResult> Function()? configureNotifications,
 }) {
   final _FakeLeaveRepository resolvedLeaveRepository =
       leaveRepository ?? _FakeLeaveRepository.empty();
@@ -503,12 +535,14 @@ Widget _buildScreen({
       compensationReferenceRepository:
           const _FakeCompensationReferenceRepository(),
       pricingIntentRepository: _FakePricingIntentRepository(),
-      configureNotifications: () async {
-        return const WorkLedgerNotificationSetupResult(
-          permissionGranted: true,
-          notificationShown: true,
-        );
-      },
+      configureNotifications:
+          configureNotifications ??
+          () async {
+            return const WorkLedgerNotificationSetupResult(
+              permissionGranted: true,
+              notificationShown: true,
+            );
+          },
       now: () => now,
     ),
   );

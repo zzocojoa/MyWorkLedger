@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 import '../../../core/models/pricing_intent_event.dart';
 import '../../../core/models/work_record.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../compensation_reference/domain/compensation_reference_summary.dart';
@@ -27,6 +28,7 @@ final class MonthlySummaryScreen extends StatefulWidget {
     required this.compensationReferenceRepository,
     required this.pricingIntentRepository,
     required this.now,
+    required this.refreshPersistentNotification,
     super.key,
   });
 
@@ -36,6 +38,7 @@ final class MonthlySummaryScreen extends StatefulWidget {
   final CompensationReferenceRepository compensationReferenceRepository;
   final PricingIntentRepository pricingIntentRepository;
   final DateTime Function() now;
+  final RefreshWorkLedgerPersistentNotification refreshPersistentNotification;
 
   @override
   State<MonthlySummaryScreen> createState() => _MonthlySummaryScreenState();
@@ -160,6 +163,7 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       await widget.repository.deleteByDate(workDate: entry.workDate);
       _didDeleteWorkRecord = true;
       await _loadSummary();
+      await widget.refreshPersistentNotification();
       if (!mounted) {
         return;
       }
@@ -168,6 +172,8 @@ final class _MonthlySummaryScreenState extends State<MonthlySummaryScreen> {
       });
     } on WorkRecordRepositoryException catch (error) {
       _showError('근무 기록을 삭제할 수 없습니다. ${error.toString()}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError('상시 알림을 갱신할 수 없습니다. ${error.toString()}');
     }
   }
 

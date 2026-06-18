@@ -482,6 +482,7 @@ Widget _buildScreen({
       workRuleRepository:
           workRuleRepository ?? _FakeWorkRuleRepository(rule: _workRule()),
       now: () => now,
+      refreshPersistentNotification: () async {},
     ),
   );
 }
@@ -536,6 +537,7 @@ final class _CalendarResultHostState extends State<_CalendarResultHost> {
           repository: widget.repository,
           workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
           now: () => widget.now,
+          refreshPersistentNotification: () async {},
         ),
       ),
     );

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
+import '../../../core/notifications/workledger_notification_refresh_signal.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/domain/leave_summary.dart';
@@ -47,17 +49,54 @@ final class WorkRecordHomeScreen extends StatefulWidget {
   State<WorkRecordHomeScreen> createState() => _WorkRecordHomeScreenState();
 }
 
-final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
+final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
+    with WidgetsBindingObserver {
   TodayWorkSummary? _summary;
   _HomeMonthlyPreviewData? _monthlyPreviewData;
   String? _errorMessage;
   bool _isLoading = true;
   bool _isPreviewLoading = true;
+  late final WorkLedgerNotificationRefreshListener _notificationRefreshListener;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _notificationRefreshListener = WorkLedgerNotificationRefreshListener(
+      onRefresh: _handleNotificationRefresh,
+    );
+    _notificationRefreshListener.start();
     _loadSummary();
+  }
+
+  @override
+  void dispose() {
+    _notificationRefreshListener.stop();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _handleNotificationRefresh();
+    }
+  }
+
+  void _handleNotificationRefresh() {
+    if (!mounted) {
+      return;
+    }
+    _loadSummary();
+  }
+
+  Future<void> _refreshSummaryAndNotification() async {
+    await _loadSummary();
+    await _refreshPersistentNotification();
+  }
+
+  Future<void> _refreshPersistentNotification() async {
+    await widget.configureNotifications();
   }
 
   Future<void> _loadSummary() async {
@@ -155,10 +194,12 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
             'widget=WorkRecordHomeScreen action=editTodayRecord rule=handled before repository action',
           );
       }
-      await _loadSummary();
+      await _refreshSummaryAndNotification();
     } on WorkRecordRepositoryException catch (error) {
       _showError(error.toString());
     } on TodayWorkSummaryException catch (error) {
+      _showError(error.toString());
+    } on WorkLedgerNotificationException catch (error) {
       _showError(error.toString());
     }
   }
@@ -174,6 +215,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
             widget.now().month,
             widget.now().day,
           ),
+          refreshPersistentNotification: _refreshPersistentNotification,
         ),
       ),
     );
@@ -201,6 +243,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
           repository: widget.repository,
           workRuleRepository: widget.workRuleRepository,
           now: widget.now,
+          refreshPersistentNotification: _refreshPersistentNotification,
         ),
       ),
     );
@@ -220,6 +263,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen> {
               widget.compensationReferenceRepository,
           pricingIntentRepository: widget.pricingIntentRepository,
           now: widget.now,
+          refreshPersistentNotification: _refreshPersistentNotification,
         ),
       ),
     );

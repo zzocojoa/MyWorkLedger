@@ -6,6 +6,7 @@ import 'package:workledger/core/models/leave_usage.dart';
 import 'package:workledger/core/models/pricing_intent_event.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/models/work_rule.dart';
+import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/monthly_summary/presentation/monthly_summary_screen.dart';
@@ -613,6 +614,49 @@ void main() {
     },
   );
 
+  testWidgets('shows notification refresh failure after record deletion', (
+    WidgetTester tester,
+  ) async {
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      monthlyRecords: <WorkRecord>[
+        _completedRecord(
+          id: 'delete-notification-fails',
+          clockInAt: DateTime(2026, 6, 1, 9, 0),
+          clockOutAt: DateTime(2026, 6, 1, 17, 0),
+          tags: <WorkRecordTag>[],
+        ),
+      ],
+      findByMonthError: null,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: _emptyLeaveRepository(),
+        now: DateTime(2026, 6, 12, 9, 0),
+        refreshPersistentNotification: () async {
+          throw const WorkLedgerNotificationException(
+            'action=refresh rule=test failure',
+          );
+        },
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.ensureVisible(find.byTooltip('근무 기록 삭제').first);
+    await tester.pump();
+    await tester.tap(find.byTooltip('근무 기록 삭제').first);
+    await tester.pump();
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.deleteByDateCallCount, 1);
+    expect(find.textContaining('상시 알림을 갱신할 수 없습니다.'), findsOneWidget);
+    expect(find.textContaining('action=refresh'), findsOneWidget);
+  });
+
   testWidgets('shows Korean error when repository fails', (
     WidgetTester tester,
   ) async {
@@ -739,6 +783,7 @@ Widget _buildScreen({
   required DateTime now,
   _FakeWorkRuleRepository? workRuleRepository,
   _FakeCompensationReferenceRepository? compensationReferenceRepository,
+  RefreshWorkLedgerPersistentNotification? refreshPersistentNotification,
 }) {
   return _buildScreenWithPricingRepository(
     repository: repository,
@@ -756,6 +801,7 @@ Widget _buildScreen({
       failingEventTypes: <PricingIntentEventType>{},
     ),
     now: now,
+    refreshPersistentNotification: refreshPersistentNotification,
   );
 }
 
@@ -766,6 +812,7 @@ Widget _buildScreenWithPricingRepository({
   required _FakeCompensationReferenceRepository compensationReferenceRepository,
   required _FakePricingIntentRepository pricingIntentRepository,
   required DateTime now,
+  RefreshWorkLedgerPersistentNotification? refreshPersistentNotification,
 }) {
   return MaterialApp(
     locale: const Locale('ko'),
@@ -778,6 +825,8 @@ Widget _buildScreenWithPricingRepository({
       compensationReferenceRepository: compensationReferenceRepository,
       pricingIntentRepository: pricingIntentRepository,
       now: () => now,
+      refreshPersistentNotification:
+          refreshPersistentNotification ?? () async {},
     ),
   );
 }

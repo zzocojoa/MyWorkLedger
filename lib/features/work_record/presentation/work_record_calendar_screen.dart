@@ -4,6 +4,7 @@ import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
 import '../../../core/models/work_rule.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
 import '../../monthly_summary/domain/calculate_monthly_summary.dart';
 import '../../monthly_summary/domain/monthly_summary.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
@@ -19,12 +20,14 @@ final class WorkRecordCalendarScreen extends StatefulWidget {
     required this.repository,
     required this.workRuleRepository,
     required this.now,
+    required this.refreshPersistentNotification,
     super.key,
   });
 
   final WorkRecordRepository repository;
   final WorkRuleRepository workRuleRepository;
   final DateTime Function() now;
+  final RefreshWorkLedgerPersistentNotification refreshPersistentNotification;
 
   @override
   State<WorkRecordCalendarScreen> createState() =>
@@ -133,6 +136,7 @@ final class _WorkRecordCalendarScreenState
           repository: widget.repository,
           now: widget.now,
           workDate: _selectedDate,
+          refreshPersistentNotification: widget.refreshPersistentNotification,
         ),
       ),
     );

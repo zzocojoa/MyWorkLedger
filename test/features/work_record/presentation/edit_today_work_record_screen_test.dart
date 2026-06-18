@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/input/clock_time_input.dart';
 import 'package:workledger/core/models/work_record.dart';
+import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/edit_today_work_record_screen.dart';
 
@@ -72,6 +73,45 @@ void main() {
     expect(repository.upsertByDateCallCount, 1);
     expect(repository.record!.clockInAt, DateTime(2026, 6, 12, 9, 30));
     expect(repository.record!.clockOutAt, DateTime(2026, 6, 12, 18, 40));
+  });
+
+  testWidgets('shows notification refresh failure after save', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 3),
+        clockOutAt: DateTime(2026, 6, 12, 18, 42),
+        tags: <WorkRecordTag>[],
+        memo: null,
+      ),
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        workDate: now,
+        refreshPersistentNotification: () async {
+          throw const WorkLedgerNotificationException(
+            'action=refresh rule=test failure',
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byKey(const Key('clockInTimeField')), '09:30');
+    await tester.enterText(find.byKey(const Key('clockOutTimeField')), '18:40');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pump();
+
+    expect(repository.upsertByDateCallCount, 1);
+    expect(find.text('근무 기록 수정'), findsOneWidget);
+    expect(find.textContaining('상시 알림을 갱신할 수 없습니다.'), findsOneWidget);
+    expect(find.textContaining('action=refresh'), findsOneWidget);
   });
 
   test('normalizes clock input from HH:mm and numeric shorthand', () {
@@ -274,6 +314,45 @@ void main() {
     expect(repository.record, isNull);
   });
 
+  testWidgets('shows notification refresh failure after deletion', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 20, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9, 3),
+        clockOutAt: DateTime(2026, 6, 12, 18, 42),
+        tags: <WorkRecordTag>[],
+        memo: null,
+      ),
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        workDate: now,
+        refreshPersistentNotification: () async {
+          throw const WorkLedgerNotificationException(
+            'action=refresh rule=test failure',
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '기록 삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await tester.pump();
+
+    expect(repository.deleteByDateCallCount, 1);
+    expect(find.text('근무 기록 수정'), findsOneWidget);
+    expect(find.textContaining('상시 알림을 갱신할 수 없습니다.'), findsOneWidget);
+    expect(find.textContaining('action=refresh'), findsOneWidget);
+  });
+
   testWidgets('does not delete today record when confirmation is cancelled', (
     WidgetTester tester,
   ) async {
@@ -363,12 +442,15 @@ Widget _buildScreen({
   required _FakeWorkRecordRepository repository,
   required DateTime now,
   required DateTime workDate,
+  RefreshWorkLedgerPersistentNotification? refreshPersistentNotification,
 }) {
   return MaterialApp(
     home: EditTodayWorkRecordScreen(
       repository: repository,
       now: () => now,
       workDate: workDate,
+      refreshPersistentNotification:
+          refreshPersistentNotification ?? () async {},
     ),
   );
 }
