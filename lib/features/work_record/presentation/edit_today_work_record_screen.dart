@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../core/input/clock_time_input.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
@@ -375,9 +377,10 @@ final class _TimeField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.datetime,
+      inputFormatters: const <TextInputFormatter>[ClockTimeInputFormatter()],
       decoration: InputDecoration(
         labelText: label,
-        hintText: '09:03',
+        hintText: '0930 또는 09:30',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         ),
@@ -457,11 +460,14 @@ DateTime? parseClockInput({
   if (trimmedValue.isEmpty) {
     return null;
   }
+  final String normalizedValue = normalizeClockInput(value: trimmedValue);
   final RegExpMatch? match = RegExp(
     r'^([01]\d|2[0-3]):([0-5]\d)$',
-  ).firstMatch(trimmedValue);
+  ).firstMatch(normalizedValue);
   if (match == null) {
-    throw EditTodayWorkRecordFormException('$fieldLabel은 HH:mm 형식으로 입력해주세요.');
+    throw EditTodayWorkRecordFormException(
+      '$fieldLabel은 HH:mm 형식 또는 숫자 3~4자리로 입력해주세요.',
+    );
   }
   return DateTime(
     workDate.year,

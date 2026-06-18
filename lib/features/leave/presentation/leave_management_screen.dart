@@ -79,7 +79,29 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     }
   }
 
+  Future<void> _refreshSummaryAfterUsageChange() async {
+    final LeaveSummary summary = await loadLeaveSummary(
+      repository: widget.repository,
+      year: _year,
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _summary = summary;
+      _errorMessage = null;
+      _isLoading = false;
+      _isDeletingUsage = false;
+    });
+  }
+
   Future<void> _addUsage() async {
+    final LeaveSummary? summary = _summary;
+    if (summary == null || summary.totalLeaveMinutes <= 0) {
+      _showError('총 연차에서 올해 총 연차를 먼저 등록한 뒤 연차 사용을 추가해 주세요.');
+      return;
+    }
+
     try {
       final DateTime usedOn = parseDateInput(text: _usageDateController.text);
       final int usedLeaveMinutes = parseLeaveMinutesInput(
@@ -106,12 +128,50 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     }
   }
 
+  Future<void> _resetLeaveUsages() async {
+    final LeaveSummary? summary = _summary;
+    if (summary == null || summary.usages.isEmpty) {
+      _showError('초기화할 연차 사용 내역이 없습니다.');
+      return;
+    }
+
+    final bool confirmed = await _confirmLeaveUsageReset(
+      context: context,
+      year: _year,
+    );
+    if (!confirmed) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _errorMessage = null;
+      _isDeletingUsage = true;
+    });
+
+    try {
+      for (final LeaveUsage usage in summary.usages) {
+        await widget.repository.deleteUsage(id: usage.id);
+      }
+      await _refreshSummaryAfterUsageChange();
+    } on LeaveRepositoryException catch (error) {
+      _showError('연차 사용 내역을 초기화할 수 없습니다. ${error.toString()}');
+    } on LeaveSummaryException catch (error) {
+      _showError('연차 사용 내역을 초기화할 수 없습니다. ${error.toString()}');
+    }
+  }
+
   Future<void> _deleteUsage(LeaveUsage usage) async {
     final bool confirmed = await _confirmLeaveUsageDeletion(
       context: context,
       usage: usage,
     );
     if (!confirmed) {
+      return;
+    }
+    if (!mounted) {
       return;
     }
 
@@ -122,14 +182,10 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
 
     try {
       await widget.repository.deleteUsage(id: usage.id);
-      await _loadSummary();
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isDeletingUsage = false;
-      });
+      await _refreshSummaryAfterUsageChange();
     } on LeaveRepositoryException catch (error) {
+      _showError('연차 사용을 삭제할 수 없습니다. ${error.toString()}');
+    } on LeaveSummaryException catch (error) {
       _showError('연차 사용을 삭제할 수 없습니다. ${error.toString()}');
     }
   }
@@ -150,7 +206,17 @@ final class _LeaveManagementScreenState extends State<LeaveManagementScreen> {
     final LeaveSummary? summary = _summary;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('연차 관리')),
+      appBar: AppBar(
+        title: const Text('연차 관리'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: _isLoading || _isDeletingUsage
+                ? null
+                : _resetLeaveUsages,
+            child: const Text('리셋'),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
@@ -515,6 +581,32 @@ Future<bool> _confirmLeaveUsageDeletion({
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('삭제'),
+          ),
+        ],
+      );
+    },
+  );
+  return result ?? false;
+}
+
+Future<bool> _confirmLeaveUsageReset({
+  required BuildContext context,
+  required int year,
+}) async {
+  final bool? result = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('연차 사용 내역을 초기화할까요?'),
+        content: Text('$year년 연차 사용 일수와 시간을 모두 초기화합니다.'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('초기화'),
           ),
         ],
       );

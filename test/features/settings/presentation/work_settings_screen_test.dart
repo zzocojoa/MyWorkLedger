@@ -44,13 +44,16 @@ void main() {
     await tester.enterText(_findTextFieldByLabel(label: '정시 출근'), '08:30');
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:30');
     await tester.enterText(_findTextFieldByLabel(label: '휴게시간(분)'), '30');
-    await tester.ensureVisible(_findTextFieldByLabel(label: '연장 근무 태그 시작'));
+    await tester.ensureVisible(_findTextFieldByLabel(label: '연장 근무 시작 시간'));
     await tester.pump();
     await tester.enterText(
-      _findTextFieldByLabel(label: '연장 근무 태그 시작'),
-      '19:00',
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
+      '19:30',
     );
-    await tester.enterText(_findTextFieldByLabel(label: '야간 근무 시작'), '22:30');
+    await tester.enterText(
+      _findTextFieldByLabel(label: '야간 근무 시작 시간'),
+      '22:30',
+    );
     await tester.ensureVisible(
       _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
     );
@@ -66,7 +69,7 @@ void main() {
     expect(workRuleRepository.savedRule!.regularStartTimeMinutes, 510);
     expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1050);
     expect(workRuleRepository.savedRule!.breakMinutes, 30);
-    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1140);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1170);
     expect(workRuleRepository.savedRule!.nightWorkStartTimeMinutes, 1350);
     expect(
       compensationRepository.savedMode,
@@ -74,6 +77,48 @@ void main() {
     );
     expect(compensationRepository.savedAfterRegularEndMinutes, 120);
     expect(compensationRepository.savedEffectiveFromMonth, DateTime(2000));
+    expect(compensationRepository.savedMemo, isNull);
+  });
+
+  testWidgets('saves work rule time fields with numeric shorthand', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      initialRule: null,
+      saveError: null,
+    );
+    final _FakeCompensationReferenceRepository compensationRepository =
+        _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: workRuleRepository,
+        compensationRepository: compensationRepository,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(_findTextFieldByLabel(label: '정시 출근'), '830');
+    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '1730');
+    await tester.ensureVisible(_findTextFieldByLabel(label: '연장 근무 시작 시간'));
+    await tester.pump();
+    await tester.enterText(_findTextFieldByLabel(label: '연장 근무 시작 시간'), '1900');
+    await tester.enterText(_findTextFieldByLabel(label: '야간 근무 시작 시간'), '2230');
+
+    await _tapSave(tester: tester);
+    await tester.pumpAndSettle();
+
+    expect(workRuleRepository.savedRule, isNotNull);
+    expect(workRuleRepository.savedRule!.regularStartTimeMinutes, 510);
+    expect(workRuleRepository.savedRule!.regularEndTimeMinutes, 1050);
+    expect(workRuleRepository.savedRule!.overtimeStartTimeMinutes, 1140);
+    expect(workRuleRepository.savedRule!.nightWorkStartTimeMinutes, 1350);
   });
 
   testWidgets('shows fixed included fields only for fixed included mode', (
@@ -97,9 +142,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('정시 근무'), findsOneWidget);
-    expect(find.text('포함 시간 비교'), findsOneWidget);
+    expect(find.text('포괄임금 시간'), findsOneWidget);
     expect(find.text('근무 태그 기준'), findsOneWidget);
     expect(find.text('고급 설정'), findsOneWidget);
+    expect(_findTextFieldByLabel(label: '메모'), findsNothing);
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
 
     await tester.ensureVisible(
@@ -115,9 +161,9 @@ void main() {
     expect(find.text('야간 근무 포함 시간(분)'), findsNothing);
     expect(find.text('휴무일 근무 포함 시간(분)'), findsNothing);
 
-    await tester.ensureVisible(find.text('고정 포함 시간 없음'));
+    await tester.ensureVisible(find.text('미포함'));
     await tester.pump();
-    await tester.tap(find.text('고정 포함 시간 없음'));
+    await tester.tap(find.text('미포함'));
     await tester.pump();
 
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
@@ -150,7 +196,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(_textFieldText(label: '연장 근무 태그 시작', tester: tester), '18:00');
+      expect(_textFieldText(label: '연장 근무 시작 시간', tester: tester), '18:00');
 
       await tester.tap(
         _findModeTile(value: CompensationReferenceMode.fixedIncluded),
@@ -174,6 +220,59 @@ void main() {
       );
     },
   );
+
+  testWidgets('blocks overtime start before fixed included excess start', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    final _FakeWorkRuleRepository workRuleRepository = _FakeWorkRuleRepository(
+      initialRule: null,
+      saveError: null,
+    );
+    final _FakeCompensationReferenceRepository compensationRepository =
+        _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: workRuleRepository,
+        compensationRepository: compensationRepository,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(
+      _findModeTile(value: CompensationReferenceMode.fixedIncluded),
+    );
+    await tester.pump();
+    await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
+    await tester.enterText(
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
+      '18:00',
+    );
+    await tester.ensureVisible(
+      _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+    );
+    await tester.pump();
+    await tester.enterText(
+      _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+      '120',
+    );
+
+    await _tapSave(tester: tester);
+    await tester.pump();
+
+    expect(
+      find.text('연장 근무 시작 시간은 포괄임금 시간 이후인 19:00부터 입력할 수 있습니다.'),
+      findsOneWidget,
+    );
+    expect(workRuleRepository.savedRule, isNull);
+    expect(compensationRepository.savedMode, isNull);
+  });
 
   testWidgets('keeps overtime start editable in fixed included mode', (
     WidgetTester tester,
@@ -201,18 +300,18 @@ void main() {
     await tester.pump();
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
     await tester.enterText(
-      _findTextFieldByLabel(label: '연장 근무 태그 시작'),
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
       '19:00',
     );
     await tester.pump();
 
     final TextField overtimeStartField = tester.widget<TextField>(
-      _findTextFieldByLabel(label: '연장 근무 태그 시작'),
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
     );
 
     expect(overtimeStartField.readOnly, isFalse);
     expect(overtimeStartField.enableInteractiveSelection, isTrue);
-    expect(_textFieldText(label: '연장 근무 태그 시작', tester: tester), '19:00');
+    expect(_textFieldText(label: '연장 근무 시작 시간', tester: tester), '19:00');
   });
 
   testWidgets('preserves custom overtime start in fixed included mode', (
@@ -262,7 +361,7 @@ void main() {
 
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
     await tester.enterText(
-      _findTextFieldByLabel(label: '연장 근무 태그 시작'),
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
       '19:00',
     );
     await tester.pump();
@@ -298,11 +397,11 @@ void main() {
 
     await tester.enterText(_findTextFieldByLabel(label: '정시 퇴근'), '17:00');
     await tester.enterText(
-      _findTextFieldByLabel(label: '연장 근무 태그 시작'),
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
       '19:00',
     );
     final TextField overtimeStartField = tester.widget<TextField>(
-      _findTextFieldByLabel(label: '연장 근무 태그 시작'),
+      _findTextFieldByLabel(label: '연장 근무 시작 시간'),
     );
     expect(overtimeStartField.readOnly, isFalse);
 
@@ -462,7 +561,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('keeps scrolling when drag starts on focused memo field', (
+  testWidgets('keeps scrolling when drag starts on focused time field', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(360, 640);
@@ -478,7 +577,7 @@ void main() {
         ),
         compensationRepository: _FakeCompensationReferenceRepository(
           setting: CompensationReferenceSetting(
-            id: 'compensation-setting-memo-scroll',
+            id: 'compensation-setting-time-scroll',
             mode: CompensationReferenceMode.fixedIncluded,
             fixedIncludedAfterRegularEndMinutes: 120,
             effectiveFromMonth: DateTime(2000),
@@ -498,20 +597,31 @@ void main() {
       _workSettingsScrollable(),
     );
 
-    await tester.ensureVisible(_findTextFieldByLabel(label: '메모'));
+    await tester.scrollUntilVisible(
+      _findTextFieldByLabel(label: '야간 근무 시작 시간'),
+      420,
+      scrollable: _workSettingsScrollable(),
+      maxScrolls: 20,
+    );
     await tester.pump();
 
-    await tester.tap(_findTextFieldByLabel(label: '메모'));
+    await tester.tap(_findTextFieldByLabel(label: '야간 근무 시작 시간'));
     await tester.pump();
     expect(tester.testTextInput.isVisible, isTrue);
 
-    final double positionBeforeMemoDrag = scrollableState.position.pixels;
-    expect(positionBeforeMemoDrag, greaterThan(0));
+    final double positionBeforeTimeFieldDrag = scrollableState.position.pixels;
+    expect(positionBeforeTimeFieldDrag, greaterThan(0));
 
-    await tester.drag(_findTextFieldByLabel(label: '메모'), const Offset(0, 360));
+    await tester.drag(
+      _findTextFieldByLabel(label: '야간 근무 시작 시간'),
+      const Offset(0, 360),
+    );
     await tester.pump();
 
-    expect(scrollableState.position.pixels, lessThan(positionBeforeMemoDrag));
+    expect(
+      scrollableState.position.pixels,
+      lessThan(positionBeforeTimeFieldDrag),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -552,7 +662,7 @@ void main() {
     );
 
     await tester.scrollUntilVisible(
-      _findTextFieldByLabel(label: '야간 근무 시작'),
+      _findTextFieldByLabel(label: '야간 근무 시작 시간'),
       420,
       scrollable: _workSettingsScrollable(),
       maxScrolls: 20,
@@ -560,7 +670,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('근무 태그 기준'), findsOneWidget);
-    expect(_findTextFieldByLabel(label: '야간 근무 시작'), findsOneWidget);
+    expect(_findTextFieldByLabel(label: '야간 근무 시작 시간'), findsOneWidget);
     expect(scrollableState.position.pixels, greaterThan(0));
 
     scrollableState.position.jumpTo(scrollableState.position.maxScrollExtent);
@@ -570,7 +680,7 @@ void main() {
     expect(bottomPosition, scrollableState.position.maxScrollExtent);
 
     await tester.drag(
-      _findTextFieldByLabel(label: '야간 근무 시작'),
+      _findTextFieldByLabel(label: '야간 근무 시작 시간'),
       const Offset(0, 520),
     );
     await tester.pump();
@@ -599,7 +709,7 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('근무 태그 기준입니다. 초과 참고 시작과 별도입니다.'), findsOneWidget);
+    expect(find.text('근무 태그 기준입니다. 초과 참고 시작과 별도입니다.'), findsNothing);
     expect(find.text('예: 22:00부터 8시간'), findsOneWidget);
     expect(find.text('정시 퇴근 이후 시각만 입력할 수 있습니다.'), findsNothing);
     expect(find.text('입력한 시각부터 8시간을 야간 근무 기준으로 봅니다.'), findsNothing);
@@ -746,7 +856,7 @@ void main() {
     await _tapSave(tester: tester);
     await tester.pump();
 
-    expect(find.textContaining('포함 시간 비교를 저장할 수 없습니다.'), findsOneWidget);
+    expect(find.textContaining('포괄임금 시간을 저장할 수 없습니다.'), findsOneWidget);
     expect(find.textContaining('action=save'), findsOneWidget);
     expect(workRuleRepository.savedRule, isNotNull);
   });
@@ -880,6 +990,7 @@ final class _FakeCompensationReferenceRepository
   CompensationReferenceMode? savedMode;
   int? savedAfterRegularEndMinutes;
   DateTime? savedEffectiveFromMonth;
+  String? savedMemo;
 
   @override
   Future<CompensationReferenceSetting?> findApplicableForMonth({
@@ -907,6 +1018,7 @@ final class _FakeCompensationReferenceRepository
     savedMode = mode;
     savedAfterRegularEndMinutes = fixedIncludedAfterRegularEndMinutes;
     savedEffectiveFromMonth = effectiveFromMonth;
+    savedMemo = memo;
     return CompensationReferenceSetting(
       id: 'compensation-setting-1',
       mode: mode,

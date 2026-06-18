@@ -31,4 +31,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get homeLeaveManagement => '연차 관리';
+
+  @override
+  String get monthlySummaryCompensationReferenceTitle => '포괄임금 시간 대비';
+
+  @override
+  String get monthlySummaryCompensationReferenceStartLabel => '포괄임금 포함 시간';
+
+  @override
+  String get monthlySummaryCompensationActualLabel => '실제 기록';
+
+  @override
+  String get monthlySummaryCompensationIncludedDurationLabel => '포괄임금 시간';
+
+  @override
+  String get monthlySummaryCompensationExcessReferenceLabel => '초과 참고';
 }
