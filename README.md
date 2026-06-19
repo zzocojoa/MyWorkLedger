@@ -17,6 +17,15 @@ $HOME/.local/share/flutter-stable/bin/flutter analyze
 $HOME/.local/share/flutter-stable/bin/flutter test
 ```
 
+## Design And Brand Assets
+
+Logo, launcher icon, splash, and Play Store asset rules are documented in:
+
+```text
+docs/02-design/logo-asset-spec.md
+docs/02-design/logo-concepts.md
+```
+
 ## Android Release Signing
 
 Release builds require upload key values in `android/key.properties` or matching

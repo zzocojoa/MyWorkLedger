@@ -48,6 +48,37 @@ void main() {
     expect(find.text('출근 09:00'), findsOneWidget);
   });
 
+  testWidgets('shows notification refresh failure after clock-in', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        now: now,
+        configureNotifications: () async {
+          throw const WorkLedgerNotificationException(
+            'action=configure rule=test failure',
+          );
+        },
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(repository.clockInCallCount, 1);
+    expect(find.textContaining('action=configure'), findsOneWidget);
+  });
+
   testWidgets('shows working state and clocks out', (
     WidgetTester tester,
   ) async {
@@ -79,6 +110,37 @@ void main() {
     expect(find.text('오늘 기록 완료'), findsOneWidget);
     expect(find.text('09:03 - 12:45'), findsOneWidget);
     expect(find.text('총 3시간 42분'), findsOneWidget);
+  });
+
+  testWidgets('keeps calendar action when previous monthly record exists', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 17, 9, 0);
+    final WorkRecord previousRecord = _workRecordWithId(
+      id: 'record-2026-06-16',
+      clockInAt: DateTime(2026, 6, 16, 9, 0),
+      clockOutAt: DateTime(2026, 6, 16, 18, 0),
+      now: DateTime(2026, 6, 16, 18, 0),
+    );
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[previousRecord],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(_buildScreen(repository: repository, now: now));
+    await tester.pump();
+
+    expect(find.text('아직 출근 전'), findsOneWidget);
+    expect(find.text('출근하기'), findsOneWidget);
+    expect(find.text('달력 보기'), findsOneWidget);
+
+    await tester.tap(find.text('달력 보기'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WorkRecordCalendarScreen), findsOneWidget);
+    expect(find.text('2026년 6월'), findsOneWidget);
+    expect(find.text('6월 17일 수요일'), findsOneWidget);
   });
 
   testWidgets('shows after clock-out state', (WidgetTester tester) async {
@@ -455,6 +517,7 @@ Widget _buildScreen({
   required DateTime now,
   _FakeLeaveRepository? leaveRepository,
   _FakeWorkRuleRepository? workRuleRepository,
+  Future<WorkLedgerNotificationSetupResult> Function()? configureNotifications,
 }) {
   final _FakeLeaveRepository resolvedLeaveRepository =
       leaveRepository ?? _FakeLeaveRepository.empty();
@@ -472,12 +535,14 @@ Widget _buildScreen({
       compensationReferenceRepository:
           const _FakeCompensationReferenceRepository(),
       pricingIntentRepository: _FakePricingIntentRepository(),
-      configureNotifications: () async {
-        return const WorkLedgerNotificationSetupResult(
-          permissionGranted: true,
-          notificationShown: true,
-        );
-      },
+      configureNotifications:
+          configureNotifications ??
+          () async {
+            return const WorkLedgerNotificationSetupResult(
+              permissionGranted: true,
+              notificationShown: true,
+            );
+          },
       now: () => now,
     ),
   );

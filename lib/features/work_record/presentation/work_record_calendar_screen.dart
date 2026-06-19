@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
+import '../../../core/models/work_rule.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
 import '../../monthly_summary/domain/calculate_monthly_summary.dart';
 import '../../monthly_summary/domain/monthly_summary.dart';
+import '../../work_rule/domain/work_rule_repository.dart';
+import '../../work_time/domain/calculate_monthly_work_time_candidate_summary.dart';
+import '../../work_time/domain/work_time_candidate.dart';
+import '../../work_time/presentation/work_time_candidate_summary_card.dart';
 import '../domain/work_record_repository.dart';
 import 'edit_today_work_record_screen.dart';
 import 'work_record_formatters.dart';
@@ -12,12 +18,16 @@ import 'work_record_formatters.dart';
 final class WorkRecordCalendarScreen extends StatefulWidget {
   const WorkRecordCalendarScreen({
     required this.repository,
+    required this.workRuleRepository,
     required this.now,
+    required this.refreshPersistentNotification,
     super.key,
   });
 
   final WorkRecordRepository repository;
+  final WorkRuleRepository workRuleRepository;
   final DateTime Function() now;
+  final RefreshWorkLedgerPersistentNotification refreshPersistentNotification;
 
   @override
   State<WorkRecordCalendarScreen> createState() =>
@@ -29,6 +39,7 @@ final class _WorkRecordCalendarScreenState
   late MonthlySummaryMonth _targetMonth;
   late DateTime _selectedDate;
   MonthlySummary? _summary;
+  WorkTimeCandidateSummary? _workTimeCandidateSummary;
   String? _errorMessage;
   bool _isLoading = true;
   bool _didModifyRecord = false;
@@ -60,15 +71,29 @@ final class _WorkRecordCalendarScreenState
         targetMonth: _targetMonth,
         records: records,
       );
+      final WorkRule? workRule = await widget.workRuleRepository.findActive();
+      final WorkRule candidateWorkRule =
+          workRule ??
+          buildDefaultWorkTimeCandidateRule(
+            timestamp: DateTime(_targetMonth.year, _targetMonth.month),
+          );
+      final WorkTimeCandidateSummary workTimeCandidateSummary =
+          calculateMonthlyWorkTimeCandidateSummary(
+            records: records,
+            workRule: candidateWorkRule,
+          );
       if (!mounted) {
         return;
       }
       setState(() {
         _summary = summary;
+        _workTimeCandidateSummary = workTimeCandidateSummary;
         _isLoading = false;
       });
     } on WorkRecordRepositoryException catch (error) {
       _showError('달력 기록을 불러올 수 없습니다. ${error.toString()}');
+    } on WorkRuleRepositoryException catch (error) {
+      _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
     } on MonthlySummaryException catch (error) {
       _showError('달력 기록을 계산할 수 없습니다. ${error.toString()}');
     }
@@ -111,6 +136,7 @@ final class _WorkRecordCalendarScreenState
           repository: widget.repository,
           now: widget.now,
           workDate: _selectedDate,
+          refreshPersistentNotification: widget.refreshPersistentNotification,
         ),
       ),
     );
@@ -127,6 +153,8 @@ final class _WorkRecordCalendarScreenState
   @override
   Widget build(BuildContext context) {
     final MonthlySummary? summary = _summary;
+    final WorkTimeCandidateSummary? workTimeCandidateSummary =
+        _workTimeCandidateSummary;
     final Map<DateTime, MonthlyWorkRecordEntry> entriesByDate =
         _buildEntriesByDate(summary: summary);
     final MonthlyWorkRecordEntry? selectedEntry = entriesByDate[_selectedDate];
@@ -181,6 +209,13 @@ final class _WorkRecordCalendarScreenState
                   ),
                   const SizedBox(height: workLedgerSpacingMedium),
                   _CalendarLegend(),
+                  if (workTimeCandidateSummary != null &&
+                      workTimeCandidateSummary.hasActiveTags) ...<Widget>[
+                    const SizedBox(height: workLedgerSpacingMedium),
+                    WorkTimeCandidateSummaryCard(
+                      summary: workTimeCandidateSummary,
+                    ),
+                  ],
                   const SizedBox(height: workLedgerSpacingMedium),
                   _SelectedDateDetail(
                     selectedDate: _selectedDate,

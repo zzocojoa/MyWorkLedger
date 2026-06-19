@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/theme/workledger_design_tokens.dart';
 import 'package:workledger/features/leave/data/local_storage_leave_repository.dart';
 import 'package:workledger/features/leave/presentation/leave_management_screen.dart';
 
@@ -51,6 +52,108 @@ void main() {
     expect(find.text('06-10'), findsOneWidget);
     expect(find.text('4시간'), findsWidgets);
     expect(find.text('오전 반차'), findsOneWidget);
+  });
+
+  testWidgets('blocks leave usage before total leave registration', (
+    WidgetTester tester,
+  ) async {
+    final LocalStorageLeaveRepository repository = _createRepository();
+
+    await tester.pumpWidget(_buildScreen(repository: repository));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-10',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+
+    expect(find.textContaining('총 연차에서 올해 총 연차를 먼저 등록'), findsOneWidget);
+    expect(await repository.findUsagesByYear(year: 2026), isEmpty);
+    expect(find.text('사용 내역이 없습니다'), findsOneWidget);
+  });
+
+  testWidgets('blocks leave usage when total leave is saved as zero', (
+    WidgetTester tester,
+  ) async {
+    final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 0);
+
+    await tester.pumpWidget(_buildScreen(repository: repository));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-10',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+
+    expect(find.textContaining('총 연차에서 올해 총 연차를 먼저 등록'), findsOneWidget);
+    expect(await repository.findUsagesByYear(year: 2026), isEmpty);
+    expect(find.text('사용 내역이 없습니다'), findsOneWidget);
+  });
+
+  testWidgets('resets registered leave usage amounts from app bar action', (
+    WidgetTester tester,
+  ) async {
+    final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 15 * 480);
+
+    await tester.pumpWidget(_buildScreen(repository: repository));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-26',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('06-26'), findsOneWidget);
+    expect(find.text('총 15일 0시간 · 사용 1일 0시간'), findsOneWidget);
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-27',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '0');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '4');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('06-27'), findsOneWidget);
+    expect(find.text('13일 4시간'), findsOneWidget);
+    expect(find.text('총 15일 0시간 · 사용 1일 4시간'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, '리셋'));
+    await tester.pumpAndSettle();
+    expect(find.text('연차 사용 내역을 초기화할까요?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, '초기화'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(await repository.findUsagesByYear(year: 2026), isEmpty);
+    expect(find.text('15일'), findsOneWidget);
+    expect(find.text('총 15일 0시간 · 사용 0시간'), findsOneWidget);
+    expect(find.text('13일 4시간'), findsNothing);
+    expect(find.text('총 15일 0시간 · 사용 1일 4시간'), findsNothing);
+    expect(find.text('사용 내역이 없습니다'), findsOneWidget);
+    expect(find.text('06-26'), findsNothing);
+    expect(find.text('06-27'), findsNothing);
   });
 
   testWidgets('deletes leave usage after confirmation and refreshes summary', (
@@ -119,6 +222,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final LocalStorageLeaveRepository repository = _createRepository();
+    await repository.saveBalance(year: 2026, totalLeaveMinutes: 15 * 480);
 
     await tester.pumpWidget(_buildScreen(repository: repository));
     await tester.pump();
@@ -140,6 +244,7 @@ void main() {
 
 Widget _buildScreen({required LocalStorageLeaveRepository repository}) {
   return MaterialApp(
+    theme: createWorkLedgerTheme(),
     home: LeaveManagementScreen(
       repository: repository,
       now: () => DateTime(2026, 6, 12, 9),

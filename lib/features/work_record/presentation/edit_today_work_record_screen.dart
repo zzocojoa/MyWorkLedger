@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../core/input/clock_time_input.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
 import '../domain/save_work_record.dart';
 import '../domain/work_record_repository.dart';
 import 'work_record_formatters.dart';
@@ -12,12 +15,14 @@ final class EditTodayWorkRecordScreen extends StatefulWidget {
     required this.repository,
     required this.now,
     required this.workDate,
+    required this.refreshPersistentNotification,
     super.key,
   });
 
   final WorkRecordRepository repository;
   final DateTime Function() now;
   final DateTime workDate;
+  final RefreshWorkLedgerPersistentNotification refreshPersistentNotification;
 
   @override
   State<EditTodayWorkRecordScreen> createState() =>
@@ -124,6 +129,7 @@ final class _EditTodayWorkRecordScreenState
           memo: memoText.isEmpty ? null : memoText,
         ),
       );
+      await widget.refreshPersistentNotification();
       if (!mounted) {
         return;
       }
@@ -134,6 +140,8 @@ final class _EditTodayWorkRecordScreenState
       _showError(_saveWorkRecordErrorMessage(error: error));
     } on WorkRecordRepositoryException catch (error) {
       _showError('저장할 수 없습니다. ${error.message}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError('상시 알림을 갱신할 수 없습니다. ${error.toString()}');
     } on ArgumentError catch (error) {
       _showError('저장할 수 없습니다. ${error.message}');
     }
@@ -158,12 +166,15 @@ final class _EditTodayWorkRecordScreenState
 
     try {
       await widget.repository.deleteByDate(workDate: record.workDate);
+      await widget.refreshPersistentNotification();
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop(true);
     } on WorkRecordRepositoryException catch (error) {
       _showError('삭제할 수 없습니다. ${error.message}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError('상시 알림을 갱신할 수 없습니다. ${error.toString()}');
     }
   }
 
@@ -375,9 +386,10 @@ final class _TimeField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.datetime,
+      inputFormatters: const <TextInputFormatter>[ClockTimeInputFormatter()],
       decoration: InputDecoration(
         labelText: label,
-        hintText: '09:03',
+        hintText: '0930 또는 09:30',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(workLedgerRadiusSmall),
         ),
@@ -457,11 +469,14 @@ DateTime? parseClockInput({
   if (trimmedValue.isEmpty) {
     return null;
   }
+  final String normalizedValue = normalizeClockInput(value: trimmedValue);
   final RegExpMatch? match = RegExp(
     r'^([01]\d|2[0-3]):([0-5]\d)$',
-  ).firstMatch(trimmedValue);
+  ).firstMatch(normalizedValue);
   if (match == null) {
-    throw EditTodayWorkRecordFormException('$fieldLabel은 HH:mm 형식으로 입력해주세요.');
+    throw EditTodayWorkRecordFormException(
+      '$fieldLabel은 HH:mm 형식 또는 숫자 3~4자리로 입력해주세요.',
+    );
   }
   return DateTime(
     workDate.year,

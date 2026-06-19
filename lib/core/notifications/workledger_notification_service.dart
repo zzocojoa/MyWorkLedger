@@ -5,12 +5,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../models/work_record.dart';
 import '../../features/work_record/data/local_storage_work_record_repository.dart';
 import '../../features/work_record/domain/work_record_repository.dart';
 import '../storage/persistent_key_value_storage.dart';
 import 'workledger_notification_action.dart';
+import 'workledger_notification_refresh_signal.dart';
 
 typedef WorkLedgerOpenHome = void Function();
+typedef RefreshWorkLedgerPersistentNotification = Future<void> Function();
 
 const int workLedgerPersistentNotificationId = 1001;
 const String workLedgerNotificationChannelId = 'workledger_persistent_record';
@@ -18,6 +21,8 @@ const String workLedgerNotificationChannelName = '내근무장부 빠른 기록'
 const String workLedgerNotificationChannelDescription =
     '상시 알림에서 출근과 퇴근을 빠르게 기록합니다.';
 const String workLedgerNotificationPayloadHome = 'workledger_home';
+const String workLedgerNotificationTitle = '내근무장부';
+const String workLedgerNotificationIdleBody = '앱을 열지 않고 출근과 퇴근을 기록할 수 있습니다.';
 
 final class WorkLedgerNotificationException implements Exception {
   const WorkLedgerNotificationException(this.message);
@@ -38,6 +43,16 @@ final class WorkLedgerNotificationSetupResult {
 
   final bool permissionGranted;
   final bool notificationShown;
+}
+
+final class WorkLedgerPersistentNotificationContent {
+  const WorkLedgerPersistentNotificationContent({
+    required this.title,
+    required this.body,
+  });
+
+  final String title;
+  final String body;
 }
 
 final class WorkLedgerNotificationService {
@@ -89,12 +104,9 @@ final class WorkLedgerNotificationService {
   }
 
   Future<void> showPersistentNotification() async {
-    await plugin.show(
-      id: workLedgerPersistentNotificationId,
-      title: '내근무장부',
-      body: '앱을 열지 않고 출근과 퇴근을 기록할 수 있습니다.',
-      notificationDetails: buildWorkLedgerPersistentNotificationDetails(),
-      payload: workLedgerNotificationPayloadHome,
+    await showWorkLedgerPersistentNotification(
+      plugin: plugin,
+      repository: repository,
     );
   }
 
@@ -118,12 +130,14 @@ final class WorkLedgerNotificationService {
           actionId: response.actionId,
           repository: repository,
         );
+        notifyWorkLedgerNotificationActionHandled();
         await showPersistentNotification();
       case WorkLedgerNotificationAction.clockOut:
         await handleWorkLedgerNotificationAction(
           actionId: response.actionId,
           repository: repository,
         );
+        notifyWorkLedgerNotificationActionHandled();
         await showPersistentNotification();
     }
   }
@@ -159,6 +173,64 @@ NotificationDetails buildWorkLedgerPersistentNotificationDetails() {
   );
 }
 
+Future<void> showWorkLedgerPersistentNotification({
+  required FlutterLocalNotificationsPlugin plugin,
+  required WorkRecordRepository repository,
+}) async {
+  final WorkRecord? todayRecord = await repository.findToday();
+  final WorkLedgerPersistentNotificationContent content =
+      buildWorkLedgerPersistentNotificationContent(record: todayRecord);
+  await plugin.show(
+    id: workLedgerPersistentNotificationId,
+    title: content.title,
+    body: content.body,
+    notificationDetails: buildWorkLedgerPersistentNotificationDetails(),
+    payload: workLedgerNotificationPayloadHome,
+  );
+}
+
+WorkLedgerPersistentNotificationContent
+buildWorkLedgerPersistentNotificationContent({required WorkRecord? record}) {
+  if (record == null) {
+    return const WorkLedgerPersistentNotificationContent(
+      title: workLedgerNotificationTitle,
+      body: workLedgerNotificationIdleBody,
+    );
+  }
+
+  final DateTime? clockInAt = record.clockInAt;
+  final DateTime? clockOutAt = record.clockOutAt;
+  if (clockInAt != null && clockOutAt != null) {
+    return WorkLedgerPersistentNotificationContent(
+      title: workLedgerNotificationTitle,
+      body:
+          '출근 ${_formatWorkLedgerNotificationClock(value: clockInAt)} · 퇴근 ${_formatWorkLedgerNotificationClock(value: clockOutAt)}',
+    );
+  }
+  if (clockInAt != null) {
+    return WorkLedgerPersistentNotificationContent(
+      title: workLedgerNotificationTitle,
+      body: '출근 ${_formatWorkLedgerNotificationClock(value: clockInAt)}',
+    );
+  }
+  if (clockOutAt != null) {
+    return WorkLedgerPersistentNotificationContent(
+      title: workLedgerNotificationTitle,
+      body: '퇴근 ${_formatWorkLedgerNotificationClock(value: clockOutAt)}',
+    );
+  }
+  return const WorkLedgerPersistentNotificationContent(
+    title: workLedgerNotificationTitle,
+    body: workLedgerNotificationIdleBody,
+  );
+}
+
+String _formatWorkLedgerNotificationClock({required DateTime value}) {
+  final String hour = value.hour.toString().padLeft(2, '0');
+  final String minute = value.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
 @pragma('vm:entry-point')
 Future<void> workLedgerNotificationBackgroundHandler(
   NotificationResponse response,
@@ -169,6 +241,11 @@ Future<void> workLedgerNotificationBackgroundHandler(
       await createPersistentWorkRecordRepository();
   await handleWorkLedgerNotificationAction(
     actionId: response.actionId,
+    repository: repository,
+  );
+  notifyWorkLedgerNotificationActionHandled();
+  await showWorkLedgerPersistentNotification(
+    plugin: FlutterLocalNotificationsPlugin(),
     repository: repository,
   );
 }

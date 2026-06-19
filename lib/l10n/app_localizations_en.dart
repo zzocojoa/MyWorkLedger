@@ -31,4 +31,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeLeaveManagement => 'Leave';
+
+  @override
+  String get monthlySummaryCompensationReferenceTitle =>
+      'Included salary hours comparison';
+
+  @override
+  String get monthlySummaryCompensationReferenceStartLabel =>
+      'Included salary time';
+
+  @override
+  String get monthlySummaryCompensationActualLabel => 'Actual record';
+
+  @override
+  String get monthlySummaryCompensationIncludedDurationLabel =>
+      'Included salary hours';
+
+  @override
+  String get monthlySummaryCompensationExcessReferenceLabel =>
+      'Excess reference';
 }

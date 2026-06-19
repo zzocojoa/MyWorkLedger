@@ -2,9 +2,9 @@
 
 ## 1. 목적
 
-이 문서는 `내근무장부` / `WorkLedger` 로고 시안 3개를 비교하고, 실제 asset 반영 전 선택 기준과 변환 계획을 정리한다.
+이 문서는 `내근무장부` / `WorkLedger` 로고 시안 3개와 최종 선택 로고의 source/export 반영 상태를 정리한다.
 
-이번 단계에서는 앱 코드, Android 리소스, Play Console export 파일을 만들지 않는다. 실제 반영은 최종 시안 승인 후 별도 작업으로 진행한다.
+초기 시안 단계에서는 앱 코드, Android 리소스, Play Console export 파일을 만들지 않았다. 최종 선택 로고 확정 후 source asset, Android launcher icon 리소스, Play icon export, splash 리소스를 이 기준으로 반영한다.
 
 기준 문서:
 
@@ -31,6 +31,24 @@ docs/02-design/assets/logo-concepts/
 ```
 
 비교 보드는 작업용 preview로 gstack 디자인 작업 영역에 보관한다. PR 보존 대상은 SVG 시안과 이 문서다.
+
+최종 선택 로고 source와 export는 다음 경로에 둔다.
+
+```text
+assets/brand/source/workledger-logo-master.svg
+assets/brand/source/workledger-logo-transparent-1024.png
+assets/brand/source/workledger-logo-preview-1024.png
+assets/brand/google-play/workledger-play-icon-512.png
+android/app/src/main/res/drawable/ic_launcher_background.xml
+android/app/src/main/res/drawable/ic_launcher_foreground.xml
+android/app/src/main/res/drawable/ic_launcher_monochrome.xml
+android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+android/app/src/main/res/drawable/ic_splash_mark.xml
+android/app/src/main/res/drawable/launch_background.xml
+android/app/src/main/res/drawable-v21/launch_background.xml
+android/app/src/main/res/values-v31/styles.xml
+android/app/src/main/res/values-night-v31/styles.xml
+```
 
 ## 3. 평가 기준
 
@@ -69,6 +87,20 @@ docs/02-design/assets/logo-concepts/
 - foreground 심볼은 66dp 안전 영역 안에서 장부 실루엣이 먼저 보이게 둔다.
 - C 시안의 겹친 월간 카드 motif는 feature graphic의 배경 카드로 활용한다.
 
+## 5.1 최종 선택 로고
+
+최종 선택 로고는 디자이너 시안 `WorkLedger_logo_18_selected`다.
+
+선택 이유:
+
+- 장부 본체와 spine이 있어 단순 체크 앱처럼 보이는 리스크를 줄인다.
+- 기록선 2개와 코럴 체크로 `근무 기록 완료` 의미가 작게 남는다.
+- 크림 배경, 다크 잉크 면, 코럴 강조가 `DESIGN-airtable.md` 색상 체계와 맞다.
+- Android adaptive icon에서 foreground와 background를 분리하기 쉽다.
+- 앱 아이콘 안에 텍스트가 없어 48px 크기에서도 정책과 가독성 리스크가 낮다.
+
+이 선택으로 A/B/C 시안은 탐색용 기록으로 남기고, 실제 source asset과 Android/Play icon은 `WorkLedger_logo_18_selected` 기준으로 만들었다.
+
 ## 6. 선택 후 변환 계획
 
 ### 6.1 원본 source
@@ -99,7 +131,7 @@ assets/brand/google-play/workledger-play-icon-512.png
 규칙:
 
 - `512px x 512px`, `32-bit PNG`, `sRGB`, `1024KB` 이하로 export한다.
-- 배경은 투명하게 두지 않고 `#181d26`을 채운다.
+- 배경은 투명하게 두지 않고 `#f5e9d4`를 채운다.
 - export 파일에 둥근 모서리와 외부 shadow를 넣지 않는다.
 - 텍스트, 순위, 가격, 다운로드 유도 문구를 넣지 않는다.
 
@@ -149,15 +181,38 @@ alt text 후보:
 WorkLedger의 근무 기록, 월간 요약, 연차 관리 화면을 조용한 업무 도구 톤으로 보여주는 그래픽
 ```
 
-## 7. 승인 후 작업 순서
+### 6.5 Android splash screen
 
-1. `A. Ledger Check`를 기준으로 master SVG를 정리한다.
-2. 48px, 72px, 96px, 512px 축소 미리보기를 만든다.
-3. 원형, squircle, 둥근 사각형 mask 미리보기를 확인한다.
-4. monochrome layer를 별도로 검토한다.
-5. Play icon PNG와 Android vector drawable을 생성한다.
-6. feature graphic을 별도 composition으로 만든다.
-7. Flutter/Android 리소스 반영 후 아래 명령을 실행한다.
+Android splash는 launcher icon PNG를 재사용하지 않는다. 중앙 로고는 투명 배경 mark인 `ic_splash_mark.xml`을 사용하고, 배경은 로고 배경과 같은 `#f5e9d4`로 고정한다.
+
+리소스 대상:
+
+```text
+android/app/src/main/res/drawable/ic_splash_mark.xml
+android/app/src/main/res/drawable/launch_background.xml
+android/app/src/main/res/drawable-v21/launch_background.xml
+android/app/src/main/res/values/styles.xml
+android/app/src/main/res/values-night/styles.xml
+android/app/src/main/res/values-v31/styles.xml
+android/app/src/main/res/values-night-v31/styles.xml
+```
+
+규칙:
+
+- Android 12 이상은 `windowSplashScreenBackground`와 `windowSplashScreenAnimatedIcon`을 지정한다.
+- Android 11 이하는 `windowBackground` layer-list로 같은 배경과 중앙 mark를 보여준다.
+- `NormalTheme`의 `windowBackground`도 `#f5e9d4`로 맞춰 native splash와 Flutter 첫 frame 사이의 흰색 flash를 줄인다.
+- dark mode에서도 splash 배경은 브랜드 크림색으로 유지한다.
+
+## 7. 승인 후 작업 상태
+
+1. `WorkLedger_logo_18_selected`를 기준으로 master SVG를 정리했다.
+2. 48px, 72px, 96px, 144px, 192px, 512px export를 만들었다.
+3. Android adaptive icon foreground, background, monochrome layer를 만들었다.
+4. legacy launcher PNG를 density별로 갱신했다.
+5. Play icon PNG와 Android vector drawable을 생성했다.
+6. Android splash screen 리소스를 생성했다.
+7. Flutter/Android 리소스 반영 후 아래 명령을 실행했다.
 
 ```bash
 $HOME/.local/share/flutter-stable/bin/dart format .
@@ -166,13 +221,14 @@ $HOME/.local/share/flutter-stable/bin/flutter test
 $HOME/.local/share/flutter-stable/bin/flutter build apk --debug
 ```
 
-8. Android 실기기에서 launcher icon, themed icon, 앱 실행을 확인한다.
+8. Android 실기기에서 launcher icon, themed icon, splash, 앱 실행을 확인한다.
 
 ## 8. 현재 결론
 
 현재 단계의 결론은 다음과 같다.
 
 - 로고 시안은 3개를 만들었다.
-- 최종 방향은 `A. Ledger Check`를 추천한다.
-- 실제 앱 리소스와 Play export는 아직 만들지 않았다.
-- 앱 코드와 Android 리소스 반영은 별도 승인 후 진행한다.
+- 최종 방향은 `WorkLedger_logo_18_selected`로 확정했다.
+- source SVG, Android adaptive icon, themed icon, legacy launcher PNG, splash, Play icon PNG를 선택 로고 기준으로 만들었다.
+- Google Play feature graphic은 앱 화면 구성이 필요한 별도 스토어 그래픽 작업으로 남긴다.
+- Android 실기기에서 launcher icon, themed icon, splash, 앱 실행을 확인한다.

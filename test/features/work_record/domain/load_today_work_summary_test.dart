@@ -10,6 +10,7 @@ void main() {
     test('returns before clock-in state when there is no record', () {
       final TodayWorkSummary summary = buildTodayWorkSummary(
         record: null,
+        currentMonthRecords: <WorkRecord>[],
         now: DateTime.parse('2026-06-12T09:03:00'),
       );
 
@@ -22,6 +23,25 @@ void main() {
       expect(summary.workedDuration, isNull);
     });
 
+    test('returns calendar action before clock-in when month has records', () {
+      final WorkRecord previousRecord = _createRecordForDate(
+        workDate: DateTime(2026, 6, 16),
+        clockInAt: DateTime.parse('2026-06-16T09:00:00'),
+        clockOutAt: DateTime.parse('2026-06-16T18:00:00'),
+      );
+
+      final TodayWorkSummary summary = buildTodayWorkSummary(
+        record: null,
+        currentMonthRecords: <WorkRecord>[previousRecord],
+        now: DateTime.parse('2026-06-17T09:03:00'),
+      );
+
+      expect(summary.status, TodayWorkStatus.beforeClockIn);
+      expect(summary.primaryButtonLabel, '출근하기');
+      expect(summary.secondaryAction, TodayWorkSecondaryAction.viewCalendar);
+      expect(summary.secondaryButtonLabel, '달력 보기');
+    });
+
     test('returns before clock-in state when an empty record exists', () {
       final WorkRecord record = _createRecord(
         clockInAt: null,
@@ -30,6 +50,7 @@ void main() {
 
       final TodayWorkSummary summary = buildTodayWorkSummary(
         record: record,
+        currentMonthRecords: <WorkRecord>[],
         now: DateTime.parse('2026-06-12T09:03:00'),
       );
 
@@ -48,6 +69,7 @@ void main() {
 
         final TodayWorkSummary summary = buildTodayWorkSummary(
           record: record,
+          currentMonthRecords: <WorkRecord>[],
           now: DateTime.parse('2026-06-12T12:45:00'),
         );
 
@@ -70,6 +92,7 @@ void main() {
 
         final TodayWorkSummary summary = buildTodayWorkSummary(
           record: record,
+          currentMonthRecords: <WorkRecord>[record],
           now: DateTime.parse('2026-06-12T19:00:00'),
         );
 
@@ -93,6 +116,7 @@ void main() {
       expect(
         () => buildTodayWorkSummary(
           record: record,
+          currentMonthRecords: <WorkRecord>[],
           now: DateTime.parse('2026-06-12T19:00:00'),
         ),
         throwsA(isA<TodayWorkSummaryException>()),
@@ -110,6 +134,7 @@ void main() {
         expect(
           () => buildTodayWorkSummary(
             record: record,
+            currentMonthRecords: <WorkRecord>[],
             now: DateTime.parse('2026-06-12T09:00:00'),
           ),
           throwsA(isA<TodayWorkSummaryException>()),
@@ -152,6 +177,7 @@ void main() {
         );
         final FakeWorkRecordRepository repository = FakeWorkRecordRepository(
           record: record,
+          monthlyRecords: <WorkRecord>[record],
         );
 
         final TodayWorkSummary summary = await loadTodayWorkSummary(
@@ -162,6 +188,7 @@ void main() {
         expect(summary.status, TodayWorkStatus.working);
         expect(summary.elapsedDuration, const Duration(hours: 3, minutes: 42));
         expect(repository.findTodayCallCount, 1);
+        expect(repository.findByMonthCallCount, 1);
       },
     );
 
@@ -184,9 +211,21 @@ WorkRecord _createRecord({
   required DateTime? clockInAt,
   required DateTime? clockOutAt,
 }) {
+  return _createRecordForDate(
+    workDate: DateTime(2026, 6, 12),
+    clockInAt: clockInAt,
+    clockOutAt: clockOutAt,
+  );
+}
+
+WorkRecord _createRecordForDate({
+  required DateTime workDate,
+  required DateTime? clockInAt,
+  required DateTime? clockOutAt,
+}) {
   return WorkRecord(
     id: 'work-1',
-    workDate: DateTime(2026, 6, 12),
+    workDate: DateTime(workDate.year, workDate.month, workDate.day),
     clockInAt: clockInAt,
     clockOutAt: clockOutAt,
     tags: <WorkRecordTag>[],
@@ -197,10 +236,15 @@ WorkRecord _createRecord({
 }
 
 final class FakeWorkRecordRepository implements WorkRecordRepository {
-  FakeWorkRecordRepository({required this.record});
+  FakeWorkRecordRepository({
+    required this.record,
+    required this.monthlyRecords,
+  });
 
   final WorkRecord? record;
+  final List<WorkRecord> monthlyRecords;
   int findTodayCallCount = 0;
+  int findByMonthCallCount = 0;
 
   @override
   Future<WorkRecord?> findToday() async {
@@ -218,7 +262,12 @@ final class FakeWorkRecordRepository implements WorkRecordRepository {
     required int year,
     required int month,
   }) async {
-    throw const WorkRecordRepositoryException('unexpected findByMonth call');
+    findByMonthCallCount += 1;
+    return monthlyRecords
+        .where((WorkRecord record) {
+          return record.workDate.year == year && record.workDate.month == month;
+        })
+        .toList(growable: false);
   }
 
   @override
