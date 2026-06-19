@@ -50,42 +50,30 @@ jobs:
       - name: Test
         run: flutter test --reporter=compact
 
-      - name: Configure Android release signing
-        env:
-          WORKLEDGER_RELEASE_KEYSTORE_BASE64: ${{ secrets.WORKLEDGER_RELEASE_KEYSTORE_BASE64 }}
-          WORKLEDGER_RELEASE_STORE_FILE: workledger-upload-keystore.jks
-          WORKLEDGER_RELEASE_STORE_PASSWORD: ${{ secrets.WORKLEDGER_RELEASE_STORE_PASSWORD }}
-          WORKLEDGER_RELEASE_KEY_ALIAS: ${{ secrets.WORKLEDGER_RELEASE_KEY_ALIAS }}
-          WORKLEDGER_RELEASE_KEY_PASSWORD: ${{ secrets.WORKLEDGER_RELEASE_KEY_PASSWORD }}
+      - name: Configure CI-only Android release signing
         run: |
           set -euo pipefail
 
-          missing_values=()
-          for value_name in \
-            WORKLEDGER_RELEASE_KEYSTORE_BASE64 \
-            WORKLEDGER_RELEASE_STORE_PASSWORD \
-            WORKLEDGER_RELEASE_KEY_ALIAS \
-            WORKLEDGER_RELEASE_KEY_PASSWORD
-          do
-            if [ -z "${!value_name:-}" ]; then
-              missing_values+=("$value_name")
-            fi
-          done
+          ci_store_file="workledger-ci-release-keystore.jks"
+          ci_key_alias="workledger-ci-release"
+          ci_key_password="workledger-ci-release-password"
 
-          if [ "${#missing_values[@]}" -gt 0 ]; then
-            printf 'Missing Android release signing secrets: %s\n' "${missing_values[*]}" >&2
-            exit 1
-          fi
-
-          printf '%s' "$WORKLEDGER_RELEASE_KEYSTORE_BASE64" \
-            | base64 --decode > "android/app/$WORKLEDGER_RELEASE_STORE_FILE"
-          chmod 600 "android/app/$WORKLEDGER_RELEASE_STORE_FILE"
+          keytool -genkeypair \
+            -keystore "android/app/$ci_store_file" \
+            -storepass "$ci_key_password" \
+            -keypass "$ci_key_password" \
+            -alias "$ci_key_alias" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=WorkLedger CI,O=WorkLedger,C=KR"
+          chmod 600 "android/app/$ci_store_file"
 
           {
-            printf 'WORKLEDGER_RELEASE_STORE_FILE=%s\n' "$WORKLEDGER_RELEASE_STORE_FILE"
-            printf 'WORKLEDGER_RELEASE_STORE_PASSWORD=%s\n' "$WORKLEDGER_RELEASE_STORE_PASSWORD"
-            printf 'WORKLEDGER_RELEASE_KEY_ALIAS=%s\n' "$WORKLEDGER_RELEASE_KEY_ALIAS"
-            printf 'WORKLEDGER_RELEASE_KEY_PASSWORD=%s\n' "$WORKLEDGER_RELEASE_KEY_PASSWORD"
+            printf 'WORKLEDGER_RELEASE_STORE_FILE=%s\n' "$ci_store_file"
+            printf 'WORKLEDGER_RELEASE_STORE_PASSWORD=%s\n' "$ci_key_password"
+            printf 'WORKLEDGER_RELEASE_KEY_ALIAS=%s\n' "$ci_key_alias"
+            printf 'WORKLEDGER_RELEASE_KEY_PASSWORD=%s\n' "$ci_key_password"
           } > android/key.properties
           chmod 600 android/key.properties
 

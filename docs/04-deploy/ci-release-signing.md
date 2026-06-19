@@ -12,28 +12,39 @@ Workflow 파일은 `.github/workflows/flutter-ci.yml`이다.
 - `flutter build appbundle --release`
 - SHA-256 hash printout for the release APK and AAB
 
-## Required GitHub Secrets
+## CI signing
 
-CI를 병합 기준으로 쓰기 전에 아래 repository secret을 설정해야 한다.
+PR CI와 `main` push CI는 runner 안에서 일회용 release signing key를 생성해
+Android release build 경로를 검증한다. 이 키는 Google Play 업로드 키가 아니며,
+빌드가 끝나면 runner와 함께 폐기된다.
 
-| Secret | Value |
-| --- | --- |
-| `WORKLEDGER_RELEASE_KEYSTORE_BASE64` | Base64 text of `android/app/workledger-upload-keystore.jks` |
-| `WORKLEDGER_RELEASE_STORE_PASSWORD` | Upload keystore store password |
-| `WORKLEDGER_RELEASE_KEY_ALIAS` | Upload key alias |
-| `WORKLEDGER_RELEASE_KEY_PASSWORD` | Upload key password |
+현재 CI release build에는 GitHub repository secret이 필요하지 않다.
 
-CI stores the decoded keystore as `android/app/workledger-upload-keystore.jks`
-and writes `WORKLEDGER_RELEASE_STORE_FILE=workledger-upload-keystore.jks` into
-`android/key.properties`.
+Workflow는 `android/app/workledger-ci-release-keystore.jks`를 생성하고
+`android/key.properties`에 아래 값을 기록한다.
 
-macOS에서 keystore base64 값은 아래 명령으로 만든다.
-
-```bash
-base64 < android/app/workledger-upload-keystore.jks | tr -d '\n'
-```
+- `WORKLEDGER_RELEASE_STORE_FILE=workledger-ci-release-keystore.jks`
+- `WORKLEDGER_RELEASE_STORE_PASSWORD`
+- `WORKLEDGER_RELEASE_KEY_ALIAS`
+- `WORKLEDGER_RELEASE_KEY_PASSWORD`
 
 `android/key.properties`, `.jks`, `.keystore`, APK, AAB 파일은 커밋하지 않는다.
+
+## Production signing
+
+Google Play에 업로드할 release build는 실제 upload keystore로 서명한다.
+
+현재 저장소의 Android Gradle 설정은 로컬 `android/key.properties`가 있으면 해당
+파일을 읽어 release signing을 수행한다. 배포 담당자는 로컬 환경에 아래 파일을
+준비한 뒤 release AAB를 생성한다.
+
+- `android/app/workledger-upload-keystore.jks`
+- `android/key.properties`
+
+향후 GitHub Actions에서 Google Play 배포까지 자동화할 경우에는 별도 deploy
+workflow를 만들고, production upload keystore는 GitHub repository secret 또는
+environment secret으로 분리해 관리한다. PR 검증용 CI workflow에는 production
+upload key를 연결하지 않는다.
 
 ## Keystore backup
 
