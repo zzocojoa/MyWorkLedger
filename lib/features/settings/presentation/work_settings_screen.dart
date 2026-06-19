@@ -406,6 +406,34 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       ),
       const SizedBox(height: workLedgerSpacingMedium),
       _SettingsSection(
+        title: '근무 태그 기준',
+        children: <Widget>[
+          TextField(
+            controller: _overtimeStartController,
+            decoration: const InputDecoration(labelText: '연장 근무 시작 시간'),
+            keyboardType: TextInputType.datetime,
+            inputFormatters: const <TextInputFormatter>[
+              ClockTimeInputFormatter(),
+            ],
+            scrollPhysics: _textFieldScrollPhysics,
+          ),
+          const SizedBox(height: workLedgerSpacingSmall),
+          TextField(
+            controller: _nightWorkStartController,
+            decoration: const InputDecoration(
+              labelText: '야간 근무 시작 시간',
+              helperText: '예: 22:00부터 8시간',
+            ),
+            keyboardType: TextInputType.datetime,
+            inputFormatters: const <TextInputFormatter>[
+              ClockTimeInputFormatter(),
+            ],
+            scrollPhysics: _textFieldScrollPhysics,
+          ),
+        ],
+      ),
+      const SizedBox(height: workLedgerSpacingMedium),
+      _SettingsSection(
         title: '고급 설정',
         children: <Widget>[
           Row(
@@ -456,34 +484,6 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
               onChanged: _changeWeekdaySelection,
             ),
           ],
-        ],
-      ),
-      const SizedBox(height: workLedgerSpacingMedium),
-      _SettingsSection(
-        title: '근무 태그 기준',
-        children: <Widget>[
-          TextField(
-            controller: _overtimeStartController,
-            decoration: const InputDecoration(labelText: '연장 근무 시작 시간'),
-            keyboardType: TextInputType.datetime,
-            inputFormatters: const <TextInputFormatter>[
-              ClockTimeInputFormatter(),
-            ],
-            scrollPhysics: _textFieldScrollPhysics,
-          ),
-          const SizedBox(height: workLedgerSpacingSmall),
-          TextField(
-            controller: _nightWorkStartController,
-            decoration: const InputDecoration(
-              labelText: '야간 근무 시작 시간',
-              helperText: '예: 22:00부터 8시간',
-            ),
-            keyboardType: TextInputType.datetime,
-            inputFormatters: const <TextInputFormatter>[
-              ClockTimeInputFormatter(),
-            ],
-            scrollPhysics: _textFieldScrollPhysics,
-          ),
         ],
       ),
       if (_errorMessage != null) ...<Widget>[

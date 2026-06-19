@@ -176,6 +176,36 @@ void main() {
     expect(find.text('정시 이후 고정 포함 시간(분)'), findsNothing);
   });
 
+  testWidgets('orders sections by the documented work settings flow', (
+    WidgetTester tester,
+  ) async {
+    _useTallViewport(tester: tester);
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    final double regularWorkTop = tester.getTopLeft(find.text('정시 근무')).dy;
+    final double compensationTop = tester.getTopLeft(find.text('포괄임금 시간')).dy;
+    final double workTagTop = tester.getTopLeft(find.text('근무 태그 기준')).dy;
+    final double advancedTop = tester.getTopLeft(find.text('고급 설정')).dy;
+
+    expect(regularWorkTop, lessThan(compensationTop));
+    expect(compensationTop, lessThan(workTagTop));
+    expect(workTagTop, lessThan(advancedTop));
+  });
+
   testWidgets(
     'shows excess start from regular end plus fixed included minutes',
     (WidgetTester tester) async {
