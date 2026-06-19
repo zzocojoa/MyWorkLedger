@@ -625,7 +625,7 @@ List<String> buildStatusLines({required TodayWorkSummary summary}) {
   final WorkRecord? record = summary.record;
   switch (summary.status) {
     case TodayWorkStatus.beforeClockIn:
-      return <String>['기록된 근무 시간이 없습니다', '회사명·위치 없이 시작합니다'];
+      return <String>['기록된 근무 시간이 없습니다'];
     case TodayWorkStatus.working:
       final DateTime? clockInAt = record?.clockInAt;
       final Duration? elapsedDuration = summary.elapsedDuration;
