@@ -510,6 +510,55 @@ void main() {
     expect(find.text('연차 관리'), findsOneWidget);
     expect(find.text('기준 연도'), findsOneWidget);
   });
+
+  testWidgets('refreshes remaining leave after adding usage from leave management', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 0);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+    final _FakeLeaveRepository leaveRepository = _FakeLeaveRepository(
+      balance: _leaveBalance(year: 2026, totalLeaveMinutes: 15 * 480, now: now),
+      usages: <LeaveUsage>[],
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        leaveRepository: leaveRepository,
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('남은 연차'), findsOneWidget);
+    expect(find.text('15일'), findsOneWidget);
+
+    await tester.tap(find.text('연차 관리'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const Key('usageDateField')),
+      '2026-06-10',
+    );
+    await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
+    await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
+    await _tapAddUsageButton(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('14일'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(WorkRecordHomeScreen), findsOneWidget);
+    expect(find.text('14일'), findsOneWidget);
+    expect(find.text('15일'), findsNothing);
+  });
 }
 
 Widget _buildScreen({
@@ -859,7 +908,7 @@ final class _FakeLeaveRepository implements LeaveRepository {
   _FakeLeaveRepository({
     required this.balance,
     required List<LeaveUsage> usages,
-  }) : usages = List<LeaveUsage>.unmodifiable(usages);
+  }) : usages = List<LeaveUsage>.of(usages);
 
   factory _FakeLeaveRepository.empty() {
     return _FakeLeaveRepository(balance: null, usages: <LeaveUsage>[]);
@@ -898,13 +947,29 @@ final class _FakeLeaveRepository implements LeaveRepository {
     required int usedLeaveMinutes,
     required String? memo,
   }) async {
-    throw const LeaveRepositoryException('unexpected addUsage call');
+    final LeaveUsage usage = LeaveUsage(
+      id: 'leave-usage-${usages.length + 1}',
+      usedOn: DateTime(usedOn.year, usedOn.month, usedOn.day),
+      usedLeaveMinutes: usedLeaveMinutes,
+      memo: memo,
+      createdAt: DateTime(2026, 6, 12, 9),
+      updatedAt: DateTime(2026, 6, 12, 9),
+    );
+    usages.add(usage);
+    return usage;
   }
 
   @override
   Future<void> deleteUsage({required String id}) async {
     throw const LeaveRepositoryException('unexpected deleteUsage call');
   }
+}
+
+Future<void> _tapAddUsageButton(WidgetTester tester) async {
+  final Finder button = find.widgetWithText(OutlinedButton, '연차 사용 추가');
+  await tester.ensureVisible(button);
+  await tester.pump();
+  await tester.tap(button);
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {
