@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WorkLedger 개인정보처리방침</title>
+    <meta
+      name="description"
+      content="내근무장부 / WorkLedger 개인정보처리방침. 계정 없이, 서버 동기화 없이, 사용자의 근무 기록을 기기 안에 저장합니다."
+    >
+    <style>
+      :root {
+        color-scheme: light;
+        --color-primary: #181d26;
+        --color-primary-active: #0d1218;
+        --color-ink: #181d26;
+        --color-body: #333840;
+        --color-muted: #41454d;
+        --color-hairline: #dddddd;
+        --color-border-strong: #9297a0;
+        --color-canvas: #ffffff;
+        --color-surface-soft: #f8fafc;
+        --color-surface-strong: #e0e2e6;
+        --color-signature-coral: #aa2d00;
+        --color-on-primary: #ffffff;
+        --color-link: #1b61c9;
+        --color-link-active: #1a3866;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 12px;
+        --space-xxs: 4px;
+        --space-xs: 8px;
+        --space-sm: 12px;
+        --space-md: 16px;
+        --space-lg: 24px;
+        --space-xl: 32px;
+        --space-xxl: 48px;
+        --space-section: 96px;
+        --container-max: 1280px;
+        --content-max: 880px;
+        --font-sans: "Haas", "Haas Groot Disp", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell,
+          "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--color-canvas);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        font-size: 16px;
+        line-height: 1.5;
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        background: var(--color-canvas);
+        color: var(--color-body);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: var(--color-link);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 0.16em;
+      }
+
+      a:active {
+        color: var(--color-link-active);
+      }
+
+      a:focus-visible {
+        border-radius: var(--radius-sm);
+        outline: 2px solid var(--color-link);
+        outline-offset: 4px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      ul {
+        margin: 0;
+        padding: 0;
+      }
+
+      li {
+        margin: 0;
+      }
+
+      .page-shell {
+        min-height: 100vh;
+        background: var(--color-canvas);
+      }
+
+      .container {
+        width: min(100% - 96px, var(--container-max));
+        margin: 0 auto;
+      }
+
+      .policy-header {
+        border-bottom: 1px solid var(--color-hairline);
+        background: var(--color-canvas);
+      }
+
+      .policy-header__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 64px;
+        gap: var(--space-lg);
+      }
+
+      .brand {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-xs) var(--space-sm);
+        color: var(--color-ink);
+      }
+
+      .brand__name {
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      .brand__support {
+        color: var(--color-muted);
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.35;
+      }
+
+      .meta {
+        color: var(--color-muted);
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.35;
+        text-align: right;
+      }
+
+      .hero {
+        padding: var(--space-section) 0;
+      }
+
+      .hero__content {
+        max-width: var(--content-max);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        margin-bottom: var(--space-md);
+        border: 1px solid var(--color-hairline);
+        border-radius: var(--radius-sm);
+        padding: var(--space-xs) var(--space-sm);
+        color: var(--color-muted);
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .hero h1 {
+        max-width: 780px;
+        color: var(--color-ink);
+        font-size: 40px;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.2;
+        text-wrap: balance;
+      }
+
+      .lead {
+        max-width: 760px;
+        margin-top: var(--space-lg);
+        color: var(--color-body);
+        font-size: 18px;
+        font-weight: 400;
+        line-height: 1.55;
+      }
+
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-sm);
+        margin-top: var(--space-xl);
+      }
+
+      .button-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 54px;
+        border-radius: var(--radius-lg);
+        background: var(--color-primary);
+        color: var(--color-on-primary);
+        padding: 16px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1.4;
+        text-decoration: none;
+      }
+
+      .button-primary:active {
+        background: var(--color-primary-active);
+        color: var(--color-on-primary);
+      }
+
+      .button-primary:focus-visible {
+        outline: 2px solid var(--color-link);
+        outline-offset: 4px;
+      }
+
+      .status-note {
+        color: var(--color-muted);
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.45;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-xxl);
+      }
+
+      .summary-card,
+      .policy-card,
+      .contact-card {
+        border: 1px solid var(--color-hairline);
+        border-radius: var(--radius-md);
+        background: var(--color-canvas);
+      }
+
+      .summary-card {
+        min-height: 168px;
+        padding: var(--space-xl);
+      }
+
+      .summary-card h2 {
+        color: var(--color-ink);
+        font-size: 20px;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.5;
+      }
+
+      .summary-card p {
+        margin-top: var(--space-sm);
+        color: var(--color-body);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .section {
+        padding: var(--space-section) 0;
+        border-top: 1px solid var(--color-hairline);
+      }
+
+      .section--tight {
+        padding-top: 0;
+        border-top: 0;
+      }
+
+      .local-first {
+        border-radius: var(--radius-lg);
+        background: var(--color-signature-coral);
+        color: var(--color-on-primary);
+        padding: var(--space-xxl);
+      }
+
+      .local-first h2 {
+        max-width: 720px;
+        color: var(--color-on-primary);
+        font-size: 32px;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.2;
+      }
+
+      .local-first p {
+        max-width: 780px;
+        margin-top: var(--space-md);
+        color: var(--color-on-primary);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .section-heading {
+        max-width: var(--content-max);
+      }
+
+      .section-heading h2 {
+        color: var(--color-ink);
+        font-size: 32px;
+        font-weight: 400;
+        letter-spacing: 0;
+        line-height: 1.2;
+        text-wrap: balance;
+      }
+
+      .section-heading p {
+        margin-top: var(--space-md);
+        color: var(--color-body);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .two-column {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-lg);
+        margin-top: var(--space-xl);
+      }
+
+      .policy-card {
+        padding: var(--space-xl);
+      }
+
+      .policy-card h3 {
+        color: var(--color-ink);
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.5;
+      }
+
+      .policy-list {
+        display: grid;
+        gap: var(--space-md);
+        margin-top: var(--space-lg);
+        list-style: none;
+      }
+
+      .policy-list li {
+        display: grid;
+        gap: var(--space-xxs);
+        color: var(--color-body);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .policy-list strong {
+        color: var(--color-ink);
+        font-size: 15px;
+        font-weight: 500;
+      }
+
+      .callout {
+        margin-top: var(--space-xl);
+        border: 1px solid var(--color-hairline);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface-soft);
+        padding: var(--space-xl);
+      }
+
+      .callout h3 {
+        color: var(--color-ink);
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.5;
+      }
+
+      .callout p {
+        margin-top: var(--space-sm);
+        color: var(--color-body);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        margin-top: var(--space-md);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        border: 1px solid var(--color-hairline);
+        border-radius: var(--radius-sm);
+        background: var(--color-canvas);
+        color: var(--color-ink);
+        padding: 6px 10px;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+
+      .narrow-copy {
+        max-width: var(--content-max);
+      }
+
+      .narrow-copy p + p {
+        margin-top: var(--space-md);
+      }
+
+      .contact-card {
+        margin-top: var(--space-xl);
+        background: var(--color-surface-soft);
+        padding: var(--space-xl);
+      }
+
+      .contact-grid {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr);
+        gap: var(--space-sm) var(--space-lg);
+        margin-top: var(--space-lg);
+      }
+
+      .contact-grid dt {
+        color: var(--color-muted);
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.5;
+      }
+
+      .contact-grid dd {
+        margin: 0;
+        color: var(--color-ink);
+        font-size: 15px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+
+      .needs-confirmation {
+        color: var(--color-muted);
+      }
+
+      .policy-footer {
+        border-top: 1px solid var(--color-hairline);
+        padding: 64px 0;
+      }
+
+      .policy-footer__inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-lg);
+      }
+
+      .policy-footer p {
+        color: var(--color-muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      @media (max-width: 1023px) {
+        .container {
+          width: min(100% - 64px, var(--container-max));
+        }
+
+        .summary-grid {
+          gap: var(--space-md);
+        }
+
+        .summary-card,
+        .policy-card,
+        .contact-card,
+        .callout {
+          padding: var(--space-lg);
+        }
+      }
+
+      @media (max-width: 767px) {
+        :root {
+          --space-section: 64px;
+        }
+
+        .container {
+          width: min(100% - 48px, var(--container-max));
+        }
+
+        .policy-header__inner {
+          align-items: flex-start;
+          flex-direction: column;
+          justify-content: center;
+          min-height: 88px;
+          gap: var(--space-xs);
+        }
+
+        .meta {
+          text-align: left;
+        }
+
+        .hero h1 {
+          font-size: 32px;
+        }
+
+        .lead {
+          font-size: 16px;
+        }
+
+        .action-row {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .button-primary {
+          width: 100%;
+        }
+
+        .summary-grid,
+        .two-column {
+          grid-template-columns: 1fr;
+        }
+
+        .summary-card {
+          min-height: 0;
+        }
+
+        .local-first {
+          padding: var(--space-lg);
+        }
+
+        .local-first h2,
+        .section-heading h2 {
+          font-size: 24px;
+          line-height: 1.35;
+        }
+
+        .contact-grid {
+          grid-template-columns: 1fr;
+          gap: var(--space-xxs);
+        }
+
+        .contact-grid dd + dt {
+          margin-top: var(--space-sm);
+        }
+
+        .policy-footer__inner {
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .container {
+          width: min(100% - 32px, var(--container-max));
+        }
+
+        .summary-card,
+        .policy-card,
+        .contact-card,
+        .callout,
+        .local-first {
+          padding: var(--space-md);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="policy-header">
+        <div class="container policy-header__inner">
+          <div class="brand" aria-label="WorkLedger">
+            <span class="brand__name">WorkLedger</span>
+            <span class="brand__support">내근무장부</span>
+          </div>
+          <p class="meta">개인정보처리방침 · 시행일 2026년 6월 20일</p>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="privacy-policy-title">
+          <div class="container">
+            <div class="hero__content">
+              <p class="eyebrow">Google Play 공개 페이지용</p>
+              <h1 id="privacy-policy-title">개인정보처리방침</h1>
+              <p class="lead">
+                내근무장부는 계정 없이, 서버 동기화 없이, 사용자의 근무
+                기록을 기기 안에 저장합니다.
+              </p>
+              <div class="action-row">
+                <a class="button-primary" href="#privacy-contact">
+                  개인정보 문의
+                </a>
+                <p class="status-note">
+                  문의 이메일과 개발자명은 배포 전 실제 값으로 교체해야 합니다.
+                </p>
+              </div>
+            </div>
+
+            <div class="summary-grid" aria-label="개인정보 처리 핵심 요약">
+              <article class="summary-card">
+                <h2>계정 없음</h2>
+                <p>로그인 정보나 회원 계정을 만들지 않습니다.</p>
+              </article>
+              <article class="summary-card">
+                <h2>서버 동기화 없음</h2>
+                <p>근무 기록을 개발자 서버로 전송하지 않습니다.</p>
+              </article>
+              <article class="summary-card">
+                <h2>실제 결제 없음</h2>
+                <p>월간 리포트 관심 표시는 결제나 구독이 아닙니다.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section--tight" aria-labelledby="local-first-title">
+          <div class="container">
+            <div class="local-first">
+              <h2 id="local-first-title">로컬 저장 중심</h2>
+              <p>
+                사용자가 입력한 출근, 퇴근, 메모, 연차, 근무 기준은 앱 내부
+                저장소에 보관됩니다. 내근무장부는 이 정보를 개발자 서버로
+                동기화하지 않습니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="stored-data-title">
+          <div class="container">
+            <div class="section-heading">
+              <h2 id="stored-data-title">앱 내부에 저장되는 정보</h2>
+              <p>
+                아래 정보는 사용자가 앱을 쓰기 위해 직접 입력하거나, 앱 안에서
+                기능 수요를 확인하기 위해 저장되는 로컬 기록입니다.
+              </p>
+            </div>
+
+            <div class="two-column">
+              <article class="policy-card">
+                <h3>저장될 수 있는 정보</h3>
+                <ul class="policy-list">
+                  <li>
+                    <strong>근무 기록</strong>
+                    <span>근무일, 출근 시각, 퇴근 시각, 기록 사유, 메모</span>
+                  </li>
+                  <li>
+                    <strong>근무 기준</strong>
+                    <span>정시 출퇴근, 연장/야간 기준, 휴게시간, 근무 요일</span>
+                  </li>
+                  <li>
+                    <strong>연차 정보</strong>
+                    <span>사용자가 직접 입력한 총 연차와 사용 내역</span>
+                  </li>
+                  <li>
+                    <strong>월간 리포트 관심 표시</strong>
+                    <span>Report Pass 또는 Pro의 관심 있음 클릭 기록</span>
+                  </li>
+                </ul>
+              </article>
+
+              <article class="policy-card">
+                <h3>서버로 수집하거나 전송하지 않는 정보</h3>
+                <ul class="policy-list">
+                  <li>
+                    <strong>로그인 정보</strong>
+                    <span>계정, 비밀번호, 소셜 계정 정보</span>
+                  </li>
+                  <li>
+                    <strong>위치 정보</strong>
+                    <span>GPS 위치 정보 또는 자동 위치 추적 정보</span>
+                  </li>
+                  <li>
+                    <strong>회사 정보</strong>
+                    <span>회사명, 회사 위치, 회사 근태 시스템 계정</span>
+                  </li>
+                  <li>
+                    <strong>결제 정보</strong>
+                    <span>실제 결제 카드, 영수증, 구독 상태</span>
+                  </li>
+                  <li>
+                    <strong>법률 관련 정보</strong>
+                    <span>법률 분쟁, 소송, 노무 자문 상태</span>
+                  </li>
+                </ul>
+              </article>
+            </div>
+
+            <div class="callout" aria-labelledby="monthly-report-interest-title">
+              <h3 id="monthly-report-interest-title">월간 리포트 관심 표시</h3>
+              <p>
+                월간 요약 화면의 Report 버튼과 가격 화면의 관심 있음 버튼은
+                월간 리포트 기능에 대한 관심을 확인하기 위한 기능입니다. 이
+                클릭은 앱 내부에 이벤트로 저장되며, 실제 결제, 구독 활성화,
+                리포트 생성 완료를 의미하지 않습니다.
+              </p>
+              <div class="badge-row" aria-label="월간 리포트 관심 표시 상태">
+                <span class="badge">실제 결제 아님</span>
+                <span class="badge">구독 활성화 아님</span>
+                <span class="badge">로컬 이벤트 기록</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="use-purpose-title">
+          <div class="container narrow-copy">
+            <div class="section-heading">
+              <h2 id="use-purpose-title">정보 사용 목적</h2>
+              <p>
+                앱 내부에 저장된 정보는 오늘 출근/퇴근 기록 표시, 달력 보기,
+                잔여 연차 계산, 월간 요약 표시, 월간 리포트 기능 수요 확인에만
+                사용됩니다.
+              </p>
+            </div>
+            <div class="callout">
+              <p>
+                내근무장부는 저장된 정보를 광고, 외부 분석, 회사 근태 시스템
+                제출, 법률 자문 판단에 사용하지 않습니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="retention-title">
+          <div class="container narrow-copy">
+            <div class="section-heading">
+              <h2 id="retention-title">보관 및 삭제</h2>
+              <p>
+                기록은 사용자가 삭제하기 전까지 앱 내부 저장소에 남아 있습니다.
+                사용자는 앱 안에서 기록을 삭제하거나 Android 설정에서 앱 데이터를
+                삭제할 수 있습니다.
+              </p>
+            </div>
+            <div class="callout">
+              <p>
+                앱을 삭제하거나 Android 설정에서 내근무장부의 앱 데이터를
+                삭제하면 기기 안에 저장된 데이터도 삭제됩니다.
+              </p>
+              <p>
+                내근무장부는 계정을 만들지 않으므로 별도의 계정 삭제 절차는
+                없습니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="third-party-title">
+          <div class="container narrow-copy">
+            <div class="section-heading">
+              <h2 id="third-party-title">제3자 제공 및 외부 전송</h2>
+              <p>
+                현재 버전의 내근무장부는 사용자의 근무 기록, 연차 기록, 월간
+                리포트 관심 표시를 개발자 서버나 제3자 서버로 전송하지 않습니다.
+              </p>
+            </div>
+            <div class="callout">
+              <p>
+                서버, 로그인, 클라우드 동기화, 광고 SDK, 실제 결제 SDK는 현재
+                버전에 포함되지 않습니다.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="privacy-contact" aria-labelledby="contact-title">
+          <div class="container narrow-copy">
+            <div class="section-heading">
+              <h2 id="contact-title">개인정보 문의</h2>
+              <p>개인정보 처리와 관련한 문의는 아래 연락처로 보내주세요.</p>
+            </div>
+
+            <div class="contact-card">
+              <dl class="contact-grid">
+                <dt>이메일</dt>
+                <dd>
+                  <a href="mailto:kmksla2@gmail.com">
+                    kmksla2@gmail.com
+                  </a>
+                </dd>
+                <dt>개발자명</dt>
+                <dd>HOIHOU</dd>
+                <dt>앱 이름</dt>
+                <dd>내근무장부 / WorkLedger</dd>
+                <dt>시행일</dt>
+                <dd>2026년 6월 20일</dd>
+              </dl>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="policy-footer">
+        <div class="container policy-footer__inner">
+          <p>WorkLedger · 내근무장부</p>
+          <p>개인정보처리방침 · 시행일 2026년 6월 20일</p>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
