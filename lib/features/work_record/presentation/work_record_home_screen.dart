@@ -281,6 +281,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
         ),
       ),
     );
+    await _loadSummary();
   }
 
   Future<void> _openSettings() async {
