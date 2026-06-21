@@ -60,7 +60,7 @@
 | Upload warnings | PASS | `versionCode=2` was already used; rebuilt and uploaded `versionCode=3` successfully |
 | Version code duplicate check | PASS | `versionCode=3` upload accepted |
 | Internal test release notes | PASS | Release notes were included in committed API internal track update |
-| Internal test device QA | NOT RUN | Requires Play internal-test installation |
+| Internal test device QA | PASS | Play Store internal-test install and smoke QA completed on `SM_G977N` |
 | Production submit | NOT RUN | User approval required before production submission |
 
 ## Android Publisher API Result
@@ -104,11 +104,32 @@ The current service account still cannot manage Play Console users and permissio
 | Closed testing | NOT READY | Dashboard says closed testing must be run before production access |
 | Tester requirement | NOT READY | Dashboard shows 0 testers opted in; 12 testers and at least 14 days are required before production access |
 
+## Internal Test Device QA
+
+| Item | Status | Evidence |
+|---|---|---|
+| Device detected | PASS | `adb devices -l` showed `SM_G977N`, serial `R3CM807B7DR` |
+| Internal-test install | PASS | Play Store internal-test page installed `com.workledger.workledger` |
+| Installed version | PASS | `dumpsys package` showed `versionCode=3`, `versionName=1.0.2`, `targetSdk=36` |
+| Release build sanity | PASS | Installed package flags did not include `DEBUGGABLE` |
+| App launch | PASS | Home screen opened with `내근무장부` and today's work card |
+| Current-time quick record | PASS | Initial smoke QA completed `출근하기` -> `퇴근하기` and produced a completed record |
+| Test record cleanup | PASS | The QA-created `01:40 - 01:41` record was deleted through the app's `기록 삭제` flow |
+| Choose-before-save setting | PASS | `근무 설정` selected and saved `저장 전 시각 선택` |
+| Home quick record candidate UI | PASS | `출근하기` opened `출근 시각 선택` with `현재 시각`, `정시 출근`, and `직접 입력` candidates |
+| Home quick record save | PASS | Selecting `현재 시각` saved a working record with `출근 01:45` |
+| Persistent notification shown | PASS | Notification screen returned `상시 알림이 표시되었습니다.` and `dumpsys notification` showed notification id `1001` |
+| Persistent notification actions | PASS | System notification exposed `출근하기` and `퇴근하기` actions |
+| Notification action in choose-before-save mode | PASS | `퇴근하기` notification action opened `퇴근 시각 선택` with `현재 시각`, `정시 퇴근`, and `직접 입력`; selecting current time completed `01:45 - 01:47` |
+| Test data cleanup | PASS | The QA-created `01:45 - 01:47` record was deleted through the app; final home state returned to `아직 출근 전` |
+
+Note: the current release intentionally opens the candidate UI from notification actions when quick record mode is `저장 전 시각 선택`. This matches the shipped app copy and `shouldOpenQuickRecordFromNotification` tests. If the older acceptance criterion requires notification actions to save immediately regardless of mode, that criterion is not met by the current release and should be resolved as a product decision before treating that older criterion as binding.
+
 ## Submission Decision
 
 Current status: `PARTIAL`.
 
-Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, and edit commit are ready. Internal test device QA is still not run. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
+Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, edit commit, Play internal-test install, and internal test device QA are ready. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
 
 ## Rollback
 
