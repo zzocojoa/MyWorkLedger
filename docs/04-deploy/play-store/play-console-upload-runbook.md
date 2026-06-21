@@ -46,6 +46,50 @@
 19. Smoke test 출근/퇴근, 저장 전 시각 선택, 상시 알림 액션, 자정 정책 핵심 흐름.
 20. Do not submit production review until the user explicitly approves production submission.
 
+## Production Access Closed Testing Steps
+
+The internal testing release is already committed, installed, and smoke-tested. Production access is still blocked by the separate closed-testing checklist on the Play Console dashboard.
+
+Current verified state on 2026-06-22:
+
+| Item | State |
+|---|---|
+| Dashboard closed-testing checklist | 0 of 5 tasks complete |
+| Production access application | Disabled |
+| Internal track | `1.0.2`, `versionCode=3`, completed |
+| Production track | No releases |
+| `beta` closed/open legacy track | No releases |
+| `alpha` closed/open legacy track | No releases |
+
+Before changing Play Console state, confirm these inputs:
+
+| Input | Required decision |
+|---|---|
+| Countries and regions | Choose the countries where closed testers can install the app |
+| Testers | Choose email list or Google Group and provide at least 12 opted-in testers for production access |
+| Feedback channel | Provide a feedback email address or URL shown to testers |
+| Release artifact | Prefer reusing the accepted `versionCode=3` bundle if Play Console allows it; bump the version only if Play Console rejects reuse |
+| Review submission | Confirm before sending the closed-testing release to Google for review |
+
+Approved execution order:
+
+1. Open **Testing > Closed testing** or the dashboard `할 일 보기`.
+2. Select countries and regions.
+3. Select or create testers by email list or Google Group.
+4. Add the tester feedback channel.
+5. Create a closed-testing release.
+6. Select the already accepted `1.0.2+3` app bundle if available.
+7. Add release notes from `store-listing.md`.
+8. Preview and confirm the closed-testing release.
+9. Send the closed-testing release to Google for review only after explicit user approval.
+10. After review approval, share the opt-in link and wait for at least 12 testers to opt in for 14 continuous days.
+11. Apply for production access only after the Play Console enables the production application flow.
+
+References:
+
+- Google Play Help: `https://support.google.com/googleplay/android-developer/answer/9845334`
+- Android Publisher Tracks API: `https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks`
+
 ## Current API Attempt
 
 The Android Publisher API edit reached these states on 2026-06-22:
