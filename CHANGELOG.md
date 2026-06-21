@@ -2,6 +2,19 @@
 
 All notable changes to WorkLedger are documented in this file.
 
+## [1.0.2] - 2026-06-22
+
+### Release
+- Bumped the Google Play internal testing build to `1.0.2+3` because `versionCode=2` was already used in Play Console.
+
+## [1.0.1] - 2026-06-22
+
+### Fixed
+- Preserved the selected quick-record work date when saving after midnight.
+
+### Release
+- Prepared Google Play release artifacts for `1.0.1+2`.
+
 ## [0.1.0.0] - 2026-06-21
 
 ### Added

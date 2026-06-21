@@ -1,5 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - assets/**
+    - build/**
+    - docs/**
+
 linter:
   rules:
     always_declare_return_types: true
