@@ -22,6 +22,7 @@
 | Check | Status | Evidence |
 |---|---|---|
 | Main sync | PASS | `git rev-list --left-right --count main...origin/main` -> `0 0` |
+| Latest CI | PASS | GitHub Actions `Flutter CI` run `27912558815` completed successfully for HEAD `ec8746d4bb4473a80a48373916f7ff329dbb5cb0` |
 | Diff whitespace | PASS | `git --no-pager diff --check` exit 0 |
 | Analyze | PASS | `flutter analyze --no-pub` exit 0, no issues |
 | Tests | PASS | `flutter test --reporter=compact` exit 0, 297 tests passed |
@@ -40,6 +41,19 @@
 |---|---|
 | `app-release.aab` | `7a5abd00e7af36dfbacb0d77706ad86700517b5e9702792d81118f248bdb95ce` |
 | `app-release.apk` | `1607b1b97575913436a6d2fceb11fff43de0645373eed3910a08645aed5bc988` |
+
+## Git Working Tree Notes
+
+Current Git status on 2026-06-22 still includes four untracked files under `assets/brand 2/`.
+They are byte-identical duplicates of the tracked files under `assets/brand/` and are not release inputs.
+They should not be committed as part of the Play release unless a separate asset-directory decision is made.
+
+| Untracked file | Tracked duplicate | SHA-256 |
+|---|---|---|
+| `assets/brand 2/google-play/workledger-play-icon-512.png` | `assets/brand/google-play/workledger-play-icon-512.png` | `badc55aab69799acfd94212a670f4fa5c6f0265eed1ea57763579906de227fc4` |
+| `assets/brand 2/source/workledger-logo-master.svg` | `assets/brand/source/workledger-logo-master.svg` | `e94d53cb3e004e81ba16c97149eff69cb477b1305e60d47ba9847af29999e97a` |
+| `assets/brand 2/source/workledger-logo-preview-1024.png` | `assets/brand/source/workledger-logo-preview-1024.png` | `51389b3c419cbc30219102e98a09d61672330a433f2f38c1209b0195b3735022` |
+| `assets/brand 2/source/workledger-logo-transparent-1024.png` | `assets/brand/source/workledger-logo-transparent-1024.png` | `885c23c155a8bbd8a7a109fe4fffcb24dc0f87dae139d0f01b92873dadc8b87c` |
 
 ## Play Console Checklist
 
@@ -81,6 +95,8 @@ Read-only API verification on 2026-06-22 used edit `04123157826065938820`. The e
 
 Read-only track-list verification on 2026-06-22 used edit `10388814169983200170`. The edit was not committed. `edits.tracks.list` returned `production`, `beta`, and `alpha` with zero releases, and `internal` with one completed `1.0.2` release for `versionCode=3`.
 
+Second read-only track-list verification on 2026-06-22 used edit `08159576147300272370`. The edit was not committed. `edits.tracks.list` again returned `production`, `beta`, and `alpha` with zero releases, and `internal` with one completed `1.0.2` release for `versionCode=3`.
+
 ## Android Publisher API Result
 
 | Step | Status | Evidence |
@@ -112,6 +128,8 @@ Post-commit verification used read-only edit `18396962594213530106`. `edits.trac
 The current service account still cannot manage Play Console users and permissions through the API. App-specific release permissions are now sufficient for this internal testing release because edit validation and commit succeeded.
 
 ## Play Console Screen Check
+
+Current read-only Chrome verification on 2026-06-22 confirmed the dashboard is still on the same production-access blocker state: the app is in draft, closed-testing setup shows 0 of 5 tasks completed, current opted-in tester count is 0, and the production application button is disabled.
 
 | Item | Status | Evidence |
 |---|---|---|
