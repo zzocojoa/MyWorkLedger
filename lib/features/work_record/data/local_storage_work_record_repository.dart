@@ -67,24 +67,24 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
     required DateTime clockInAt,
     required DateTime savedAt,
   }) async {
-    final DateTime today = _dateOnly(savedAt);
+    final DateTime workDate = _dateOnly(clockInAt);
     _validateRecordTimesForDate(
       action: action,
-      workDate: today,
+      workDate: workDate,
       clockInAt: clockInAt,
       clockOutAt: null,
     );
-    final WorkRecord? existingRecord = await _readByDate(today);
+    final WorkRecord? existingRecord = await _readByDate(workDate);
     if (existingRecord != null && existingRecord.clockInAt != null) {
       throw WorkRecordRepositoryException(
-        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockInAt=${clockInAt.toIso8601String()} rule=already clocked in',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(workDate)} clockInAt=${clockInAt.toIso8601String()} rule=already clocked in',
       );
     }
 
     final WorkRecord record = existingRecord == null
         ? WorkRecord(
             id: idGenerator(),
-            workDate: today,
+            workDate: workDate,
             clockInAt: clockInAt,
             clockOutAt: null,
             tags: <WorkRecordTag>[],
@@ -128,33 +128,33 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
     required DateTime clockOutAt,
     required DateTime savedAt,
   }) async {
-    final DateTime today = _dateOnly(savedAt);
+    final DateTime workDate = _dateOnly(clockOutAt);
     _validateRecordTimesForDate(
       action: action,
-      workDate: today,
+      workDate: workDate,
       clockInAt: null,
       clockOutAt: clockOutAt,
     );
-    final WorkRecord? existingRecord = await _readByDate(today);
+    final WorkRecord? existingRecord = await _readByDate(workDate);
     if (existingRecord == null) {
       throw WorkRecordRepositoryException(
-        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockOutAt=${clockOutAt.toIso8601String()} rule=missing work record',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(workDate)} clockOutAt=${clockOutAt.toIso8601String()} rule=missing work record',
       );
     }
     final DateTime? clockInAt = existingRecord.clockInAt;
     if (clockInAt == null) {
       throw WorkRecordRepositoryException(
-        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockOutAt=${clockOutAt.toIso8601String()} rule=missing clock-in',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(workDate)} clockOutAt=${clockOutAt.toIso8601String()} rule=missing clock-in',
       );
     }
     if (existingRecord.clockOutAt != null) {
       throw WorkRecordRepositoryException(
-        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockOutAt=${clockOutAt.toIso8601String()} rule=already clocked out',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(workDate)} clockOutAt=${clockOutAt.toIso8601String()} rule=already clocked out',
       );
     }
     if (clockOutAt.isBefore(clockInAt)) {
       throw WorkRecordRepositoryException(
-        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockInAt=${clockInAt.toIso8601String()} clockOutAt=${clockOutAt.toIso8601String()} rule=clock-out must be after clock-in',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(workDate)} clockInAt=${clockInAt.toIso8601String()} clockOutAt=${clockOutAt.toIso8601String()} rule=clock-out must be after clock-in',
       );
     }
 

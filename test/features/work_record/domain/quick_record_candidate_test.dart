@@ -44,6 +44,18 @@ void main() {
       expect(candidates[1].label, '정시 퇴근 18:00');
       expect(candidates[1].recordedAt, DateTime(2026, 6, 12, 18));
     });
+
+    test('uses selector-open date for regular candidates near midnight', () {
+      final List<QuickRecordCandidate> candidates = buildQuickRecordCandidates(
+        mode: QuickRecordMode.chooseBeforeSave,
+        actionType: QuickRecordActionType.clockIn,
+        currentTime: DateTime(2026, 6, 12, 23, 59, 58),
+        workRule: _workRule(),
+      );
+
+      expect(candidates[1].label, '정시 출근 09:00');
+      expect(candidates[1].recordedAt, DateTime(2026, 6, 12, 9));
+    });
   });
 
   group('parseQuickRecordManualTime', () {
@@ -54,6 +66,15 @@ void main() {
       );
 
       expect(value, DateTime(2026, 6, 12, 9, 30));
+    });
+
+    test('uses selector-open work date for manual input near midnight', () {
+      final DateTime value = parseQuickRecordManualTime(
+        value: '08:15',
+        workDate: DateTime(2026, 6, 12, 23, 59, 58),
+      );
+
+      expect(value, DateTime(2026, 6, 12, 8, 15));
     });
 
     test('throws for out-of-range input', () {

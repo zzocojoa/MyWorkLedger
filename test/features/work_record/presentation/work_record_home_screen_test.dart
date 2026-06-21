@@ -132,6 +132,45 @@ void main() {
     expect(find.text('출근 09:37'), findsOneWidget);
   });
 
+  testWidgets('keeps selector-open date when saving after midnight', (
+    WidgetTester tester,
+  ) async {
+    DateTime now = DateTime(2026, 6, 12, 23, 59, 58);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+        now: now,
+        nowProvider: () => now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pumpAndSettle();
+    now = DateTime(2026, 6, 13, 0, 0, 3);
+    await tester.tap(find.text('정시 출근 09:00'));
+    await tester.pumpAndSettle();
+
+    expect(repository.clockInCallCount, 0);
+    expect(repository.clockInAtCallCount, 1);
+    expect(repository.lastClockInAt, DateTime(2026, 6, 12, 9));
+    expect(find.text('출근 09:00'), findsOneWidget);
+  });
+
   testWidgets('saves selected regular clock-out time in choose mode', (
     WidgetTester tester,
   ) async {
@@ -1036,6 +1075,7 @@ Widget _buildScreen({
   _FakeQuickRecordSettingsRepository? quickRecordSettingsRepository,
   WorkLedgerNotificationActionController? notificationActionController,
   Future<WorkLedgerNotificationSetupResult> Function()? configureNotifications,
+  DateTime Function()? nowProvider,
 }) {
   final _FakeLeaveRepository resolvedLeaveRepository =
       leaveRepository ?? _FakeLeaveRepository.empty();
@@ -1067,7 +1107,7 @@ Widget _buildScreen({
       notificationActionController:
           notificationActionController ??
           WorkLedgerNotificationActionController(),
-      now: () => now,
+      now: nowProvider ?? () => now,
     ),
   );
 }
