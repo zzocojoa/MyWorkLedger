@@ -339,6 +339,69 @@ void main() {
   );
 
   testWidgets(
+    'deduplicates duplicate pending clock-in notification action requests',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 9, 37);
+      final WorkLedgerNotificationActionController
+      notificationActionController = WorkLedgerNotificationActionController();
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockIn,
+      );
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockIn,
+      );
+      int configureNotificationsCallCount = 0;
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: null,
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+            settings: QuickRecordSettings(
+              mode: QuickRecordMode.chooseBeforeSave,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+          notificationActionController: notificationActionController,
+          configureNotifications: () async {
+            configureNotificationsCallCount += 1;
+            return const WorkLedgerNotificationSetupResult(
+              permissionGranted: true,
+              notificationShown: true,
+            );
+          },
+          now: now,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('출근 시각 선택'), findsOneWidget);
+      expect(find.text('현재 시각 09:37'), findsOneWidget);
+      expect(find.text('정시 출근 09:00'), findsOneWidget);
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockInAtCallCount, 0);
+      expect(repository.clockOutAtCallCount, 0);
+
+      await tester.tap(find.text('정시 출근 09:00'));
+      await tester.pumpAndSettle();
+
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockInAtCallCount, 1);
+      expect(repository.lastClockInAt, DateTime(2026, 6, 12, 9));
+      expect(configureNotificationsCallCount, 1);
+      expect(find.text('출근 시각 선택'), findsNothing);
+      expect(find.text('출근 09:00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'opens clock-out selector from notification action in choose mode before saving',
     (WidgetTester tester) async {
       final DateTime now = DateTime(2026, 6, 12, 18, 45);
