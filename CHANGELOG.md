@@ -5,8 +5,8 @@ All notable changes to WorkLedger are documented in this file.
 ## [0.1.0.0] - 2026-06-21
 
 ### Added
-- Users can choose a quick record mode for work records: save the current time immediately or select a time before saving.
-- Work record quick save now supports current time, regular work-rule time, and direct `HH:mm` input before saving.
+- You can choose how work records are saved: save the current time immediately or select a time before saving.
+- You can save a quick work record with the current time, regular work-rule time, or direct `HH:mm` input.
 - Persistent notification clock-in and clock-out actions respect the selected quick record mode.
 - Quick record settings are stored locally with explicit parsing and validation.
 
