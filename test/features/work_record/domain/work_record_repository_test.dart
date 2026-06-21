@@ -78,34 +78,27 @@ void main() {
       expect(record.updatedAt, DateTime.parse('2026-06-12T09:37:00'));
     });
 
-    test(
-      'clockInAt throws when selected time date differs from today',
-      () async {
-        final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
-        final LocalStorageWorkRecordRepository repository = _createRepository(
-          storage: storage,
-          clock: () => DateTime.parse('2026-06-12T09:37:00'),
-          idGenerator: () => 'work-1',
-        );
+    test('clockInAt saves selected date when saved after midnight', () async {
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => DateTime.parse('2026-06-13T00:00:03'),
+        idGenerator: () => 'work-1',
+      );
 
-        await expectLater(
-          repository.clockInAt(
-            clockInAt: DateTime.parse('2026-06-11T09:00:00'),
-          ),
-          throwsA(
-            isA<WorkRecordRepositoryException>().having(
-              (WorkRecordRepositoryException error) => error.message,
-              'message',
-              allOf(
-                contains('action=clockInAt'),
-                contains('workDate=2026-06-12'),
-                contains('clock-in date must match workDate'),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+      final WorkRecord record = await repository.clockInAt(
+        clockInAt: DateTime.parse('2026-06-12T09:00:00'),
+      );
+      final WorkRecord? savedRecord = await repository.findByDate(
+        workDate: DateTime(2026, 6, 12),
+      );
+
+      expect(record.workDate, DateTime(2026, 6, 12));
+      expect(record.clockInAt, DateTime.parse('2026-06-12T09:00:00'));
+      expect(record.createdAt, DateTime.parse('2026-06-13T00:00:03'));
+      expect(record.updatedAt, DateTime.parse('2026-06-13T00:00:03'));
+      expect(savedRecord, record);
+    });
 
     test('clockIn updates an existing empty today record', () async {
       final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
@@ -301,37 +294,29 @@ void main() {
       },
     );
 
-    test(
-      'clockOutAt throws when selected time date differs from today',
-      () async {
-        DateTime now = DateTime.parse('2026-06-12T09:03:00');
-        final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
-        final LocalStorageWorkRecordRepository repository = _createRepository(
-          storage: storage,
-          clock: () => now,
-          idGenerator: () => 'work-1',
-        );
-        await repository.clockIn();
-        now = DateTime.parse('2026-06-12T18:45:00');
+    test('clockOutAt saves selected date when saved after midnight', () async {
+      DateTime now = DateTime.parse('2026-06-12T09:03:00');
+      final InMemoryKeyValueStorage storage = InMemoryKeyValueStorage.empty();
+      final LocalStorageWorkRecordRepository repository = _createRepository(
+        storage: storage,
+        clock: () => now,
+        idGenerator: () => 'work-1',
+      );
+      await repository.clockIn();
+      now = DateTime.parse('2026-06-13T00:00:03');
 
-        await expectLater(
-          repository.clockOutAt(
-            clockOutAt: DateTime.parse('2026-06-11T18:00:00'),
-          ),
-          throwsA(
-            isA<WorkRecordRepositoryException>().having(
-              (WorkRecordRepositoryException error) => error.message,
-              'message',
-              allOf(
-                contains('action=clockOutAt'),
-                contains('workDate=2026-06-12'),
-                contains('clock-out date must match workDate'),
-              ),
-            ),
-          ),
-        );
-      },
-    );
+      final WorkRecord record = await repository.clockOutAt(
+        clockOutAt: DateTime.parse('2026-06-12T18:00:00'),
+      );
+      final WorkRecord? savedRecord = await repository.findByDate(
+        workDate: DateTime(2026, 6, 12),
+      );
+
+      expect(record.workDate, DateTime(2026, 6, 12));
+      expect(record.clockOutAt, DateTime.parse('2026-06-12T18:00:00'));
+      expect(record.updatedAt, DateTime.parse('2026-06-13T00:00:03'));
+      expect(savedRecord, record);
+    });
 
     test('clockOut throws when already clocked out', () async {
       DateTime now = DateTime.parse('2026-06-12T09:03:00');
