@@ -47,7 +47,7 @@
 |---|---|---|
 | App exists or selected | PASS | Android Publisher API accepted package `com.workledger.workledger` edits |
 | Privacy policy URL entered | PASS | Store listing edit sent `https://zzocojoa.github.io/MyWorkLedger/privacy-policy/` through Android Publisher API |
-| Data safety | NOT RUN | Must be verified in Play Console questionnaire; draft answers are in `docs/04-deploy/play-store/store-listing.md` |
+| Data safety | NOT RUN | Internal-only releases are exempt from Data safety display, but production submission still requires the Play Console form; draft answers are in `docs/04-deploy/play-store/store-listing.md` |
 | Ads declaration | NOT RUN | App has no ads SDK in current dependencies, but Play Console declaration is not verified |
 | App access | NOT RUN | App does not require login in current build, but Play Console declaration is not verified |
 | Content rating | NOT RUN | Play Console questionnaire required |
@@ -62,6 +62,20 @@
 | Internal test release notes | PASS | Release notes were included in committed API internal track update |
 | Internal test device QA | PASS | Play Store internal-test install and smoke QA completed on `SM_G977N` |
 | Production submit | NOT RUN | User approval required before production submission |
+
+## Current API Readback
+
+Read-only API verification on 2026-06-22 used edit `04123157826065938820`. The edit was not committed.
+
+| Item | Status | Evidence |
+|---|---|---|
+| App details | PASS | `edits.details.get` returned default language `ko-KR` and contact email configured |
+| Korean listing | PASS | `edits.listings.get` returned title `내근무장부`, short description, and full description |
+| Internal track | PASS | `edits.tracks.get` returned release `1.0.2`, status `completed`, `versionCodes=["3"]` |
+| Production track | NOT READY | `edits.tracks.get` returned no production releases |
+| App icon | PASS | `edits.images.list` returned 1 `icon` image |
+| Feature graphic | PASS | `edits.images.list` returned 1 `featureGraphic` image |
+| Phone screenshots | PASS | `edits.images.list` returned 5 `phoneScreenshots` images |
 
 ## Android Publisher API Result
 
@@ -129,7 +143,7 @@ Note: the current release intentionally opens the candidate UI from notification
 
 Current status: `PARTIAL`.
 
-Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, edit commit, Play internal-test install, and internal test device QA are ready. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
+Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, edit commit, API readback, Play internal-test install, and internal test device QA are ready. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement and remaining App content forms.
 
 ## Rollback
 
