@@ -47,14 +47,15 @@
 |---|---|---|
 | App exists or selected | PASS | Android Publisher API accepted package `com.workledger.workledger` edits |
 | Privacy policy URL entered | PASS | Store listing edit sent `https://zzocojoa.github.io/MyWorkLedger/privacy-policy/` through Android Publisher API |
-| Data safety | NOT RUN | Internal-only releases are exempt from Data safety display, but production submission still requires the Play Console form; draft answers are in `docs/04-deploy/play-store/store-listing.md` |
-| Ads declaration | NOT RUN | App has no ads SDK in current dependencies, but Play Console declaration is not verified |
-| App access | NOT RUN | App does not require login in current build, but Play Console declaration is not verified |
-| Content rating | NOT RUN | Play Console questionnaire required |
-| Target audience | NOT RUN | Play Console questionnaire required |
+| Data safety | DRAFT_NOT_SUBMITTED | Play Console publishing overview lists `데이터 보안 설문지 작성` as an unsubmitted app-content change |
+| Ads declaration | DRAFT_NOT_SUBMITTED | Play Console publishing overview lists `광고 선언 업데이트` as an unsubmitted app-content change |
+| App access | DRAFT_NOT_SUBMITTED | Play Console publishing overview lists login details as submitted content not yet published: `특수한 액세스 권한 없이 모든 기능 사용 가능` |
+| Content rating | DRAFT_NOT_SUBMITTED | Play Console publishing overview lists `콘텐츠 등급` with `새 설문지 제출` as an unsubmitted app-content change |
+| Target audience | DRAFT_NOT_SUBMITTED | Play Console publishing overview lists target audience as `만 18세 이상` but the change is not submitted for review |
 | Store listing console entry | PASS | Listing text and image uploads were committed through Android Publisher API |
 | Store listing text draft | PASS | `docs/04-deploy/play-store/store-listing.md` prepared |
 | Store screenshots | PASS | Five phone screenshots prepared in `docs/04-deploy/play-store/screenshots/phone-upload/` |
+| App category | DRAFT_NOT_SUBMITTED | Play Console publishing overview lists app category as `생산성 앱` but the change is not submitted for review |
 | Feature graphic | PASS | `assets/brand/google-play/workledger-feature-graphic-1024x500.jpg`, 1024x500, no alpha |
 | Internal test track upload | PASS | `versionCode=3` AAB upload, internal track update, edit validation, and edit commit succeeded through API |
 | Upload warnings | PASS | `versionCode=2` was already used; rebuilt and uploaded `versionCode=3` successfully |
@@ -117,6 +118,27 @@ The current service account still cannot manage Play Console users and permissio
 | Production | NOT READY | Dashboard shows production inactive |
 | Closed testing | NOT READY | Dashboard says closed testing must be run before production access |
 | Tester requirement | NOT READY | Dashboard shows 0 testers opted in; 12 testers and at least 14 days are required before production access |
+
+## Play Console Publishing Overview Check
+
+Read-only browser verification on 2026-06-22 showed the Play Console publishing overview for `내근무장부`.
+
+| Item | Status | Evidence |
+|---|---|---|
+| Publishing overview opened | PASS | URL `.../app/4975751448796517471/publishing` displayed `게시 개요` |
+| Review submission button | BLOCKED | `검토를 위해 앱 전송` button was disabled |
+| Required dashboard steps | BLOCKED | Page stated `검토를 위해 변경사항을 전송하려면 앱 대시보드에서 필수 단계를 완료하세요.` |
+| Store listing draft | DRAFT_NOT_SUBMITTED | Change list included `한국어 - ko-KR` default store listing and said all required information was provided |
+| Content rating draft | DRAFT_NOT_SUBMITTED | Change list included `콘텐츠 등급` with `새 설문지 제출` |
+| Target audience draft | DRAFT_NOT_SUBMITTED | Change list included target audience update with `만 18세 이상` |
+| Privacy policy draft | DRAFT_NOT_SUBMITTED | Change list included privacy policy URL `https://zzocojoa.github.io/MyWorkLedger/privacy-policy/` |
+| Ads declaration draft | DRAFT_NOT_SUBMITTED | Change list included `광고 선언 업데이트` |
+| Data safety draft | DRAFT_NOT_SUBMITTED | Change list included `데이터 보안 설문지 작성` |
+| App category draft | DRAFT_NOT_SUBMITTED | Change list included app category `생산성 앱` |
+| App access declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included login details: all features available without special access |
+| Government app declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included government app declaration update |
+| Financial features declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included financial features declaration update |
+| Health declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included health-related declaration update |
 
 ## Internal Test Device QA
 
