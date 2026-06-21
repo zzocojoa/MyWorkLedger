@@ -118,6 +118,7 @@ The current service account still cannot manage Play Console users and permissio
 | Production | NOT READY | Dashboard shows production inactive |
 | Closed testing | NOT READY | Dashboard says closed testing must be run before production access |
 | Tester requirement | NOT READY | Dashboard shows 0 testers opted in; 12 testers and at least 14 days are required before production access |
+| Closed testing task list | NOT READY | Dashboard `할 일 보기` showed 0 of 5 production-access closed-testing tasks completed |
 
 ## Play Console Publishing Overview Check
 
@@ -139,6 +140,22 @@ Read-only browser verification on 2026-06-22 showed the Play Console publishing 
 | Government app declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included government app declaration update |
 | Financial features declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included financial features declaration update |
 | Health declaration | DRAFT_NOT_SUBMITTED | Submitted-content list included health-related declaration update |
+
+## Closed Testing Production Access Checklist
+
+Read-only browser verification on 2026-06-22 expanded the dashboard `할 일 보기` checklist under `앱 문제를 파악하고 의견을 얻고 프로덕션 액세스 권한을 확보하세요`.
+
+| Item | Status | Evidence |
+|---|---|---|
+| Checklist progress | NOT READY | Dashboard stated `완료된 작업 5개 중 0개` |
+| Country and region selection | NOT READY | Checklist showed `국가 및 지역 선택` as an available task |
+| Tester selection | NOT READY | Checklist showed `테스터 선택` as an available task |
+| Closed testing release creation | NOT READY | Checklist showed `새 버전 만들기` as an available task |
+| Preview and confirmation | LOCKED | Checklist showed `버전 미리보기 및 확인` as locked until a new release is created |
+| Send closed testing release to Google for review | LOCKED | Checklist showed `검토를 위해 Google에 버전 전송` as locked |
+| Production access application | BLOCKED | Dashboard still showed `프로덕션 신청` disabled |
+
+This closed-testing checklist is separate from the already uploaded Android Publisher API `internal` track release. It is the Play Console production-access path and remains incomplete.
 
 ## Internal Test Device QA
 
