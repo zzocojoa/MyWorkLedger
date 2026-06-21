@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/input/clock_time_input.dart';
+import '../../../core/notifications/workledger_notification_service.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/compensation_reference_setting.dart';
 import '../../../core/models/work_rule.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
+import '../../work_record/domain/quick_record_settings.dart';
+import '../../work_record/domain/quick_record_settings_repository.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
 import '../../work_rule/presentation/work_rule_settings_screen.dart';
+import 'notification_settings_screen.dart';
 
 const NeverScrollableScrollPhysics _textFieldScrollPhysics =
     NeverScrollableScrollPhysics();
@@ -23,13 +27,17 @@ const String _compensationReferenceSectionTitle = '포괄임금 시간';
 final class WorkSettingsScreen extends StatefulWidget {
   const WorkSettingsScreen({
     required this.workRuleRepository,
+    required this.quickRecordSettingsRepository,
     required this.compensationReferenceRepository,
+    required this.configureNotifications,
     required this.targetMonth,
     super.key,
   });
 
   final WorkRuleRepository workRuleRepository;
+  final QuickRecordSettingsRepository quickRecordSettingsRepository;
   final CompensationReferenceRepository compensationReferenceRepository;
+  final ConfigureWorkLedgerNotifications configureNotifications;
   final DateTime targetMonth;
 
   @override
@@ -67,6 +75,7 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
   };
 
   CompensationReferenceMode _mode = CompensationReferenceMode.unknown;
+  QuickRecordMode _quickRecordMode = QuickRecordMode.currentTimeOnly;
   String? _errorMessage;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -98,6 +107,9 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     });
     try {
       final WorkRule? rule = await widget.workRuleRepository.findActive();
+      final QuickRecordSettings? quickRecordSettings = await widget
+          .quickRecordSettingsRepository
+          .findActive();
       final CompensationReferenceSetting? setting = await widget
           .compensationReferenceRepository
           .findApplicableForMonth(
@@ -109,12 +121,15 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
       }
       setState(() {
         _applyRule(rule: rule);
+        _applyQuickRecordSettings(settings: quickRecordSettings);
         _applyCompensationReferenceSetting(setting: setting);
         _isLoading = false;
       });
       _jumpToTopAfterLoad();
     } on WorkRuleRepositoryException catch (error) {
       _showError('근무 기준을 불러올 수 없습니다. ${error.toString()}');
+    } on QuickRecordSettingsRepositoryException catch (error) {
+      _showError('빠른 기록 방식을 불러올 수 없습니다. ${error.toString()}');
     } on CompensationReferenceRepositoryException catch (error) {
       _showError('포괄임금 시간을 불러올 수 없습니다. ${error.toString()}');
     }
@@ -152,6 +167,13 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     _includedAfterRegularEndController.text = setting
         .fixedIncludedAfterRegularEndMinutes
         .toString();
+  }
+
+  void _applyQuickRecordSettings({required QuickRecordSettings? settings}) {
+    if (settings == null) {
+      return;
+    }
+    _quickRecordMode = settings.mode;
   }
 
   void _applyPreset() {
@@ -260,14 +282,25 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
         effectiveFromMonth: _globalEffectiveFromMonth(),
         memo: null,
       );
+    } on ArgumentError catch (error) {
+      _showError('포괄임금 시간을 저장할 수 없습니다. ${error.message}');
+      return;
+    } on CompensationReferenceRepositoryException catch (error) {
+      _showError('포괄임금 시간을 저장할 수 없습니다. ${error.toString()}');
+      return;
+    }
+
+    try {
+      await widget.quickRecordSettingsRepository.save(mode: _quickRecordMode);
+      await widget.configureNotifications();
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop(true);
-    } on ArgumentError catch (error) {
-      _showError('포괄임금 시간을 저장할 수 없습니다. ${error.message}');
-    } on CompensationReferenceRepositoryException catch (error) {
-      _showError('포괄임금 시간을 저장할 수 없습니다. ${error.toString()}');
+    } on QuickRecordSettingsRepositoryException catch (error) {
+      _showError('빠른 기록 방식을 저장할 수 없습니다. ${error.toString()}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError('상시 알림을 갱신할 수 없습니다. ${error.toString()}');
     }
   }
 
@@ -365,6 +398,40 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
             decoration: const InputDecoration(labelText: '휴게시간(분)'),
             keyboardType: TextInputType.number,
             scrollPhysics: _textFieldScrollPhysics,
+          ),
+        ],
+      ),
+      const SizedBox(height: workLedgerSpacingMedium),
+      _SettingsSection(
+        title: '빠른 기록 방식',
+        children: <Widget>[
+          RadioGroup<QuickRecordMode>(
+            groupValue: _quickRecordMode,
+            onChanged: _changeQuickRecordMode,
+            child: Column(
+              children: <Widget>[
+                _QuickRecordModeTile(
+                  title: '현재 시각만 저장',
+                  subtitle: '출근/퇴근 버튼을 누른 현재 시각을 바로 저장',
+                  value: QuickRecordMode.currentTimeOnly,
+                  selectedMode: _quickRecordMode,
+                ),
+                _QuickRecordModeTile(
+                  title: '저장 전 시각 선택',
+                  subtitle: '홈 화면과 상시 알림 기록 전에 현재 시각, 정시 후보, 직접 입력 중 선택',
+                  value: QuickRecordMode.chooseBeforeSave,
+                  selectedMode: _quickRecordMode,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: workLedgerSpacingSmall),
+          Text(
+            '앱이 시간을 자동 보정하지 않습니다. 선택한 시각만 저장합니다.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: workLedgerColorMuted,
+              letterSpacing: 0,
+            ),
           ),
         ],
       ),
@@ -530,6 +597,16 @@ final class _WorkSettingsScreenState extends State<WorkSettingsScreen> {
     }
     setState(() {
       _mode = mode;
+      _errorMessage = null;
+    });
+  }
+
+  void _changeQuickRecordMode(QuickRecordMode? mode) {
+    if (mode == null) {
+      return;
+    }
+    setState(() {
+      _quickRecordMode = mode;
       _errorMessage = null;
     });
   }
@@ -783,6 +860,34 @@ final class _ModeTile extends StatelessWidget {
       color: Colors.transparent,
       child: RadioListTile<CompensationReferenceMode>(
         title: Text(title),
+        value: value,
+        selected: value == selectedMode,
+        contentPadding: EdgeInsets.zero,
+      ),
+    );
+  }
+}
+
+final class _QuickRecordModeTile extends StatelessWidget {
+  const _QuickRecordModeTile({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.selectedMode,
+  });
+
+  final String title;
+  final String subtitle;
+  final QuickRecordMode value;
+  final QuickRecordMode selectedMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: RadioListTile<QuickRecordMode>(
+        title: Text(title),
+        subtitle: Text(subtitle),
         value: value,
         selected: value == selectedMode,
         contentPadding: EdgeInsets.zero,

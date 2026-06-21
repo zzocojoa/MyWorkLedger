@@ -11,6 +11,10 @@ abstract interface class WorkRecordRepository {
 
   Future<WorkRecord> clockOut();
 
+  Future<WorkRecord> clockInAt({required DateTime clockInAt});
+
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt});
+
   Future<WorkRecord> updateToday({
     required DateTime? clockInAt,
     required DateTime? clockOutAt,

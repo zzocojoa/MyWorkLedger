@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/notifications/workledger_notification_action.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 
 void main() {
@@ -50,6 +51,8 @@ void main() {
 
         expect(repository.clockInCount, 0);
         expect(repository.clockOutCount, 0);
+        expect(repository.clockInAtCount, 0);
+        expect(repository.clockOutAtCount, 0);
       },
     );
 
@@ -65,6 +68,8 @@ void main() {
 
       expect(repository.clockInCount, 1);
       expect(repository.clockOutCount, 0);
+      expect(repository.clockInAtCount, 0);
+      expect(repository.clockOutAtCount, 0);
     });
 
     test('records clock out from the notification action', () async {
@@ -79,6 +84,8 @@ void main() {
 
       expect(repository.clockInCount, 0);
       expect(repository.clockOutCount, 1);
+      expect(repository.clockInAtCount, 0);
+      expect(repository.clockOutAtCount, 0);
     });
 
     test('keeps repository errors visible', () async {
@@ -97,6 +104,49 @@ void main() {
       );
     });
   });
+
+  group('shouldOpenQuickRecordFromNotification', () {
+    test('keeps clock actions in background for current-time mode', () {
+      expect(
+        shouldOpenQuickRecordFromNotification(
+          action: WorkLedgerNotificationAction.clockIn,
+          mode: QuickRecordMode.currentTimeOnly,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldOpenQuickRecordFromNotification(
+          action: WorkLedgerNotificationAction.clockOut,
+          mode: QuickRecordMode.currentTimeOnly,
+        ),
+        isFalse,
+      );
+    });
+
+    test('opens clock actions in UI for choose-before-save mode', () {
+      expect(
+        shouldOpenQuickRecordFromNotification(
+          action: WorkLedgerNotificationAction.clockIn,
+          mode: QuickRecordMode.chooseBeforeSave,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldOpenQuickRecordFromNotification(
+          action: WorkLedgerNotificationAction.clockOut,
+          mode: QuickRecordMode.chooseBeforeSave,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldOpenQuickRecordFromNotification(
+          action: WorkLedgerNotificationAction.openHome,
+          mode: QuickRecordMode.chooseBeforeSave,
+        ),
+        isFalse,
+      );
+    });
+  });
 }
 
 final class _FakeWorkRecordRepository implements WorkRecordRepository {
@@ -105,6 +155,8 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   final WorkRecordRepositoryException? clockInError;
   int clockInCount = 0;
   int clockOutCount = 0;
+  int clockInAtCount = 0;
+  int clockOutAtCount = 0;
 
   @override
   Future<WorkRecord?> findToday() async {
@@ -138,6 +190,22 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   Future<WorkRecord> clockOut() async {
     clockOutCount += 1;
     return _record();
+  }
+
+  @override
+  Future<WorkRecord> clockInAt({required DateTime clockInAt}) async {
+    clockInAtCount += 1;
+    throw const WorkRecordRepositoryException(
+      'unexpected selected clock-in notification call',
+    );
+  }
+
+  @override
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt}) async {
+    clockOutAtCount += 1;
+    throw const WorkRecordRepositoryException(
+      'unexpected selected clock-out notification call',
+    );
   }
 
   @override

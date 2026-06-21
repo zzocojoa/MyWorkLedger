@@ -6,13 +6,18 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/work_record.dart';
+import '../../features/work_record/data/local_storage_quick_record_settings_repository.dart';
 import '../../features/work_record/data/local_storage_work_record_repository.dart';
+import '../../features/work_record/domain/quick_record_settings.dart';
+import '../../features/work_record/domain/quick_record_settings_repository.dart';
 import '../../features/work_record/domain/work_record_repository.dart';
 import '../storage/persistent_key_value_storage.dart';
 import 'workledger_notification_action.dart';
 import 'workledger_notification_refresh_signal.dart';
 
 typedef WorkLedgerOpenHome = void Function();
+typedef WorkLedgerOpenQuickRecord =
+    void Function(WorkLedgerNotificationAction action);
 typedef RefreshWorkLedgerPersistentNotification = Future<void> Function();
 
 const int workLedgerPersistentNotificationId = 1001;
@@ -20,6 +25,8 @@ const String workLedgerNotificationChannelId = 'workledger_persistent_record';
 const String workLedgerNotificationChannelName = '내근무장부 빠른 기록';
 const String workLedgerNotificationChannelDescription =
     '상시 알림에서 출근과 퇴근을 빠르게 기록합니다.';
+const String workLedgerNotificationImmediateActionDescription =
+    '현재 시각만 쓰는 방식은 알림에서 바로 저장하고, 저장 전 선택 방식은 앱을 열어 시각을 고릅니다.';
 const String workLedgerNotificationPayloadHome = 'workledger_home';
 const String workLedgerNotificationTitle = '내근무장부';
 const String workLedgerNotificationIdleBody = '앱을 열지 않고 출근과 퇴근을 기록할 수 있습니다.';
@@ -56,15 +63,20 @@ final class WorkLedgerPersistentNotificationContent {
 }
 
 final class WorkLedgerNotificationService {
-  const WorkLedgerNotificationService({
+  WorkLedgerNotificationService({
     required this.plugin,
     required this.repository,
+    required this.quickRecordSettingsRepository,
     required this.openHome,
+    required this.openQuickRecord,
   });
 
   final FlutterLocalNotificationsPlugin plugin;
   final WorkRecordRepository repository;
+  final QuickRecordSettingsRepository quickRecordSettingsRepository;
   final WorkLedgerOpenHome openHome;
+  final WorkLedgerOpenQuickRecord openQuickRecord;
+  bool _initialLaunchActionHandled = false;
 
   Future<WorkLedgerNotificationSetupResult> initialize() async {
     try {
@@ -76,6 +88,7 @@ final class WorkLedgerNotificationService {
         onDidReceiveBackgroundNotificationResponse:
             workLedgerNotificationBackgroundHandler,
       );
+      await _handleInitialLaunchAction();
       final bool permissionGranted = await _requestAndroidPermission();
       if (!permissionGranted) {
         return const WorkLedgerNotificationSetupResult(
@@ -89,6 +102,10 @@ final class WorkLedgerNotificationService {
         notificationShown: true,
       );
     } on WorkRecordRepositoryException catch (error) {
+      throw WorkLedgerNotificationException(
+        'action=initialize cause=${error.toString()}',
+      );
+    } on QuickRecordSettingsRepositoryException catch (error) {
       throw WorkLedgerNotificationException(
         'action=initialize cause=${error.toString()}',
       );
@@ -107,6 +124,7 @@ final class WorkLedgerNotificationService {
     await showWorkLedgerPersistentNotification(
       plugin: plugin,
       repository: repository,
+      quickRecordSettingsRepository: quickRecordSettingsRepository,
     );
   }
 
@@ -122,19 +140,49 @@ final class WorkLedgerNotificationService {
   Future<void> _handleForegroundResponse(NotificationResponse response) async {
     final WorkLedgerNotificationAction action =
         parseWorkLedgerNotificationAction(actionId: response.actionId);
+    await _handleNotificationResponseAction(
+      action: action,
+      actionId: response.actionId,
+    );
+  }
+
+  Future<void> _handleInitialLaunchAction() async {
+    if (_initialLaunchActionHandled) {
+      return;
+    }
+    _initialLaunchActionHandled = true;
+    final NotificationAppLaunchDetails? launchDetails = await plugin
+        .getNotificationAppLaunchDetails();
+    final NotificationResponse? response = launchDetails?.notificationResponse;
+    if (launchDetails?.didNotificationLaunchApp != true || response == null) {
+      return;
+    }
+    final WorkLedgerNotificationAction action =
+        parseWorkLedgerNotificationAction(actionId: response.actionId);
+    await _handleNotificationResponseAction(
+      action: action,
+      actionId: response.actionId,
+    );
+  }
+
+  Future<void> _handleNotificationResponseAction({
+    required WorkLedgerNotificationAction action,
+    required String? actionId,
+  }) async {
     switch (action) {
       case WorkLedgerNotificationAction.openHome:
         openHome();
       case WorkLedgerNotificationAction.clockIn:
-        await handleWorkLedgerNotificationAction(
-          actionId: response.actionId,
-          repository: repository,
-        );
-        notifyWorkLedgerNotificationActionHandled();
-        await showPersistentNotification();
       case WorkLedgerNotificationAction.clockOut:
+        final QuickRecordMode mode = await _resolveQuickRecordMode(
+          quickRecordSettingsRepository: quickRecordSettingsRepository,
+        );
+        if (shouldOpenQuickRecordFromNotification(action: action, mode: mode)) {
+          openQuickRecord(action);
+          return;
+        }
         await handleWorkLedgerNotificationAction(
-          actionId: response.actionId,
+          actionId: actionId,
           repository: repository,
         );
         notifyWorkLedgerNotificationActionHandled();
@@ -143,8 +191,11 @@ final class WorkLedgerNotificationService {
   }
 }
 
-NotificationDetails buildWorkLedgerPersistentNotificationDetails() {
-  return const NotificationDetails(
+NotificationDetails buildWorkLedgerPersistentNotificationDetails({
+  required QuickRecordMode mode,
+}) {
+  final bool showsUserInterface = mode == QuickRecordMode.chooseBeforeSave;
+  return NotificationDetails(
     android: AndroidNotificationDetails(
       workLedgerNotificationChannelId,
       workLedgerNotificationChannelName,
@@ -159,13 +210,13 @@ NotificationDetails buildWorkLedgerPersistentNotificationDetails() {
         AndroidNotificationAction(
           workLedgerClockInActionId,
           '출근하기',
-          showsUserInterface: false,
+          showsUserInterface: showsUserInterface,
           cancelNotification: false,
         ),
         AndroidNotificationAction(
           workLedgerClockOutActionId,
           '퇴근하기',
-          showsUserInterface: false,
+          showsUserInterface: showsUserInterface,
           cancelNotification: false,
         ),
       ],
@@ -176,15 +227,21 @@ NotificationDetails buildWorkLedgerPersistentNotificationDetails() {
 Future<void> showWorkLedgerPersistentNotification({
   required FlutterLocalNotificationsPlugin plugin,
   required WorkRecordRepository repository,
+  required QuickRecordSettingsRepository quickRecordSettingsRepository,
 }) async {
   final WorkRecord? todayRecord = await repository.findToday();
+  final QuickRecordMode mode = await _resolveQuickRecordMode(
+    quickRecordSettingsRepository: quickRecordSettingsRepository,
+  );
   final WorkLedgerPersistentNotificationContent content =
       buildWorkLedgerPersistentNotificationContent(record: todayRecord);
   await plugin.show(
     id: workLedgerPersistentNotificationId,
     title: content.title,
     body: content.body,
-    notificationDetails: buildWorkLedgerPersistentNotificationDetails(),
+    notificationDetails: buildWorkLedgerPersistentNotificationDetails(
+      mode: mode,
+    ),
     payload: workLedgerNotificationPayloadHome,
   );
 }
@@ -237,20 +294,37 @@ Future<void> workLedgerNotificationBackgroundHandler(
 ) async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
-  final WorkRecordRepository repository =
-      await createPersistentWorkRecordRepository();
+  final _PersistentWorkLedgerRepositories repositories =
+      await _createPersistentWorkLedgerRepositories();
+  final WorkLedgerNotificationAction action = parseWorkLedgerNotificationAction(
+    actionId: response.actionId,
+  );
+  final QuickRecordMode mode = await _resolveQuickRecordMode(
+    quickRecordSettingsRepository: repositories.quickRecordSettingsRepository,
+  );
+  if (shouldOpenQuickRecordFromNotification(action: action, mode: mode)) {
+    return;
+  }
   await handleWorkLedgerNotificationAction(
     actionId: response.actionId,
-    repository: repository,
+    repository: repositories.workRecordRepository,
   );
   notifyWorkLedgerNotificationActionHandled();
   await showWorkLedgerPersistentNotification(
     plugin: FlutterLocalNotificationsPlugin(),
-    repository: repository,
+    repository: repositories.workRecordRepository,
+    quickRecordSettingsRepository: repositories.quickRecordSettingsRepository,
   );
 }
 
 Future<WorkRecordRepository> createPersistentWorkRecordRepository() async {
+  final _PersistentWorkLedgerRepositories repositories =
+      await _createPersistentWorkLedgerRepositories();
+  return repositories.workRecordRepository;
+}
+
+Future<_PersistentWorkLedgerRepositories>
+_createPersistentWorkLedgerRepositories() async {
   final PersistentKeyValueStorage storage = PersistentKeyValueStorage(
     file: PersistentKeyValueStorage.fileInDirectory(
       directory: await getApplicationSupportDirectory(),
@@ -260,9 +334,33 @@ Future<WorkRecordRepository> createPersistentWorkRecordRepository() async {
     return DateTime.now();
   }
 
-  return LocalStorageWorkRecordRepository(
-    storage: storage,
-    clock: now,
-    idGenerator: () => 'work-${now().microsecondsSinceEpoch}',
+  return _PersistentWorkLedgerRepositories(
+    workRecordRepository: LocalStorageWorkRecordRepository(
+      storage: storage,
+      clock: now,
+      idGenerator: () => 'work-${now().microsecondsSinceEpoch}',
+    ),
+    quickRecordSettingsRepository: LocalStorageQuickRecordSettingsRepository(
+      storage: storage,
+      clock: now,
+    ),
   );
+}
+
+Future<QuickRecordMode> _resolveQuickRecordMode({
+  required QuickRecordSettingsRepository quickRecordSettingsRepository,
+}) async {
+  final QuickRecordSettings? settings = await quickRecordSettingsRepository
+      .findActive();
+  return settings?.mode ?? QuickRecordMode.currentTimeOnly;
+}
+
+final class _PersistentWorkLedgerRepositories {
+  const _PersistentWorkLedgerRepositories({
+    required this.workRecordRepository,
+    required this.quickRecordSettingsRepository,
+  });
+
+  final WorkRecordRepository workRecordRepository;
+  final QuickRecordSettingsRepository quickRecordSettingsRepository;
 }

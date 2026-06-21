@@ -1,8 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../../core/input/clock_time_input.dart';
 import '../../../core/theme/workledger_design_tokens.dart';
 
 import '../../../core/models/work_record.dart';
+import '../../../core/notifications/workledger_notification_action.dart';
 import '../../../core/notifications/workledger_notification_service.dart';
 import '../../../core/notifications/workledger_notification_refresh_signal.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
@@ -18,6 +23,9 @@ import '../../settings/presentation/settings_home_screen.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
 import '../domain/load_today_work_summary.dart';
+import '../domain/quick_record_candidate.dart';
+import '../domain/quick_record_settings.dart';
+import '../domain/quick_record_settings_repository.dart';
 import '../domain/today_work_status.dart';
 import '../domain/today_work_summary.dart';
 import '../domain/work_record_repository.dart';
@@ -28,21 +36,25 @@ import 'work_record_formatters.dart';
 final class WorkRecordHomeScreen extends StatefulWidget {
   const WorkRecordHomeScreen({
     required this.repository,
+    required this.quickRecordSettingsRepository,
     required this.leaveRepository,
     required this.workRuleRepository,
     required this.compensationReferenceRepository,
     required this.pricingIntentRepository,
     required this.configureNotifications,
+    required this.notificationActionController,
     required this.now,
     super.key,
   });
 
   final WorkRecordRepository repository;
+  final QuickRecordSettingsRepository quickRecordSettingsRepository;
   final LeaveRepository leaveRepository;
   final WorkRuleRepository workRuleRepository;
   final CompensationReferenceRepository compensationReferenceRepository;
   final PricingIntentRepository pricingIntentRepository;
   final ConfigureWorkLedgerNotifications configureNotifications;
+  final WorkLedgerNotificationActionController notificationActionController;
   final DateTime Function() now;
 
   @override
@@ -56,6 +68,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
   String? _errorMessage;
   bool _isLoading = true;
   bool _isPreviewLoading = true;
+  bool _isHandlingNotificationQuickRecord = false;
+  bool _isPendingNotificationQuickRecordDrainScheduled = false;
   late final WorkLedgerNotificationRefreshListener _notificationRefreshListener;
 
   @override
@@ -66,12 +80,19 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
       onRefresh: _handleNotificationRefresh,
     );
     _notificationRefreshListener.start();
+    widget.notificationActionController.addListener(
+      _handleNotificationQuickRecordRequest,
+    );
     _loadSummary();
+    _schedulePendingNotificationQuickRecordDrain();
   }
 
   @override
   void dispose() {
     _notificationRefreshListener.stop();
+    widget.notificationActionController.removeListener(
+      _handleNotificationQuickRecordRequest,
+    );
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -123,6 +144,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
         _isLoading = false;
         _isPreviewLoading = false;
       });
+      _schedulePendingNotificationQuickRecordDrain();
     } on WorkRecordRepositoryException catch (error) {
       _showError(error.toString());
     } on TodayWorkSummaryException catch (error) {
@@ -184,24 +206,278 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
     });
 
     try {
-      switch (summary.primaryAction) {
-        case TodayWorkPrimaryAction.clockIn:
-          await widget.repository.clockIn();
-        case TodayWorkPrimaryAction.clockOut:
-          await widget.repository.clockOut();
-        case TodayWorkPrimaryAction.editTodayRecord:
-          throw const TodayWorkSummaryException(
-            'widget=WorkRecordHomeScreen action=editTodayRecord rule=handled before repository action',
-          );
+      final QuickRecordSettings? quickRecordSettings = await widget
+          .quickRecordSettingsRepository
+          .findActive();
+      final QuickRecordMode mode =
+          quickRecordSettings?.mode ?? QuickRecordMode.currentTimeOnly;
+      if (mode == QuickRecordMode.currentTimeOnly) {
+        await _savePrimaryActionNow(summary: summary);
+      } else {
+        final bool saved = await _chooseAndSaveQuickRecord(summary: summary);
+        if (!saved) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
       }
       await _refreshSummaryAndNotification();
+    } on QuickRecordSettingsRepositoryException catch (error) {
+      _showError(error.toString());
     } on WorkRecordRepositoryException catch (error) {
       _showError(error.toString());
     } on TodayWorkSummaryException catch (error) {
       _showError(error.toString());
+    } on WorkRuleRepositoryException catch (error) {
+      _showError(error.toString());
+    } on QuickRecordManualInputException catch (error) {
+      _showError('시각을 저장할 수 없습니다. ${error.toString()}');
     } on WorkLedgerNotificationException catch (error) {
       _showError(error.toString());
     }
+  }
+
+  Future<void> _savePrimaryActionNow({
+    required TodayWorkSummary summary,
+  }) async {
+    switch (summary.primaryAction) {
+      case TodayWorkPrimaryAction.clockIn:
+        await widget.repository.clockIn();
+      case TodayWorkPrimaryAction.clockOut:
+        await widget.repository.clockOut();
+      case TodayWorkPrimaryAction.editTodayRecord:
+        throw const TodayWorkSummaryException(
+          'widget=WorkRecordHomeScreen action=editTodayRecord rule=handled before repository action',
+        );
+    }
+  }
+
+  Future<bool> _chooseAndSaveQuickRecord({
+    required TodayWorkSummary summary,
+  }) async {
+    final QuickRecordActionType actionType = _quickRecordActionType(
+      summary: summary,
+    );
+    return _chooseAndSaveQuickRecordAction(actionType: actionType);
+  }
+
+  Future<bool> _chooseAndSaveQuickRecordAction({
+    required QuickRecordActionType actionType,
+  }) async {
+    final DateTime currentTime = widget.now();
+    final List<QuickRecordCandidate> candidates = buildQuickRecordCandidates(
+      mode: QuickRecordMode.chooseBeforeSave,
+      actionType: actionType,
+      currentTime: currentTime,
+      workRule: await widget.workRuleRepository.findActive(),
+    );
+    final QuickRecordCandidate? candidate = await _showQuickRecordCandidates(
+      actionType: actionType,
+      candidates: candidates,
+    );
+    if (candidate == null) {
+      return false;
+    }
+    final DateTime? recordedAt = candidate.recordedAt;
+    if (recordedAt != null) {
+      await _savePrimaryActionAt(
+        actionType: actionType,
+        recordedAt: recordedAt,
+      );
+      return true;
+    }
+    final DateTime? manualRecordedAt = await _showManualQuickRecordInput(
+      actionType: actionType,
+      workDate: currentTime,
+    );
+    if (manualRecordedAt == null) {
+      return false;
+    }
+    await _savePrimaryActionAt(
+      actionType: actionType,
+      recordedAt: manualRecordedAt,
+    );
+    return true;
+  }
+
+  void _handleNotificationQuickRecordRequest() {
+    _schedulePendingNotificationQuickRecordDrain();
+  }
+
+  void _schedulePendingNotificationQuickRecordDrain() {
+    if (_isPendingNotificationQuickRecordDrainScheduled || !mounted) {
+      return;
+    }
+    _isPendingNotificationQuickRecordDrainScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isPendingNotificationQuickRecordDrainScheduled = false;
+      if (!mounted) {
+        return;
+      }
+      unawaited(_handlePendingNotificationQuickRecord());
+    });
+  }
+
+  Future<void> _handlePendingNotificationQuickRecord() async {
+    if (_isHandlingNotificationQuickRecord || !mounted) {
+      return;
+    }
+    if (_summary == null || _isLoading) {
+      _schedulePendingNotificationQuickRecordDrain();
+      return;
+    }
+    final WorkLedgerNotificationAction? action = widget
+        .notificationActionController
+        .takePendingAction();
+    if (action == null || action == WorkLedgerNotificationAction.openHome) {
+      return;
+    }
+    _isHandlingNotificationQuickRecord = true;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final QuickRecordActionType actionType =
+          _quickRecordActionTypeFromNotification(action: action);
+      final bool saved = await _chooseAndSaveQuickRecordAction(
+        actionType: actionType,
+      );
+      if (saved) {
+        await _refreshSummaryAndNotification();
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } on WorkRecordRepositoryException catch (error) {
+      _showError(error.toString());
+    } on WorkRuleRepositoryException catch (error) {
+      _showError(error.toString());
+    } on QuickRecordManualInputException catch (error) {
+      _showError('시각을 저장할 수 없습니다. ${error.toString()}');
+    } on WorkLedgerNotificationException catch (error) {
+      _showError(error.toString());
+    } finally {
+      _isHandlingNotificationQuickRecord = false;
+    }
+  }
+
+  QuickRecordActionType _quickRecordActionTypeFromNotification({
+    required WorkLedgerNotificationAction action,
+  }) {
+    return switch (action) {
+      WorkLedgerNotificationAction.clockIn => QuickRecordActionType.clockIn,
+      WorkLedgerNotificationAction.clockOut => QuickRecordActionType.clockOut,
+      WorkLedgerNotificationAction.openHome =>
+        throw const TodayWorkSummaryException(
+          'widget=WorkRecordHomeScreen action=notificationQuickRecord rule=openHome has no quick record action type',
+        ),
+    };
+  }
+
+  Future<void> _savePrimaryActionAt({
+    required QuickRecordActionType actionType,
+    required DateTime recordedAt,
+  }) async {
+    switch (actionType) {
+      case QuickRecordActionType.clockIn:
+        await widget.repository.clockInAt(clockInAt: recordedAt);
+      case QuickRecordActionType.clockOut:
+        await widget.repository.clockOutAt(clockOutAt: recordedAt);
+    }
+  }
+
+  QuickRecordActionType _quickRecordActionType({
+    required TodayWorkSummary summary,
+  }) {
+    return switch (summary.primaryAction) {
+      TodayWorkPrimaryAction.clockIn => QuickRecordActionType.clockIn,
+      TodayWorkPrimaryAction.clockOut => QuickRecordActionType.clockOut,
+      TodayWorkPrimaryAction.editTodayRecord =>
+        throw const TodayWorkSummaryException(
+          'widget=WorkRecordHomeScreen action=quickRecordActionType rule=edit action has no quick record action type',
+        ),
+    };
+  }
+
+  Future<QuickRecordCandidate?> _showQuickRecordCandidates({
+    required QuickRecordActionType actionType,
+    required List<QuickRecordCandidate> candidates,
+  }) async {
+    return showModalBottomSheet<QuickRecordCandidate>(
+      context: context,
+      builder: (BuildContext context) {
+        final String title = switch (actionType) {
+          QuickRecordActionType.clockIn => '출근 시각 선택',
+          QuickRecordActionType.clockOut => '퇴근 시각 선택',
+        };
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(
+              workLedgerSpacingLarge,
+              workLedgerSpacingMedium,
+              workLedgerSpacingLarge,
+              workLedgerSpacingLarge,
+            ),
+            children: <Widget>[
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: workLedgerColorInk,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: workLedgerSpacingSmall),
+              for (final QuickRecordCandidate candidate in candidates)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(candidate.label),
+                  subtitle: Text(_quickRecordCandidateSubtitle(candidate)),
+                  onTap: () => Navigator.of(context).pop(candidate),
+                ),
+              const SizedBox(height: workLedgerSpacingSmall),
+              Text(
+                '앱이 시간을 자동 보정하지 않습니다. 선택한 시각만 저장합니다.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: workLedgerColorMuted,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _quickRecordCandidateSubtitle(QuickRecordCandidate candidate) {
+    return switch (candidate.type) {
+      QuickRecordCandidateType.currentTime => '지금 확인한 실제 시각으로 저장',
+      QuickRecordCandidateType.regularTime => '근무 설정의 정시 기준을 선택해서 저장',
+      QuickRecordCandidateType.manualInput => 'HH:mm 형식으로 1분 단위 직접 입력',
+    };
+  }
+
+  Future<DateTime?> _showManualQuickRecordInput({
+    required QuickRecordActionType actionType,
+    required DateTime workDate,
+  }) async {
+    final String title = switch (actionType) {
+      QuickRecordActionType.clockIn => '출근 시각 직접 입력',
+      QuickRecordActionType.clockOut => '퇴근 시각 직접 입력',
+    };
+    return showDialog<DateTime>(
+      context: context,
+      builder: (BuildContext context) =>
+          _ManualQuickRecordInputDialog(title: title, workDate: workDate),
+    );
   }
 
   Future<void> _openEditTodayRecord() async {
@@ -289,6 +565,7 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
       MaterialPageRoute<void>(
         builder: (BuildContext context) => SettingsHomeScreen(
           workRuleRepository: widget.workRuleRepository,
+          quickRecordSettingsRepository: widget.quickRecordSettingsRepository,
           compensationReferenceRepository:
               widget.compensationReferenceRepository,
           leaveRepository: widget.leaveRepository,
@@ -397,6 +674,72 @@ final class _HomeMonthlyPreviewData {
 
   final String totalWorkedText;
   final String remainingLeaveText;
+}
+
+final class _ManualQuickRecordInputDialog extends StatefulWidget {
+  const _ManualQuickRecordInputDialog({
+    required this.title,
+    required this.workDate,
+  });
+
+  final String title;
+  final DateTime workDate;
+
+  @override
+  State<_ManualQuickRecordInputDialog> createState() {
+    return _ManualQuickRecordInputDialogState();
+  }
+}
+
+final class _ManualQuickRecordInputDialogState
+    extends State<_ManualQuickRecordInputDialog> {
+  final TextEditingController _controller = TextEditingController();
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    try {
+      final DateTime recordedAt = parseQuickRecordManualTime(
+        value: _controller.text,
+        workDate: widget.workDate,
+      );
+      Navigator.of(context).pop(recordedAt);
+    } on QuickRecordManualInputException catch (error) {
+      setState(() {
+        _errorText = error.message;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          labelText: '시각',
+          helperText: 'HH:mm 형식으로 입력하세요.',
+          errorText: _errorText,
+        ),
+        keyboardType: TextInputType.datetime,
+        inputFormatters: const <TextInputFormatter>[ClockTimeInputFormatter()],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(null),
+          child: const Text('취소'),
+        ),
+        FilledButton(onPressed: _save, child: const Text('저장')),
+      ],
+    );
+  }
 }
 
 final class _TodayStatusCard extends StatelessWidget {

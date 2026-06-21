@@ -3,31 +3,56 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/notifications/workledger_notification_action.dart';
 import 'package:workledger/core/notifications/workledger_notification_service.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
 
 void main() {
-  test('builds persistent notification details with clock actions', () {
-    final NotificationDetails details =
-        buildWorkLedgerPersistentNotificationDetails();
-    final AndroidNotificationDetails android = details.android!;
+  test(
+    'builds current-time notification details with background clock actions',
+    () {
+      final NotificationDetails details =
+          buildWorkLedgerPersistentNotificationDetails(
+            mode: QuickRecordMode.currentTimeOnly,
+          );
+      final AndroidNotificationDetails android = details.android!;
 
-    expect(android.channelId, workLedgerNotificationChannelId);
-    expect(android.channelName, workLedgerNotificationChannelName);
-    expect(
-      android.channelDescription,
-      workLedgerNotificationChannelDescription,
-    );
-    expect(android.ongoing, isTrue);
-    expect(android.autoCancel, isFalse);
-    expect(android.actions, hasLength(2));
-    expect(android.actions![0].id, workLedgerClockInActionId);
-    expect(android.actions![0].title, '출근하기');
-    expect(android.actions![0].showsUserInterface, isFalse);
-    expect(android.actions![0].cancelNotification, isFalse);
-    expect(android.actions![1].id, workLedgerClockOutActionId);
-    expect(android.actions![1].title, '퇴근하기');
-    expect(android.actions![1].showsUserInterface, isFalse);
-    expect(android.actions![1].cancelNotification, isFalse);
-  });
+      expect(android.channelId, workLedgerNotificationChannelId);
+      expect(android.channelName, workLedgerNotificationChannelName);
+      expect(
+        android.channelDescription,
+        workLedgerNotificationChannelDescription,
+      );
+      expect(android.ongoing, isTrue);
+      expect(android.autoCancel, isFalse);
+      expect(android.actions, hasLength(2));
+      expect(android.actions![0].id, workLedgerClockInActionId);
+      expect(android.actions![0].title, '출근하기');
+      expect(android.actions![0].showsUserInterface, isFalse);
+      expect(android.actions![0].cancelNotification, isFalse);
+      expect(android.actions![1].id, workLedgerClockOutActionId);
+      expect(android.actions![1].title, '퇴근하기');
+      expect(android.actions![1].showsUserInterface, isFalse);
+      expect(android.actions![1].cancelNotification, isFalse);
+    },
+  );
+
+  test(
+    'builds choose-before-save notification details with UI clock actions',
+    () {
+      final NotificationDetails details =
+          buildWorkLedgerPersistentNotificationDetails(
+            mode: QuickRecordMode.chooseBeforeSave,
+          );
+      final AndroidNotificationDetails android = details.android!;
+
+      expect(android.actions, hasLength(2));
+      expect(android.actions![0].id, workLedgerClockInActionId);
+      expect(android.actions![0].showsUserInterface, isTrue);
+      expect(android.actions![0].cancelNotification, isFalse);
+      expect(android.actions![1].id, workLedgerClockOutActionId);
+      expect(android.actions![1].showsUserInterface, isTrue);
+      expect(android.actions![1].cancelNotification, isFalse);
+    },
+  );
 
   group('buildWorkLedgerPersistentNotificationContent', () {
     test('uses idle body when there is no today record', () {

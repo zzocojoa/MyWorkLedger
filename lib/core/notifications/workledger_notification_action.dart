@@ -1,9 +1,27 @@
+import 'package:flutter/foundation.dart';
+
+import '../../features/work_record/domain/quick_record_settings.dart';
 import '../../features/work_record/domain/work_record_repository.dart';
 
 const String workLedgerClockInActionId = 'workledger_clock_in';
 const String workLedgerClockOutActionId = 'workledger_clock_out';
 
 enum WorkLedgerNotificationAction { openHome, clockIn, clockOut }
+
+final class WorkLedgerNotificationActionController extends ChangeNotifier {
+  WorkLedgerNotificationAction? _pendingAction;
+
+  WorkLedgerNotificationAction? takePendingAction() {
+    final WorkLedgerNotificationAction? action = _pendingAction;
+    _pendingAction = null;
+    return action;
+  }
+
+  void request({required WorkLedgerNotificationAction action}) {
+    _pendingAction = action;
+    notifyListeners();
+  }
+}
 
 final class WorkLedgerNotificationActionException implements Exception {
   const WorkLedgerNotificationActionException(this.message);
@@ -28,6 +46,20 @@ WorkLedgerNotificationAction parseWorkLedgerNotificationAction({
     _ => throw WorkLedgerNotificationActionException(
       'action=parse actionId=$actionId rule=known notification action',
     ),
+  };
+}
+
+bool shouldOpenQuickRecordFromNotification({
+  required WorkLedgerNotificationAction action,
+  required QuickRecordMode mode,
+}) {
+  if (mode == QuickRecordMode.currentTimeOnly) {
+    return false;
+  }
+  return switch (action) {
+    WorkLedgerNotificationAction.openHome => false,
+    WorkLedgerNotificationAction.clockIn => true,
+    WorkLedgerNotificationAction.clockOut => true,
   };
 }
 

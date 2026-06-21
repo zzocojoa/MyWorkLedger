@@ -3,11 +3,13 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'app/workledger_app.dart';
+import 'core/notifications/workledger_notification_action.dart';
 import 'core/notifications/workledger_notification_service.dart';
 import 'core/storage/persistent_key_value_storage.dart';
 import 'features/compensation_reference/data/local_storage_compensation_reference_repository.dart';
 import 'features/leave/data/local_storage_leave_repository.dart';
 import 'features/pricing/data/local_storage_pricing_intent_repository.dart';
+import 'features/work_record/data/local_storage_quick_record_settings_repository.dart';
 import 'features/work_record/data/local_storage_work_record_repository.dart';
 import 'features/work_rule/data/local_storage_work_rule_repository.dart';
 
@@ -40,6 +42,11 @@ Future<void> main() async {
         clock: now,
         idGenerator: () => 'pricing-${now().microsecondsSinceEpoch}',
       );
+  final LocalStorageQuickRecordSettingsRepository
+  quickRecordSettingsRepository = LocalStorageQuickRecordSettingsRepository(
+    storage: storage,
+    clock: now,
+  );
   final LocalStorageWorkRuleRepository workRuleRepository =
       LocalStorageWorkRuleRepository(
         storage: storage,
@@ -53,14 +60,23 @@ Future<void> main() async {
     idGenerator: () => 'compensation-reference-${now().microsecondsSinceEpoch}',
   );
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  final WorkLedgerNotificationActionController notificationActionController =
+      WorkLedgerNotificationActionController();
   final WorkLedgerNotificationService notificationService =
       WorkLedgerNotificationService(
         plugin: FlutterLocalNotificationsPlugin(),
         repository: repository,
+        quickRecordSettingsRepository: quickRecordSettingsRepository,
         openHome: () {
           navigatorKey.currentState?.popUntil((Route<dynamic> route) {
             return route.isFirst;
           });
+        },
+        openQuickRecord: (WorkLedgerNotificationAction action) {
+          navigatorKey.currentState?.popUntil((Route<dynamic> route) {
+            return route.isFirst;
+          });
+          notificationActionController.request(action: action);
         },
       );
   await notificationService.initialize();
@@ -68,11 +84,13 @@ Future<void> main() async {
   runApp(
     WorkLedgerApp(
       workRecordRepository: repository,
+      quickRecordSettingsRepository: quickRecordSettingsRepository,
       leaveRepository: leaveRepository,
       workRuleRepository: workRuleRepository,
       compensationReferenceRepository: compensationReferenceRepository,
       pricingIntentRepository: pricingIntentRepository,
       configureNotifications: notificationService.initialize,
+      notificationActionController: notificationActionController,
       now: now,
       navigatorKey: navigatorKey,
     ),

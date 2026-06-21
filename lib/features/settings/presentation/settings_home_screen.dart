@@ -5,6 +5,7 @@ import '../../../core/theme/workledger_design_tokens.dart';
 import '../../compensation_reference/domain/compensation_reference_repository.dart';
 import '../../leave/domain/leave_repository.dart';
 import '../../leave/presentation/leave_balance_settings_screen.dart';
+import '../../work_record/domain/quick_record_settings_repository.dart';
 import '../../work_rule/domain/work_rule_repository.dart';
 import 'notification_settings_screen.dart';
 import 'work_settings_screen.dart';
@@ -12,6 +13,7 @@ import 'work_settings_screen.dart';
 final class SettingsHomeScreen extends StatelessWidget {
   const SettingsHomeScreen({
     required this.workRuleRepository,
+    required this.quickRecordSettingsRepository,
     required this.compensationReferenceRepository,
     required this.leaveRepository,
     required this.configureNotifications,
@@ -20,6 +22,7 @@ final class SettingsHomeScreen extends StatelessWidget {
   });
 
   final WorkRuleRepository workRuleRepository;
+  final QuickRecordSettingsRepository quickRecordSettingsRepository;
   final CompensationReferenceRepository compensationReferenceRepository;
   final LeaveRepository leaveRepository;
   final ConfigureWorkLedgerNotifications configureNotifications;
@@ -70,7 +73,9 @@ final class SettingsHomeScreen extends StatelessWidget {
       MaterialPageRoute<bool>(
         builder: (BuildContext context) => WorkSettingsScreen(
           workRuleRepository: workRuleRepository,
+          quickRecordSettingsRepository: quickRecordSettingsRepository,
           compensationReferenceRepository: compensationReferenceRepository,
+          configureNotifications: configureNotifications,
           targetMonth: DateTime(currentMonth.year, currentMonth.month),
         ),
       ),

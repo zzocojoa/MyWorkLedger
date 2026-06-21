@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:workledger/core/notifications/workledger_notification_action.dart';
 import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
@@ -15,6 +16,8 @@ import 'package:workledger/features/monthly_summary/presentation/monthly_summary
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
 import 'package:workledger/features/settings/presentation/settings_home_screen.dart';
 import 'package:workledger/features/settings/presentation/work_settings_screen.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings_repository.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_calendar_screen.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
@@ -44,9 +47,404 @@ void main() {
     await tester.pump();
 
     expect(repository.clockInCallCount, 1);
+    expect(repository.clockInAtCallCount, 0);
     expect(find.text('근무 중'), findsOneWidget);
     expect(find.text('출근 09:00'), findsOneWidget);
   });
+
+  testWidgets('saves selected regular clock-in time in choose mode', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 37);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('출근 시각 선택'), findsOneWidget);
+    expect(find.text('현재 시각 09:37'), findsOneWidget);
+    expect(find.text('정시 출근 09:00'), findsOneWidget);
+    expect(find.text('직접 입력'), findsOneWidget);
+
+    await tester.tap(find.text('정시 출근 09:00'));
+    await tester.pumpAndSettle();
+
+    expect(repository.clockInCallCount, 0);
+    expect(repository.clockInAtCallCount, 1);
+    expect(repository.lastClockInAt, DateTime(2026, 6, 12, 9));
+    expect(find.text('출근 09:00'), findsOneWidget);
+  });
+
+  testWidgets('saves selected current clock-in time in choose mode', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 9, 37);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: null,
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('출근하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('현재 시각 09:37'));
+    await tester.pumpAndSettle();
+
+    expect(repository.clockInCallCount, 0);
+    expect(repository.clockInAtCallCount, 1);
+    expect(repository.lastClockInAt, DateTime(2026, 6, 12, 9, 37));
+    expect(find.text('출근 09:37'), findsOneWidget);
+  });
+
+  testWidgets('saves selected regular clock-out time in choose mode', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 18, 45);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9),
+        clockOutAt: null,
+        now: DateTime(2026, 6, 12, 9),
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('퇴근하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('정시 퇴근 18:00'));
+    await tester.pumpAndSettle();
+
+    expect(repository.clockOutCallCount, 0);
+    expect(repository.clockOutAtCallCount, 1);
+    expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 18));
+    expect(find.text('09:00 - 18:00'), findsOneWidget);
+  });
+
+  testWidgets('saves selected manual clock-out time in choose mode', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 18, 45);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9),
+        clockOutAt: null,
+        now: DateTime(2026, 6, 12, 9),
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('퇴근하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('직접 입력'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '19:10');
+    await tester.tap(find.widgetWithText(FilledButton, '저장'));
+    await tester.pumpAndSettle();
+
+    expect(repository.clockOutCallCount, 0);
+    expect(repository.clockOutAtCallCount, 1);
+    expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 19, 10));
+    expect(find.text('09:00 - 19:10'), findsOneWidget);
+  });
+
+  testWidgets(
+    'opens clock-in selector from notification action in choose mode before saving',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 9, 37);
+      final WorkLedgerNotificationActionController
+      notificationActionController = WorkLedgerNotificationActionController();
+      int configureNotificationsCallCount = 0;
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: null,
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+            settings: QuickRecordSettings(
+              mode: QuickRecordMode.chooseBeforeSave,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+          notificationActionController: notificationActionController,
+          configureNotifications: () async {
+            configureNotificationsCallCount += 1;
+            return const WorkLedgerNotificationSetupResult(
+              permissionGranted: true,
+              notificationShown: true,
+            );
+          },
+          now: now,
+        ),
+      );
+      await tester.pump();
+
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockIn,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('출근 시각 선택'), findsOneWidget);
+      expect(find.text('현재 시각 09:37'), findsOneWidget);
+      expect(find.text('정시 출근 09:00'), findsOneWidget);
+      expect(find.text('직접 입력'), findsOneWidget);
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockInAtCallCount, 0);
+      expect(repository.clockOutAtCallCount, 0);
+
+      await tester.tap(find.text('정시 출근 09:00'));
+      await tester.pumpAndSettle();
+
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockInAtCallCount, 1);
+      expect(repository.lastClockInAt, DateTime(2026, 6, 12, 9));
+      expect(configureNotificationsCallCount, 1);
+      expect(find.text('출근 09:00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'opens clock-in selector from pending notification action after cold start',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 9, 37);
+      final WorkLedgerNotificationActionController
+      notificationActionController = WorkLedgerNotificationActionController();
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockIn,
+      );
+      int configureNotificationsCallCount = 0;
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: null,
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+            settings: QuickRecordSettings(
+              mode: QuickRecordMode.chooseBeforeSave,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+          notificationActionController: notificationActionController,
+          configureNotifications: () async {
+            configureNotificationsCallCount += 1;
+            return const WorkLedgerNotificationSetupResult(
+              permissionGranted: true,
+              notificationShown: true,
+            );
+          },
+          now: now,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('출근 시각 선택'), findsOneWidget);
+      expect(find.text('현재 시각 09:37'), findsOneWidget);
+      expect(find.text('정시 출근 09:00'), findsOneWidget);
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockInAtCallCount, 0);
+      expect(repository.clockOutAtCallCount, 0);
+
+      await tester.tap(find.text('정시 출근 09:00'));
+      await tester.pumpAndSettle();
+
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockInAtCallCount, 1);
+      expect(repository.lastClockInAt, DateTime(2026, 6, 12, 9));
+      expect(configureNotificationsCallCount, 1);
+      expect(find.text('출근 09:00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'opens clock-out selector from notification action in choose mode before saving',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 18, 45);
+      final WorkLedgerNotificationActionController
+      notificationActionController = WorkLedgerNotificationActionController();
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: _workRecord(
+          clockInAt: DateTime(2026, 6, 12, 9),
+          clockOutAt: null,
+          now: DateTime(2026, 6, 12, 9),
+        ),
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+            settings: QuickRecordSettings(
+              mode: QuickRecordMode.chooseBeforeSave,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+          notificationActionController: notificationActionController,
+          now: now,
+        ),
+      );
+      await tester.pump();
+
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockOut,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('퇴근 시각 선택'), findsOneWidget);
+      expect(find.text('현재 시각 18:45'), findsOneWidget);
+      expect(find.text('정시 퇴근 18:00'), findsOneWidget);
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockOutAtCallCount, 0);
+
+      await tester.tap(find.text('정시 퇴근 18:00'));
+      await tester.pumpAndSettle();
+
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockOutAtCallCount, 1);
+      expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 18));
+      expect(find.text('09:00 - 18:00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'opens clock-out selector from pending notification action after cold start',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 18, 45);
+      final WorkLedgerNotificationActionController
+      notificationActionController = WorkLedgerNotificationActionController();
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockOut,
+      );
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: _workRecord(
+          clockInAt: DateTime(2026, 6, 12, 9),
+          clockOutAt: null,
+          now: DateTime(2026, 6, 12, 9),
+        ),
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+            settings: QuickRecordSettings(
+              mode: QuickRecordMode.chooseBeforeSave,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+          notificationActionController: notificationActionController,
+          now: now,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('퇴근 시각 선택'), findsOneWidget);
+      expect(find.text('현재 시각 18:45'), findsOneWidget);
+      expect(find.text('정시 퇴근 18:00'), findsOneWidget);
+      expect(repository.clockInCallCount, 0);
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockInAtCallCount, 0);
+      expect(repository.clockOutAtCallCount, 0);
+
+      await tester.tap(find.text('정시 퇴근 18:00'));
+      await tester.pumpAndSettle();
+
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockOutAtCallCount, 1);
+      expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 18));
+      expect(find.text('09:00 - 18:00'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows notification refresh failure after clock-in', (
     WidgetTester tester,
@@ -107,6 +505,7 @@ void main() {
     await tester.pump();
 
     expect(repository.clockOutCallCount, 1);
+    expect(repository.clockOutAtCallCount, 0);
     expect(find.text('오늘 기록 완료'), findsOneWidget);
     expect(find.text('09:03 - 12:45'), findsOneWidget);
     expect(find.text('총 3시간 42분'), findsOneWidget);
@@ -511,54 +910,59 @@ void main() {
     expect(find.text('기준 연도'), findsOneWidget);
   });
 
-  testWidgets('refreshes remaining leave after adding usage from leave management', (
-    WidgetTester tester,
-  ) async {
-    final DateTime now = DateTime(2026, 6, 12, 9, 0);
-    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
-      initialRecord: null,
-      monthlyRecords: <WorkRecord>[],
-      now: () => now,
-    );
-    final _FakeLeaveRepository leaveRepository = _FakeLeaveRepository(
-      balance: _leaveBalance(year: 2026, totalLeaveMinutes: 15 * 480, now: now),
-      usages: <LeaveUsage>[],
-    );
+  testWidgets(
+    'refreshes remaining leave after adding usage from leave management',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 9, 0);
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: null,
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+      final _FakeLeaveRepository leaveRepository = _FakeLeaveRepository(
+        balance: _leaveBalance(
+          year: 2026,
+          totalLeaveMinutes: 15 * 480,
+          now: now,
+        ),
+        usages: <LeaveUsage>[],
+      );
 
-    await tester.pumpWidget(
-      _buildScreen(
-        repository: repository,
-        leaveRepository: leaveRepository,
-        now: now,
-      ),
-    );
-    await tester.pump();
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          leaveRepository: leaveRepository,
+          now: now,
+        ),
+      );
+      await tester.pump();
 
-    expect(find.text('남은 연차'), findsOneWidget);
-    expect(find.text('15일'), findsOneWidget);
+      expect(find.text('남은 연차'), findsOneWidget);
+      expect(find.text('15일'), findsOneWidget);
 
-    await tester.tap(find.text('연차 관리'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('연차 관리'));
+      await tester.pumpAndSettle();
 
-    await tester.enterText(
-      find.byKey(const Key('usageDateField')),
-      '2026-06-10',
-    );
-    await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
-    await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
-    await _tapAddUsageButton(tester);
-    await tester.pump();
-    await tester.pump();
+      await tester.enterText(
+        find.byKey(const Key('usageDateField')),
+        '2026-06-10',
+      );
+      await tester.enterText(find.byKey(const Key('usageDaysField')), '1');
+      await tester.enterText(find.byKey(const Key('usageHoursField')), '0');
+      await _tapAddUsageButton(tester);
+      await tester.pump();
+      await tester.pump();
 
-    expect(find.text('14일'), findsOneWidget);
+      expect(find.text('14일'), findsOneWidget);
 
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
 
-    expect(find.byType(WorkRecordHomeScreen), findsOneWidget);
-    expect(find.text('14일'), findsOneWidget);
-    expect(find.text('15일'), findsNothing);
-  });
+      expect(find.byType(WorkRecordHomeScreen), findsOneWidget);
+      expect(find.text('14일'), findsOneWidget);
+      expect(find.text('15일'), findsNothing);
+    },
+  );
 }
 
 Widget _buildScreen({
@@ -566,6 +970,8 @@ Widget _buildScreen({
   required DateTime now,
   _FakeLeaveRepository? leaveRepository,
   _FakeWorkRuleRepository? workRuleRepository,
+  _FakeQuickRecordSettingsRepository? quickRecordSettingsRepository,
+  WorkLedgerNotificationActionController? notificationActionController,
   Future<WorkLedgerNotificationSetupResult> Function()? configureNotifications,
 }) {
   final _FakeLeaveRepository resolvedLeaveRepository =
@@ -579,6 +985,9 @@ Widget _buildScreen({
     supportedLocales: AppLocalizations.supportedLocales,
     home: WorkRecordHomeScreen(
       repository: repository,
+      quickRecordSettingsRepository:
+          quickRecordSettingsRepository ??
+          _FakeQuickRecordSettingsRepository(settings: null),
       leaveRepository: resolvedLeaveRepository,
       workRuleRepository: resolvedWorkRuleRepository,
       compensationReferenceRepository:
@@ -592,6 +1001,9 @@ Widget _buildScreen({
               notificationShown: true,
             );
           },
+      notificationActionController:
+          notificationActionController ??
+          WorkLedgerNotificationActionController(),
       now: () => now,
     ),
   );
@@ -672,6 +1084,29 @@ WorkRule _workRule() {
   );
 }
 
+final class _FakeQuickRecordSettingsRepository
+    implements QuickRecordSettingsRepository {
+  _FakeQuickRecordSettingsRepository({required this.settings});
+
+  final QuickRecordSettings? settings;
+  QuickRecordMode? savedMode;
+
+  @override
+  Future<QuickRecordSettings?> findActive() async {
+    return settings;
+  }
+
+  @override
+  Future<QuickRecordSettings> save({required QuickRecordMode mode}) async {
+    savedMode = mode;
+    return QuickRecordSettings(
+      mode: mode,
+      createdAt: DateTime(2026, 6, 12, 9),
+      updatedAt: DateTime(2026, 6, 12, 9),
+    );
+  }
+}
+
 final class _FakeWorkRecordRepository implements WorkRecordRepository {
   _FakeWorkRecordRepository({
     required WorkRecord? initialRecord,
@@ -684,11 +1119,15 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
   final DateTime Function() now;
   int clockInCallCount = 0;
   int clockOutCallCount = 0;
+  int clockInAtCallCount = 0;
+  int clockOutAtCallCount = 0;
   int updateTodayCallCount = 0;
   int upsertByDateCallCount = 0;
   int deleteTodayCallCount = 0;
   int deleteByDateCallCount = 0;
   WorkRecordRepositoryException? clockInError;
+  DateTime? lastClockInAt;
+  DateTime? lastClockOutAt;
 
   @override
   Future<WorkRecord?> findToday() async {
@@ -766,6 +1205,46 @@ final class _FakeWorkRecordRepository implements WorkRecordRepository {
       memo: record.memo,
       createdAt: record.createdAt,
       updatedAt: value,
+    );
+    return _record!;
+  }
+
+  @override
+  Future<WorkRecord> clockInAt({required DateTime clockInAt}) async {
+    clockInAtCallCount += 1;
+    lastClockInAt = clockInAt;
+    _record = WorkRecord(
+      id: 'record-1',
+      workDate: DateTime(clockInAt.year, clockInAt.month, clockInAt.day),
+      clockInAt: clockInAt,
+      clockOutAt: null,
+      tags: <WorkRecordTag>[],
+      memo: null,
+      createdAt: now(),
+      updatedAt: now(),
+    );
+    return _record!;
+  }
+
+  @override
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt}) async {
+    clockOutAtCallCount += 1;
+    lastClockOutAt = clockOutAt;
+    final WorkRecord? record = _record;
+    if (record == null) {
+      throw const WorkRecordRepositoryException(
+        'action=clockOutAt rule=missing record',
+      );
+    }
+    _record = record.copyWith(
+      id: record.id,
+      workDate: record.workDate,
+      clockInAt: record.clockInAt,
+      clockOutAt: clockOutAt,
+      tags: record.tags,
+      memo: record.memo,
+      createdAt: record.createdAt,
+      updatedAt: now(),
     );
     return _record!;
   }

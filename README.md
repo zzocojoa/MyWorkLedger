@@ -2,6 +2,23 @@
 
 내근무장부 Android MVP입니다.
 
+## Current MVP Capabilities
+
+- Record clock-in and clock-out locally without an account.
+- Use the persistent Android notification to clock in and clock out quickly.
+- Choose how quick work records are saved: current time immediately, or select the time before saving.
+- Pick current time, regular work-rule time, or direct `HH:mm` input in choose-before-save mode.
+- Track leave manually and review monthly work summaries.
+
+## Project Documents
+
+- [MVP plan](docs/archive/2026-06/workledger-mvp/workledger-mvp.plan.md)
+- [Quick record mode plan](docs/01-plan/features/work-record-quick-record-mode.plan.md)
+- [Quick record mode design](docs/02-design/features/work-record-quick-record-mode.design.md)
+- [Quick record mode report](docs/04-report/work-record-quick-record-mode.report.md)
+- [Changelog](CHANGELOG.md)
+- [TODOs](TODOS.md)
+
 ## Development
 
 Flutter SDK is expected at:

@@ -92,7 +92,7 @@ final class _NotificationSettingsScreenState
                       ),
                       const SizedBox(height: workLedgerSpacingExtraSmall),
                       Text(
-                        '알림에서 출근하기와 퇴근하기를 바로 실행합니다.',
+                        workLedgerNotificationImmediateActionDescription,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: workLedgerColorMuted,
                           letterSpacing: 0,

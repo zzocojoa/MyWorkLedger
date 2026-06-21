@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/app/workledger_app.dart';
+import 'package:workledger/core/notifications/workledger_notification_action.dart';
 import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/leave_balance.dart';
@@ -11,6 +12,8 @@ import 'package:workledger/core/models/work_rule.dart';
 import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/leave/domain/leave_repository.dart';
 import 'package:workledger/features/pricing/domain/pricing_intent_repository.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings_repository.dart';
 import 'package:workledger/features/work_record/presentation/work_record_home_screen.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
@@ -21,6 +24,8 @@ void main() {
     await tester.pumpWidget(
       WorkLedgerApp(
         workRecordRepository: _WidgetTestWorkRecordRepository(),
+        quickRecordSettingsRepository:
+            _WidgetTestQuickRecordSettingsRepository(),
         leaveRepository: _WidgetTestLeaveRepository(),
         workRuleRepository: _WidgetTestWorkRuleRepository(),
         compensationReferenceRepository:
@@ -32,6 +37,7 @@ void main() {
             notificationShown: true,
           );
         },
+        notificationActionController: WorkLedgerNotificationActionController(),
         now: () => DateTime(2026, 6, 12, 9, 0),
         navigatorKey: GlobalKey<NavigatorState>(),
       ),
@@ -53,6 +59,21 @@ void main() {
     );
     expect(AppLocalizations.supportedLocales, contains(const Locale('en')));
   });
+}
+
+final class _WidgetTestQuickRecordSettingsRepository
+    implements QuickRecordSettingsRepository {
+  @override
+  Future<QuickRecordSettings?> findActive() async {
+    return null;
+  }
+
+  @override
+  Future<QuickRecordSettings> save({required QuickRecordMode mode}) async {
+    throw const QuickRecordSettingsRepositoryException(
+      'test=widget action=saveQuickRecordSettings',
+    );
+  }
 }
 
 final class _WidgetTestLeaveRepository implements LeaveRepository {
@@ -177,6 +198,16 @@ final class _WidgetTestWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<WorkRecord> clockOut() async {
     throw const WorkRecordRepositoryException('test=widget action=clockOut');
+  }
+
+  @override
+  Future<WorkRecord> clockInAt({required DateTime clockInAt}) async {
+    throw const WorkRecordRepositoryException('test=widget action=clockInAt');
+  }
+
+  @override
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt}) async {
+    throw const WorkRecordRepositoryException('test=widget action=clockOutAt');
   }
 
   @override
