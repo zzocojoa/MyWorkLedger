@@ -27,6 +27,23 @@
 | Closed-test release artifact | Existing `1.0.2+3` bundle if Play Console allows reuse | Not confirmed |
 | Review submission | Explicit approval to send closed-test release to Google | Not approved |
 
+## Official Requirements Snapshot
+
+Checked against Google Play Help on 2026-06-22.
+
+| Requirement | Current interpretation |
+|---|---|
+| Closed test before production access | New personal developer accounts must run a closed test that meets Google's criteria before applying for production access |
+| Tester count and duration | At least 12 testers must be opted in to the closed test for the last 14 continuous days when applying for production access |
+| Tester opt-in | Each tester must use the opt-in link; if using a Google Group, testers must join the group before opting in |
+| Opt-in link availability | The opt-in link appears only after the app is published for the test track, not while the app remains draft or pending publication |
+| Feedback channel | Google recommends providing a feedback channel such as email, website, or message forum because testers cannot leave public Play reviews for test versions |
+
+Official references:
+
+- `https://support.google.com/googleplay/android-developer/answer/14151465`
+- `https://support.google.com/googleplay/android-developer/answer/9845334`
+
 ## Tester Collection Checklist
 
 Use a local-only sheet or document outside the repository for tester emails.
