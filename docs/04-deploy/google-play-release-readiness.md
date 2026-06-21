@@ -69,13 +69,15 @@
 |---|---|---|
 | Service account authentication | PASS | `reviews.list` returned HTTP 200 with `reviews_count=0` |
 | Store listing update | PASS | `edits.listings.update` accepted `ko-KR` listing fields |
-| App icon upload | PASS | `edits.images.upload` accepted `appIcon` |
+| App icon upload | PASS | `edits.images.upload` accepted `icon` |
 | Feature graphic upload | PASS | `edits.images.upload` accepted `featureGraphic` |
 | Phone screenshots upload | PASS | `edits.images.upload` accepted five `phoneScreenshots` |
 | AAB upload | PASS | `edits.bundles.upload` accepted `versionCode=3` |
 | Internal track update | PASS | `edits.tracks.update` accepted `versionCode=3` on `internal` |
 | Edit validate | FAIL | `edits.validate` returned HTTP 403 `The caller does not have permission` |
 | Edit commit | FAIL | `edits.commit` returned HTTP 403 `The caller does not have permission` |
+
+Latest retry on 2026-06-22 used edit `12012481448460999871`. Listing update, `icon`, `featureGraphic`, five `phoneScreenshots`, AAB `versionCode=3`, and internal track update all returned HTTP 200. `edits.validate` still returned HTTP 403 `The caller does not have permission`, so the edit was not committed.
 
 ## Play Console Screen Check
 

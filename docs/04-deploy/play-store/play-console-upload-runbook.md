@@ -58,6 +58,8 @@ The Android Publisher API edit reached these states on 2026-06-22:
 | Edit validate | FAIL, HTTP 403 `The caller does not have permission` |
 | Edit commit | FAIL, HTTP 403 `The caller does not have permission` |
 
+Latest API retry used edit `12012481448460999871`. Use image type `icon` for the Play app icon; `appIcon` is rejected by the Android Publisher API.
+
 To continue in Play Console, either commit the prepared edit from a user account with release permission or grant the service account enough Google Play Console permission to validate and commit edits. Production review submission is still separate and must not be done without explicit user approval.
 
 ## PASS Criteria
