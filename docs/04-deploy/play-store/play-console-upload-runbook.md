@@ -50,6 +50,8 @@
 
 The internal testing release is already committed, installed, and smoke-tested. Production access is still blocked by the separate closed-testing checklist on the Play Console dashboard.
 
+Use `docs/04-deploy/play-store/closed-testing-prep.md` to collect the decisions needed before changing Play Console state.
+
 Current verified state on 2026-06-22:
 
 | Item | State |
