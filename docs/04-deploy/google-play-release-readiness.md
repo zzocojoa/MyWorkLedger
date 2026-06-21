@@ -52,14 +52,14 @@
 | App access | NOT RUN | App does not require login in current build, but Play Console declaration is not verified |
 | Content rating | NOT RUN | Play Console questionnaire required |
 | Target audience | NOT RUN | Play Console questionnaire required |
-| Store listing console entry | PARTIAL | Listing text and image uploads were accepted by Android Publisher API in an uncommitted edit |
+| Store listing console entry | PASS | Listing text and image uploads were committed through Android Publisher API |
 | Store listing text draft | PASS | `docs/04-deploy/play-store/store-listing.md` prepared |
 | Store screenshots | PASS | Five phone screenshots prepared in `docs/04-deploy/play-store/screenshots/phone-upload/` |
 | Feature graphic | PASS | `assets/brand/google-play/workledger-feature-graphic-1024x500.jpg`, 1024x500, no alpha |
-| Internal test track upload | PARTIAL | `versionCode=3` AAB upload and internal track update succeeded through API, but edit commit failed |
+| Internal test track upload | PASS | `versionCode=3` AAB upload, internal track update, edit validation, and edit commit succeeded through API |
 | Upload warnings | PASS | `versionCode=2` was already used; rebuilt and uploaded `versionCode=3` successfully |
 | Version code duplicate check | PASS | `versionCode=3` upload accepted |
-| Internal test release notes | PARTIAL | Release notes were included in API internal track update, but edit commit failed |
+| Internal test release notes | PASS | Release notes were included in committed API internal track update |
 | Internal test device QA | NOT RUN | Requires Play internal-test installation |
 | Production submit | NOT RUN | User approval required before production submission |
 
@@ -74,10 +74,14 @@
 | Phone screenshots upload | PASS | `edits.images.upload` accepted five `phoneScreenshots` |
 | AAB upload | PASS | `edits.bundles.upload` accepted `versionCode=3` |
 | Internal track update | PASS | `edits.tracks.update` accepted `versionCode=3` on `internal` |
-| Edit validate | FAIL | `edits.validate` returned HTTP 403 `The caller does not have permission` |
-| Edit commit | FAIL | `edits.commit` returned HTTP 403 `The caller does not have permission` |
+| Edit validate | PASS | Latest retry returned HTTP 200 |
+| Edit commit | PASS | Latest retry returned HTTP 200 |
 
-Latest retry on 2026-06-22 used edit `12012481448460999871`. Listing update, `icon`, `featureGraphic`, five `phoneScreenshots`, AAB `versionCode=3`, and internal track update all returned HTTP 200. `edits.validate` still returned HTTP 403 `The caller does not have permission`, so the edit was not committed.
+Earlier retry on 2026-06-22 used edit `12012481448460999871`. Listing update, `icon`, `featureGraphic`, five `phoneScreenshots`, AAB `versionCode=3`, and internal track update all returned HTTP 200, but `edits.validate` returned HTTP 403 `The caller does not have permission`, so that edit was not committed.
+
+Successful retry on 2026-06-22 used edit `14274543098808648932`. It deleted existing `phoneScreenshots`, uploaded the 5 prepared screenshots, uploaded `icon` and `featureGraphic`, uploaded AAB `versionCode=3`, updated the `internal` track, validated the edit, and committed the edit. All listed steps returned HTTP 200. A previous retry with edit `16891572003971870917` failed validation because the app had more than 8 `ko-KR` screenshots before `phoneScreenshots` was cleared.
+
+Post-commit verification used read-only edit `18396962594213530106`. `edits.tracks.get` for `internal` returned HTTP 200 with release `1.0.2`, status `completed`, and `versionCodes=["3"]`.
 
 ## Permissions API Check
 
@@ -87,7 +91,7 @@ Latest retry on 2026-06-22 used edit `12012481448460999871`. Listing update, `ic
 | Users API permission check | FAIL | `developers/{developer}/users?pageSize=-1` returned HTTP 403 `You do not have permission to access this object` |
 | Self-service permission escalation | NOT AVAILABLE | The current service account cannot inspect or update Play Console users and permissions through the API |
 
-Required Play Console permissions must be granted by an existing owner or admin. For this release workflow, grant enough permissions for store presence, internal testing releases, app content, tester management if tester lists are managed through API, and edit validation/commit.
+The current service account still cannot manage Play Console users and permissions through the API. App-specific release permissions are now sufficient for this internal testing release because edit validation and commit succeeded.
 
 ## Play Console Screen Check
 
@@ -104,7 +108,7 @@ Required Play Console permissions must be granted by an existing owner or admin.
 
 Current status: `PARTIAL`.
 
-Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, and API internal track update are ready. Google Play submission is not ready because the service account can edit but cannot validate or commit the Play edit. The current service account also cannot grant itself more Play Console permissions through the Permissions API. Internal test QA cannot start until a Play Console user with sufficient permission commits the edit or grants the service account the required release permission. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
+Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, and edit commit are ready. Internal test device QA is still not run. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
 
 ## Rollback
 

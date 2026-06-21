@@ -54,11 +54,15 @@ The Android Publisher API edit reached these states on 2026-06-22:
 |---|---|
 | Store listing text and image upload | PASS |
 | AAB upload | PASS, `versionCode=3` |
-| Internal testing track update | PASS, uncommitted edit |
-| Edit validate | FAIL, HTTP 403 `The caller does not have permission` |
-| Edit commit | FAIL, HTTP 403 `The caller does not have permission` |
+| Internal testing track update | PASS |
+| Edit validate | PASS |
+| Edit commit | PASS |
 
-Latest API retry used edit `12012481448460999871`. Use image type `icon` for the Play app icon; `appIcon` is rejected by the Android Publisher API.
+Earlier API retry used edit `12012481448460999871`. Use image type `icon` for the Play app icon; `appIcon` is rejected by the Android Publisher API.
+
+Successful API retry used edit `14274543098808648932`. Before uploading phone screenshots, call `edits.images.deleteall` for `phoneScreenshots`; otherwise validation can fail with more than 8 screenshots for `ko-KR`. The successful retry committed the internal track release for `versionCode=3`.
+
+Post-commit verification used read-only edit `18396962594213530106`. `edits.tracks.get` for `internal` returned release `1.0.2`, status `completed`, and `versionCodes=["3"]`.
 
 Permissions API self-check:
 
@@ -67,7 +71,7 @@ Permissions API self-check:
 | `developers/{developer}/users?pageSize=-1` | FAIL, HTTP 403 `You do not have permission to access this object` |
 | Current service account can grant itself permissions | NO |
 
-To continue in Play Console, either commit the prepared edit from a user account with release permission or grant the service account enough Google Play Console permission to validate and commit edits. Suggested permissions are store presence management, internal testing release management, app content management, and tester management if tester lists will be maintained through API. Production review submission is still separate and must not be done without explicit user approval.
+To continue in Play Console, verify the internal testing release in the console, install the internal test build on a real device, and run smoke QA. Production review submission is still separate and must not be done without explicit user approval.
 
 ## PASS Criteria
 
