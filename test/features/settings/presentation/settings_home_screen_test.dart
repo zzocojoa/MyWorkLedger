@@ -11,6 +11,8 @@ import 'package:workledger/features/leave/presentation/leave_balance_settings_sc
 import 'package:workledger/features/settings/presentation/notification_settings_screen.dart';
 import 'package:workledger/features/settings/presentation/settings_home_screen.dart';
 import 'package:workledger/features/settings/presentation/work_settings_screen.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings_repository.dart';
 import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
 
 void main() {
@@ -33,7 +35,7 @@ void main() {
 
     expect(find.byType(WorkSettingsScreen), findsOneWidget);
     expect(find.text('정시 근무'), findsOneWidget);
-    expect(find.text('포괄임금 시간'), findsOneWidget);
+    expect(find.text('빠른 기록 방식'), findsOneWidget);
   });
 
   testWidgets('opens total leave settings', (WidgetTester tester) async {
@@ -66,6 +68,7 @@ Widget _buildScreen() {
   return MaterialApp(
     home: SettingsHomeScreen(
       workRuleRepository: _FakeWorkRuleRepository(),
+      quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(),
       compensationReferenceRepository: _FakeCompensationReferenceRepository(),
       leaveRepository: _FakeLeaveRepository(),
       configureNotifications: () async {
@@ -77,6 +80,23 @@ Widget _buildScreen() {
       now: () => DateTime(2026, 6, 12, 9),
     ),
   );
+}
+
+final class _FakeQuickRecordSettingsRepository
+    implements QuickRecordSettingsRepository {
+  @override
+  Future<QuickRecordSettings?> findActive() async {
+    return null;
+  }
+
+  @override
+  Future<QuickRecordSettings> save({required QuickRecordMode mode}) async {
+    return QuickRecordSettings(
+      mode: mode,
+      createdAt: DateTime(2026, 6, 12, 9),
+      updatedAt: DateTime(2026, 6, 12, 9),
+    );
+  }
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {

@@ -281,6 +281,16 @@ final class FakeWorkRecordRepository implements WorkRecordRepository {
   }
 
   @override
+  Future<WorkRecord> clockInAt({required DateTime clockInAt}) async {
+    throw const WorkRecordRepositoryException('unexpected clockInAt call');
+  }
+
+  @override
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt}) async {
+    throw const WorkRecordRepositoryException('unexpected clockOutAt call');
+  }
+
+  @override
   Future<WorkRecord> updateToday({
     required DateTime? clockInAt,
     required DateTime? clockOutAt,
@@ -339,6 +349,16 @@ final class ThrowingWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<WorkRecord> clockOut() async {
     throw const WorkRecordRepositoryException('unexpected clockOut call');
+  }
+
+  @override
+  Future<WorkRecord> clockInAt({required DateTime clockInAt}) async {
+    throw const WorkRecordRepositoryException('unexpected clockInAt call');
+  }
+
+  @override
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt}) async {
+    throw const WorkRecordRepositoryException('unexpected clockOutAt call');
   }
 
   @override

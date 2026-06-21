@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/models/compensation_reference_setting.dart';
 import 'package:workledger/core/models/work_rule.dart';
+import 'package:workledger/core/notifications/workledger_notification_service.dart';
 import 'package:workledger/features/compensation_reference/domain/compensation_reference_repository.dart';
 import 'package:workledger/features/settings/presentation/work_settings_screen.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
+import 'package:workledger/features/work_record/domain/quick_record_settings_repository.dart';
 import 'package:workledger/features/work_rule/domain/work_rule_repository.dart';
 
 void main() {
@@ -78,6 +81,61 @@ void main() {
     expect(compensationRepository.savedAfterRegularEndMinutes, 120);
     expect(compensationRepository.savedEffectiveFromMonth, DateTime(2000));
     expect(compensationRepository.savedMemo, isNull);
+  });
+
+  testWidgets('loads and saves quick record mode', (WidgetTester tester) async {
+    _useTallViewport(tester: tester);
+    int configureNotificationsCallCount = 0;
+    final _FakeQuickRecordSettingsRepository quickRecordSettingsRepository =
+        _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: DateTime(2026, 6, 12, 8),
+            updatedAt: DateTime(2026, 6, 12, 8),
+          ),
+          findError: null,
+          saveError: null,
+        );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        workRuleRepository: _FakeWorkRuleRepository(
+          initialRule: null,
+          saveError: null,
+        ),
+        quickRecordSettingsRepository: quickRecordSettingsRepository,
+        compensationRepository: _FakeCompensationReferenceRepository(
+          setting: null,
+          findError: null,
+          saveError: null,
+        ),
+        configureNotifications: () async {
+          configureNotificationsCallCount += 1;
+          return const WorkLedgerNotificationSetupResult(
+            permissionGranted: true,
+            notificationShown: true,
+          );
+        },
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('빠른 기록 방식'), findsOneWidget);
+    expect(find.text('저장 전 시각 선택'), findsOneWidget);
+
+    await tester.tap(
+      _findQuickRecordModeTile(value: QuickRecordMode.currentTimeOnly),
+    );
+    await tester.pump();
+    await _tapSave(tester: tester);
+    await tester.pumpAndSettle();
+
+    expect(
+      quickRecordSettingsRepository.savedMode,
+      QuickRecordMode.currentTimeOnly,
+    );
+    expect(configureNotificationsCallCount, 1);
   });
 
   testWidgets('saves work rule time fields with numeric shorthand', (
@@ -569,25 +627,26 @@ void main() {
       _workSettingsScrollable(),
     );
 
-    await tester.drag(_workSettingsScrollable(), const Offset(0, -360));
+    await tester.scrollUntilVisible(
+      _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
+      180,
+      scrollable: _workSettingsScrollable(),
+      maxScrolls: 20,
+    );
     await tester.pump();
 
     final double positionBeforeTextFieldDrag = scrollableState.position.pixels;
-    expect(
-      positionBeforeTextFieldDrag,
-      lessThan(scrollableState.position.maxScrollExtent),
-    );
+    expect(positionBeforeTextFieldDrag, greaterThan(0));
     await tester.drag(
       _findTextFieldByLabel(label: '정시 이후 고정 포함 시간(분)'),
-      const Offset(0, -360),
+      const Offset(0, 360),
     );
     await tester.pump();
 
     expect(
       scrollableState.position.pixels,
-      greaterThan(positionBeforeTextFieldDrag),
+      lessThan(positionBeforeTextFieldDrag),
     );
-    expect(find.text('고급 설정'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -894,7 +953,9 @@ void main() {
 
 Widget _buildScreen({
   required _FakeWorkRuleRepository workRuleRepository,
+  _FakeQuickRecordSettingsRepository? quickRecordSettingsRepository,
   required _FakeCompensationReferenceRepository compensationRepository,
+  Future<WorkLedgerNotificationSetupResult> Function()? configureNotifications,
 }) {
   return MaterialApp(
     theme: ThemeData(
@@ -904,7 +965,22 @@ Widget _buildScreen({
     ),
     home: WorkSettingsScreen(
       workRuleRepository: workRuleRepository,
+      quickRecordSettingsRepository:
+          quickRecordSettingsRepository ??
+          _FakeQuickRecordSettingsRepository(
+            settings: null,
+            findError: null,
+            saveError: null,
+          ),
       compensationReferenceRepository: compensationRepository,
+      configureNotifications:
+          configureNotifications ??
+          () async {
+            return const WorkLedgerNotificationSetupResult(
+              permissionGranted: true,
+              notificationShown: true,
+            );
+          },
       targetMonth: DateTime(2026, 6, 12),
     ),
   );
@@ -931,6 +1007,12 @@ Finder _findModeTile({required CompensationReferenceMode value}) {
   return find.byWidgetPredicate((Widget widget) {
     return widget is RadioListTile<CompensationReferenceMode> &&
         widget.value == value;
+  });
+}
+
+Finder _findQuickRecordModeTile({required QuickRecordMode value}) {
+  return find.byWidgetPredicate((Widget widget) {
+    return widget is RadioListTile<QuickRecordMode> && widget.value == value;
   });
 }
 
@@ -964,6 +1046,43 @@ void _useTallViewport({required WidgetTester tester}) {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+final class _FakeQuickRecordSettingsRepository
+    implements QuickRecordSettingsRepository {
+  _FakeQuickRecordSettingsRepository({
+    required this.settings,
+    required this.findError,
+    required this.saveError,
+  });
+
+  final QuickRecordSettings? settings;
+  final QuickRecordSettingsRepositoryException? findError;
+  final QuickRecordSettingsRepositoryException? saveError;
+  QuickRecordMode? savedMode;
+
+  @override
+  Future<QuickRecordSettings?> findActive() async {
+    final QuickRecordSettingsRepositoryException? error = findError;
+    if (error != null) {
+      throw error;
+    }
+    return settings;
+  }
+
+  @override
+  Future<QuickRecordSettings> save({required QuickRecordMode mode}) async {
+    final QuickRecordSettingsRepositoryException? error = saveError;
+    if (error != null) {
+      throw error;
+    }
+    savedMode = mode;
+    return QuickRecordSettings(
+      mode: mode,
+      createdAt: DateTime(2026, 6, 12, 9),
+      updatedAt: DateTime(2026, 6, 12, 9),
+    );
+  }
 }
 
 final class _FakeWorkRuleRepository implements WorkRuleRepository {

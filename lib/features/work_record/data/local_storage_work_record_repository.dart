@@ -53,11 +53,31 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<WorkRecord> clockIn() async {
     final DateTime now = clock();
-    final DateTime today = _dateOnly(now);
+    return _clockInAt(action: 'clockIn', clockInAt: now, savedAt: now);
+  }
+
+  @override
+  Future<WorkRecord> clockInAt({required DateTime clockInAt}) async {
+    final DateTime now = clock();
+    return _clockInAt(action: 'clockInAt', clockInAt: clockInAt, savedAt: now);
+  }
+
+  Future<WorkRecord> _clockInAt({
+    required String action,
+    required DateTime clockInAt,
+    required DateTime savedAt,
+  }) async {
+    final DateTime today = _dateOnly(savedAt);
+    _validateRecordTimesForDate(
+      action: action,
+      workDate: today,
+      clockInAt: clockInAt,
+      clockOutAt: null,
+    );
     final WorkRecord? existingRecord = await _readByDate(today);
     if (existingRecord != null && existingRecord.clockInAt != null) {
       throw WorkRecordRepositoryException(
-        'action=clockIn table=$workRecordsTable workDate=${_formatDateOnly(today)} rule=already clocked in',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockInAt=${clockInAt.toIso8601String()} rule=already clocked in',
       );
     }
 
@@ -65,22 +85,22 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
         ? WorkRecord(
             id: idGenerator(),
             workDate: today,
-            clockInAt: now,
+            clockInAt: clockInAt,
             clockOutAt: null,
             tags: <WorkRecordTag>[],
             memo: null,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: savedAt,
+            updatedAt: savedAt,
           )
         : existingRecord.copyWith(
             id: existingRecord.id,
             workDate: existingRecord.workDate,
-            clockInAt: now,
+            clockInAt: clockInAt,
             clockOutAt: existingRecord.clockOutAt,
             tags: existingRecord.tags,
             memo: existingRecord.memo,
             createdAt: existingRecord.createdAt,
-            updatedAt: now,
+            updatedAt: savedAt,
           );
 
     await _write(record);
@@ -90,27 +110,51 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
   @override
   Future<WorkRecord> clockOut() async {
     final DateTime now = clock();
-    final DateTime today = _dateOnly(now);
+    return _clockOutAt(action: 'clockOut', clockOutAt: now, savedAt: now);
+  }
+
+  @override
+  Future<WorkRecord> clockOutAt({required DateTime clockOutAt}) async {
+    final DateTime now = clock();
+    return _clockOutAt(
+      action: 'clockOutAt',
+      clockOutAt: clockOutAt,
+      savedAt: now,
+    );
+  }
+
+  Future<WorkRecord> _clockOutAt({
+    required String action,
+    required DateTime clockOutAt,
+    required DateTime savedAt,
+  }) async {
+    final DateTime today = _dateOnly(savedAt);
+    _validateRecordTimesForDate(
+      action: action,
+      workDate: today,
+      clockInAt: null,
+      clockOutAt: clockOutAt,
+    );
     final WorkRecord? existingRecord = await _readByDate(today);
     if (existingRecord == null) {
       throw WorkRecordRepositoryException(
-        'action=clockOut table=$workRecordsTable workDate=${_formatDateOnly(today)} rule=missing work record',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockOutAt=${clockOutAt.toIso8601String()} rule=missing work record',
       );
     }
     final DateTime? clockInAt = existingRecord.clockInAt;
     if (clockInAt == null) {
       throw WorkRecordRepositoryException(
-        'action=clockOut table=$workRecordsTable workDate=${_formatDateOnly(today)} rule=missing clock-in',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockOutAt=${clockOutAt.toIso8601String()} rule=missing clock-in',
       );
     }
     if (existingRecord.clockOutAt != null) {
       throw WorkRecordRepositoryException(
-        'action=clockOut table=$workRecordsTable workDate=${_formatDateOnly(today)} rule=already clocked out',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockOutAt=${clockOutAt.toIso8601String()} rule=already clocked out',
       );
     }
-    if (now.isBefore(clockInAt)) {
+    if (clockOutAt.isBefore(clockInAt)) {
       throw WorkRecordRepositoryException(
-        'action=clockOut table=$workRecordsTable workDate=${_formatDateOnly(today)} clockInAt=${clockInAt.toIso8601String()} clockOutAt=${now.toIso8601String()} rule=clock-out must be after clock-in',
+        'action=$action table=$workRecordsTable workDate=${_formatDateOnly(today)} clockInAt=${clockInAt.toIso8601String()} clockOutAt=${clockOutAt.toIso8601String()} rule=clock-out must be after clock-in',
       );
     }
 
@@ -118,11 +162,11 @@ final class LocalStorageWorkRecordRepository implements WorkRecordRepository {
       id: existingRecord.id,
       workDate: existingRecord.workDate,
       clockInAt: clockInAt,
-      clockOutAt: now,
+      clockOutAt: clockOutAt,
       tags: existingRecord.tags,
       memo: existingRecord.memo,
       createdAt: existingRecord.createdAt,
-      updatedAt: now,
+      updatedAt: savedAt,
     );
 
     await _write(record);
