@@ -79,6 +79,16 @@
 
 Latest retry on 2026-06-22 used edit `12012481448460999871`. Listing update, `icon`, `featureGraphic`, five `phoneScreenshots`, AAB `versionCode=3`, and internal track update all returned HTTP 200. `edits.validate` still returned HTTP 403 `The caller does not have permission`, so the edit was not committed.
 
+## Permissions API Check
+
+| Step | Status | Evidence |
+|---|---|---|
+| Users API parameter validation | PASS | `developers/{developer}/users` responded and required `pageSize=-1`, proving the endpoint is reachable |
+| Users API permission check | FAIL | `developers/{developer}/users?pageSize=-1` returned HTTP 403 `You do not have permission to access this object` |
+| Self-service permission escalation | NOT AVAILABLE | The current service account cannot inspect or update Play Console users and permissions through the API |
+
+Required Play Console permissions must be granted by an existing owner or admin. For this release workflow, grant enough permissions for store presence, internal testing releases, app content, tester management if tester lists are managed through API, and edit validation/commit.
+
 ## Play Console Screen Check
 
 | Item | Status | Evidence |
@@ -94,7 +104,7 @@ Latest retry on 2026-06-22 used edit `12012481448460999871`. Listing update, `ic
 
 Current status: `PARTIAL`.
 
-Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, and API internal track update are ready. Google Play submission is not ready because the service account can edit but cannot validate or commit the Play edit. Internal test QA cannot start until a Play Console user with sufficient permission commits the edit or the service account receives the required release permission. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
+Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, and API internal track update are ready. Google Play submission is not ready because the service account can edit but cannot validate or commit the Play edit. The current service account also cannot grant itself more Play Console permissions through the Permissions API. Internal test QA cannot start until a Play Console user with sufficient permission commits the edit or grants the service account the required release permission. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement.
 
 ## Rollback
 
