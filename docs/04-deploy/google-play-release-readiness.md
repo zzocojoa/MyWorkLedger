@@ -74,9 +74,12 @@ Read-only API verification on 2026-06-22 used edit `04123157826065938820`. The e
 | Korean listing | PASS | `edits.listings.get` returned title `내근무장부`, short description, and full description |
 | Internal track | PASS | `edits.tracks.get` returned release `1.0.2`, status `completed`, `versionCodes=["3"]` |
 | Production track | NOT READY | `edits.tracks.get` returned no production releases |
+| Closed/open legacy testing tracks | NOT READY | `edits.tracks.list` returned no releases on `beta` or `alpha` |
 | App icon | PASS | `edits.images.list` returned 1 `icon` image |
 | Feature graphic | PASS | `edits.images.list` returned 1 `featureGraphic` image |
 | Phone screenshots | PASS | `edits.images.list` returned 5 `phoneScreenshots` images |
+
+Read-only track-list verification on 2026-06-22 used edit `10388814169983200170`. The edit was not committed. `edits.tracks.list` returned `production`, `beta`, and `alpha` with zero releases, and `internal` with one completed `1.0.2` release for `versionCode=3`.
 
 ## Android Publisher API Result
 
