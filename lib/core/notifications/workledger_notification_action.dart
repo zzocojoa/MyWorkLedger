@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 
-import '../../features/work_record/domain/quick_record_settings.dart';
 import '../../features/work_record/domain/work_record_repository.dart';
 
 const String workLedgerClockInActionId = 'workledger_clock_in';
@@ -51,15 +50,11 @@ WorkLedgerNotificationAction parseWorkLedgerNotificationAction({
 
 bool shouldOpenQuickRecordFromNotification({
   required WorkLedgerNotificationAction action,
-  required QuickRecordMode mode,
 }) {
-  if (mode == QuickRecordMode.currentTimeOnly) {
-    return false;
-  }
   return switch (action) {
     WorkLedgerNotificationAction.openHome => false,
-    WorkLedgerNotificationAction.clockIn => true,
-    WorkLedgerNotificationAction.clockOut => true,
+    WorkLedgerNotificationAction.clockIn => false,
+    WorkLedgerNotificationAction.clockOut => false,
   };
 }
 

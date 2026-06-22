@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:workledger/core/models/work_record.dart';
 import 'package:workledger/core/notifications/workledger_notification_action.dart';
-import 'package:workledger/features/work_record/domain/quick_record_settings.dart';
 import 'package:workledger/features/work_record/domain/work_record_repository.dart';
 
 void main() {
@@ -106,42 +105,22 @@ void main() {
   });
 
   group('shouldOpenQuickRecordFromNotification', () {
-    test('keeps clock actions in background for current-time mode', () {
+    test('keeps clock actions in background for notification actions', () {
       expect(
         shouldOpenQuickRecordFromNotification(
           action: WorkLedgerNotificationAction.clockIn,
-          mode: QuickRecordMode.currentTimeOnly,
         ),
         isFalse,
       );
       expect(
         shouldOpenQuickRecordFromNotification(
           action: WorkLedgerNotificationAction.clockOut,
-          mode: QuickRecordMode.currentTimeOnly,
         ),
         isFalse,
-      );
-    });
-
-    test('opens clock actions in UI for choose-before-save mode', () {
-      expect(
-        shouldOpenQuickRecordFromNotification(
-          action: WorkLedgerNotificationAction.clockIn,
-          mode: QuickRecordMode.chooseBeforeSave,
-        ),
-        isTrue,
-      );
-      expect(
-        shouldOpenQuickRecordFromNotification(
-          action: WorkLedgerNotificationAction.clockOut,
-          mode: QuickRecordMode.chooseBeforeSave,
-        ),
-        isTrue,
       );
       expect(
         shouldOpenQuickRecordFromNotification(
           action: WorkLedgerNotificationAction.openHome,
-          mode: QuickRecordMode.chooseBeforeSave,
         ),
         isFalse,
       );

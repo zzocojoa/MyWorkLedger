@@ -2,6 +2,14 @@
 
 All notable changes to WorkLedger are documented in this file.
 
+## [1.0.4] - 2026-06-22
+
+### Fixed
+- Persistent notification clock-in and clock-out actions now save immediately, even when quick records are set to choose-before-save.
+
+### Release
+- Bumped the Google Play internal testing build to `1.0.4+5`.
+
 ## [1.0.3] - 2026-06-22
 
 ### Fixed

@@ -174,10 +174,7 @@ final class WorkLedgerNotificationService {
         openHome();
       case WorkLedgerNotificationAction.clockIn:
       case WorkLedgerNotificationAction.clockOut:
-        final QuickRecordMode mode = await _resolveQuickRecordMode(
-          quickRecordSettingsRepository: quickRecordSettingsRepository,
-        );
-        if (shouldOpenQuickRecordFromNotification(action: action, mode: mode)) {
+        if (shouldOpenQuickRecordFromNotification(action: action)) {
           openQuickRecord(action);
           return;
         }
@@ -194,7 +191,10 @@ final class WorkLedgerNotificationService {
 NotificationDetails buildWorkLedgerPersistentNotificationDetails({
   required QuickRecordMode mode,
 }) {
-  final bool showsUserInterface = mode == QuickRecordMode.chooseBeforeSave;
+  final bool showsUserInterface = switch (mode) {
+    QuickRecordMode.currentTimeOnly => false,
+    QuickRecordMode.chooseBeforeSave => false,
+  };
   return NotificationDetails(
     android: AndroidNotificationDetails(
       workLedgerNotificationChannelId,
@@ -299,10 +299,7 @@ Future<void> workLedgerNotificationBackgroundHandler(
   final WorkLedgerNotificationAction action = parseWorkLedgerNotificationAction(
     actionId: response.actionId,
   );
-  final QuickRecordMode mode = await _resolveQuickRecordMode(
-    quickRecordSettingsRepository: repositories.quickRecordSettingsRepository,
-  );
-  if (shouldOpenQuickRecordFromNotification(action: action, mode: mode)) {
+  if (shouldOpenQuickRecordFromNotification(action: action)) {
     return;
   }
   await handleWorkLedgerNotificationAction(

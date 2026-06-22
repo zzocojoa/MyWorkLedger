@@ -36,7 +36,7 @@ void main() {
   );
 
   test(
-    'builds choose-before-save notification details with UI clock actions',
+    'builds choose-before-save notification details with background clock actions',
     () {
       final NotificationDetails details =
           buildWorkLedgerPersistentNotificationDetails(
@@ -46,10 +46,10 @@ void main() {
 
       expect(android.actions, hasLength(2));
       expect(android.actions![0].id, workLedgerClockInActionId);
-      expect(android.actions![0].showsUserInterface, isTrue);
+      expect(android.actions![0].showsUserInterface, isFalse);
       expect(android.actions![0].cancelNotification, isFalse);
       expect(android.actions![1].id, workLedgerClockOutActionId);
-      expect(android.actions![1].showsUserInterface, isTrue);
+      expect(android.actions![1].showsUserInterface, isFalse);
       expect(android.actions![1].cancelNotification, isFalse);
     },
   );
