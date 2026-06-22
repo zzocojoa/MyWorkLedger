@@ -194,16 +194,16 @@ This closed-testing checklist is separate from the already uploaded Android Publ
 | Home quick record save | PASS | Selecting `현재 시각` saved a working record with `출근 01:45` |
 | Persistent notification shown | PASS | Notification screen returned `상시 알림이 표시되었습니다.` and `dumpsys notification` showed notification id `1001` |
 | Persistent notification actions | PASS | System notification exposed `출근하기` and `퇴근하기` actions |
-| Notification action in choose-before-save mode | PASS | `퇴근하기` notification action opened `퇴근 시각 선택` with `현재 시각`, `정시 퇴근`, and `직접 입력`; selecting current time completed `01:45 - 01:47` |
+| Notification action in choose-before-save mode | PENDING | `1.0.4+5` changes notification actions to save immediately without opening candidate UI; Play-installed real-device smoke must be rerun |
 | Test data cleanup | PASS | The QA-created `01:45 - 01:47` record was deleted through the app; final home state returned to `아직 출근 전` |
 
-Note: the current release intentionally opens the candidate UI from notification actions when quick record mode is `저장 전 시각 선택`. This matches the shipped app copy and `shouldOpenQuickRecordFromNotification` tests. If the older acceptance criterion requires notification actions to save immediately regardless of mode, that criterion is not met by the current release and should be resolved as a product decision before treating that older criterion as binding.
+Note: `1.0.4+5` restores the older acceptance criterion: notification actions save immediately regardless of quick record mode. The previous `1.0.2+3` real-device evidence that opened candidate UI is no longer sufficient for release readiness.
 
 ## Submission Decision
 
 Current status: `PARTIAL`.
 
-Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, edit commit, API readback, Play internal-test install, and internal test device QA are ready. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement and remaining App content forms.
+Local build, signing, SDK, alignment, tests, privacy URL, store listing draft, screenshots, feature graphic, API asset upload, API AAB upload, internal track update, edit validation, edit commit, and API readback are ready. Play-installed `1.0.4+5` device smoke QA remains pending. Production submission still requires explicit user approval and is also blocked by Play Console's closed-testing requirement and remaining App content forms.
 
 ## Rollback
 

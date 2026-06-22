@@ -72,8 +72,8 @@
 | `lib/features/work_record/domain/work_record_repository.dart` | 선택된 시각으로 저장할 수 있는 clock-in/clock-out 계약 확장 |
 | `lib/features/work_record/presentation/work_record_home_screen.dart` | 설정에 따른 후보 선택 UX와 저장 호출 |
 | `lib/features/settings/presentation/work_settings_screen.dart` | 빠른 기록 방식 설정 UI |
-| `lib/core/notifications/workledger_notification_action.dart` | 알림 액션 파싱, 현재 시각 즉시 저장, 선택 UX 요청 컨트롤러 |
-| `lib/core/notifications/workledger_notification_service.dart` | `QuickRecordMode`에 따라 알림 액션을 즉시 저장 또는 앱 선택 UX로 분기 |
+| `lib/core/notifications/workledger_notification_action.dart` | 알림 액션 파싱, 현재 시각 즉시 저장, 앱 내부 선택 UX 요청 컨트롤러 |
+| `lib/core/notifications/workledger_notification_service.dart` | 알림 액션을 `QuickRecordMode`와 무관하게 즉시 저장하고 상시 알림 본문을 갱신 |
 | `lib/main.dart` / `lib/app/workledger_app.dart` | 알림에서 들어온 선택 요청을 홈 화면으로 전달 |
 
 ### 5.2 Dependency Flow
@@ -228,26 +228,25 @@ flowchart TD
 
 ## 10. Persistent Notification UX
 
-상시 알림 출근/퇴근 액션은 `QuickRecordMode`에 따라 분기한다.
+상시 알림 출근/퇴근 액션은 `QuickRecordMode`와 무관하게 즉시 저장한다.
 
 | 설정 | 알림 액션 동작 |
 |---|---|
 | `currentTimeOnly` | 기존처럼 `clockIn()` 또는 `clockOut()`을 호출해 현재 시각으로 즉시 저장한다 |
-| `chooseBeforeSave` | 앱을 열고 홈 화면의 `출근 시각 선택` 또는 `퇴근 시각 선택` 바텀시트를 표시한다 |
+| `chooseBeforeSave` | 기존처럼 `clockIn()` 또는 `clockOut()`을 호출해 현재 시각으로 즉시 저장한다 |
 
 설계 규칙:
 
-- `chooseBeforeSave`에서 알림 액션을 누르면 선택 완료 전에는 `clockIn()`, `clockOut()`, `clockInAt()`, `clockOutAt()`을 호출하지 않는다.
-- 선택 UX는 홈 화면 버튼과 같은 후보 생성 규칙을 사용한다.
-- 사용자가 현재 시각, 정시 후보, 직접 입력 중 하나를 확정하면 선택한 시각으로 `clockInAt()` 또는 `clockOutAt()`을 1회 호출한다.
+- 알림 액션은 Android 알림창에서 앱을 열지 않고 빠르게 저장하는 진입점이다.
+- `chooseBeforeSave`의 후보 선택 UX는 홈 화면 버튼과 앱 내부 컨트롤러 요청에서만 사용한다.
+- 알림 액션은 `clockIn()` 또는 `clockOut()`을 호출하고, 선택 전 저장 보류 상태를 만들지 않는다.
 - 저장 완료 후 오늘 요약과 상시 알림 본문을 갱신한다.
-- `currentTimeOnly`에서는 Android 알림의 빠른 저장 가치를 유지하기 위해 앱 선택 UX를 열지 않는다.
-- `chooseBeforeSave`에서는 Android 알림 액션에 `showsUserInterface: true`를 적용해 앱 전환 의도를 명시한다.
+- Android 알림의 빠른 저장 가치를 유지하기 위해 `showsUserInterface: false`를 적용한다.
 
 알림 설정 화면에는 다음 의미가 드러나야 한다.
 
-- 현재 시각만 저장 방식에서는 상시 알림의 `출근하기`와 `퇴근하기`가 현재 시각으로 바로 저장된다.
-- 저장 전 시각 선택 방식에서는 상시 알림의 `출근하기`와 `퇴근하기`도 앱을 열어 시각을 고른 뒤 저장한다.
+- 상시 알림의 `출근하기`와 `퇴근하기`는 빠른 기록 방식 설정과 무관하게 현재 시각으로 바로 저장된다.
+- 저장 전 시각 선택 방식은 앱 내부 홈 화면 기록에서만 후보 시각을 고른 뒤 저장한다.
 - 알림 권한이 없어도 앱 내부 홈 화면 기록은 계속 가능하다.
 
 ## 11. Settings UX Design
@@ -265,7 +264,7 @@ flowchart TD
 | 옵션 | 설명 |
 |---|---|
 | 현재 시각만 저장 | 출근/퇴근 버튼을 누른 현재 시각을 바로 저장 |
-| 저장 전 시각 선택 | 홈 화면과 상시 알림 기록 전에 현재 시각, 정시 후보, 직접 입력 중 선택 |
+| 저장 전 시각 선택 | 홈 화면 기록 전에 현재 시각, 정시 후보, 직접 입력 중 선택 |
 
 주의 문구:
 
@@ -331,9 +330,9 @@ flowchart TD
 | `WorkRecordHomeScreen` | 정시 후보 선택 시 `clockInAt` 또는 `clockOutAt` 호출 |
 | `WorkRecordHomeScreen` | 포괄임금 포함 퇴근 후보 선택 시 `clockOutAt`에 포괄임금 기준 시각 전달 |
 | `WorkRecordHomeScreen` | 직접 입력 1분 단위 저장 |
-| `WorkRecordHomeScreen` | 알림에서 진입한 `chooseBeforeSave` 요청이 저장 전 같은 후보 바텀시트를 표시 |
-| `WorkRecordHomeScreen` | 알림에서 진입한 포괄임금 포함 퇴근 후보도 홈 화면과 같은 기준 시각 사용 |
-| `NotificationSettingsScreen` | 알림 액션이 설정에 따라 즉시 저장 또는 선택 UX로 동작함을 설명 |
+| `WorkRecordHomeScreen` | 앱 내부 컨트롤러 요청이 저장 전 같은 후보 바텀시트를 표시 |
+| `WorkRecordHomeScreen` | 앱 내부 컨트롤러 요청의 포괄임금 포함 퇴근 후보도 홈 화면과 같은 기준 시각 사용 |
+| `NotificationSettingsScreen` | 알림 액션이 설정과 무관하게 즉시 저장됨을 설명 |
 
 ### 14.4 Regression Tests
 
@@ -341,9 +340,9 @@ flowchart TD
 - `flutter test`
 - 기존 상시 알림 액션 테스트
 - `currentTimeOnly` 설정 상태에서 상시 알림 `출근하기`/`퇴근하기`가 `clockIn()`/`clockOut()`을 호출하는지 검증
-- `chooseBeforeSave` 설정 상태에서 상시 알림 `출근하기`/`퇴근하기`가 선택 UX를 열고 선택 전 저장하지 않는지 검증
-- 알림 선택 UX에서 현재 시각, `WorkRule` 정시 후보, 직접 입력값이 홈 화면과 같은 저장 계약을 사용하는지 검증
-- Android 실기기에서 notification shade 액션 탭 후 앱 자동 오픈, 선택 UX 표시, 선택 전 미저장, 선택 후 저장, 알림 본문 갱신을 검증
+- `chooseBeforeSave` 설정 상태에서도 상시 알림 `출근하기`/`퇴근하기`가 `clockIn()`/`clockOut()`을 호출하는지 검증
+- 앱 내부 선택 UX에서 현재 시각, `WorkRule` 정시 후보, 직접 입력값이 홈 화면과 같은 저장 계약을 사용하는지 검증
+- Android 실기기에서 notification shade 액션 탭 후 후보 UI 없이 즉시 저장, 알림 본문 갱신을 검증
 - 기존 work record repository 테스트
 - 기존 settings screen 테스트
 
@@ -355,7 +354,7 @@ flowchart TD
 4. `WorkRecordRepository`에 선택 시각 저장 메서드 추가
 5. 홈 화면 후보 선택 UX 연결
 6. 근무 설정 화면에 빠른 기록 방식 설정 추가
-7. 알림 액션을 `QuickRecordMode` 기준으로 즉시 저장 또는 앱 선택 UX로 분기
+7. 알림 액션은 `QuickRecordMode`와 무관하게 즉시 저장하도록 유지
 8. 상시 알림 설명 문구 보강
 9. domain/repository/widget/notification 회귀 테스트 추가
 10. `flutter analyze`, `flutter test`, release build, Android 실기기 검증 실행
@@ -399,4 +398,4 @@ flowchart TD
 1. 직접 입력 후보는 별도 dialog로 받는다. 바텀시트는 후보 선택에 집중하고, `HH:mm` 입력 오류는 dialog 안에서 표시한다.
 2. `clockOutAt`이 출근보다 빠르면 기존 repository 오류 정책을 유지하고 홈 화면 오류 메시지로 저장 실패를 안내한다.
 3. 빠른 기록 방식 저장 실패는 근무 기준 저장 성공처럼 숨기지 않는다. 설정 저장 실패 메시지를 표시하고 사용자가 다시 시도하게 한다.
-4. 알림에서 앱을 연 직후 선택 UX가 표시되는지 Android 실기기에서 확인했다. 실행 중 및 앱 kill 이후 notification action 모두 홈 화면 선택 UX를 표시했다.
+4. 상시 알림 action은 앱 선택 UX를 열지 않고 즉시 저장해야 한다. `1.0.4+5` Play 내부 테스트 설치 후 Android 실기기에서 재확인한다.

@@ -27,9 +27,9 @@ In Progress:   0 / 21 counted check items
 Cancelled:     0 / 21 counted check items
 ```
 
-빠른 기록 방식 설정은 `currentTimeOnly` 기본 흐름과 `chooseBeforeSave` 저장 전 시각 선택 흐름을 모두 구현했다. 홈 화면과 상시 알림 출근/퇴근 액션은 같은 후보 선택 UX를 공유하며, 알림에서 들어온 선택 UX는 선택 전 저장하지 않고 선택 완료 후 선택한 시각으로 1회 저장한다.
+빠른 기록 방식 설정은 `currentTimeOnly` 기본 흐름과 `chooseBeforeSave` 저장 전 시각 선택 흐름을 모두 구현했다. 홈 화면은 후보 선택 UX를 제공하고, 상시 알림 출근/퇴근 액션은 빠른 저장 진입점으로서 설정과 무관하게 현재 시각을 즉시 저장한다.
 
-후속 검증에서 확인된 cold-start 누락은 HomeScreen 첫 frame 이후 pending notification action을 drain하도록 보강했고, HomeScreen build 전에 pending action이 먼저 들어온 경우를 widget test로 고정했다.
+후속 검증에서 확인된 cold-start 누락은 HomeScreen 첫 frame 이후 pending controller request를 drain하도록 보강했고, HomeScreen build 전에 pending request가 먼저 들어온 경우를 widget test로 고정했다.
 
 ## 2. Related Documents
 
@@ -50,7 +50,7 @@ Cancelled:     0 / 21 counted check items
 | FR-03 | 정시 후보 명시 선택 | Complete | `WorkRule` 정시 후보는 사용자가 선택할 때만 저장 |
 | FR-04 | 자동 변경 금지 | Complete | 선택 전 저장 금지, 선택 후 명시 시각 저장 검증 |
 | FR-05 | 10초 이내 흐름 유지 | Complete | 기본값 `currentTimeOnly`로 기존 1탭 흐름 유지 |
-| FR-06 | 상시 알림 액션 방식 확정 | Complete | `currentTimeOnly` 즉시 저장, `chooseBeforeSave` 앱 선택 UX |
+| FR-06 | 상시 알림 액션 방식 확정 | Complete | 빠른 기록 방식 설정과 무관하게 즉시 저장 |
 | FR-07 | 기존 수동 수정 흐름 유지 | Complete | 기록 후 기존 오늘 기록 수정/달력 수정 흐름 유지 |
 | FR-08 | 기록 방식 표현 | Complete | 근로제도/수당 정책이 아니라 기록 방식 설정으로 표현 |
 | FR-09 | 유연근무와 1분 단위 고려 | Complete | 현재 시각, 정시 후보, `HH:mm` 직접 입력 지원 |
@@ -72,7 +72,7 @@ Cancelled:     0 / 21 counted check items
 | `flutter analyze --no-pub` | 0 issues | No issues found | PASS |
 | `flutter test --reporter=compact` | exit 0 | 293 tests passed | PASS |
 | Release APK build | exit 0 | `build/app/outputs/flutter-apk/app-release.apk` | PASS |
-| Android manual smoke | PASS | `R3CM807B7DR` 실행 중 및 앱 kill 이후 알림 action 검증 | PASS |
+| Android manual smoke | PENDING | `1.0.4+5`에서 알림 action 즉시 저장 재검증 필요 | PENDING |
 
 ## 4. Verification Evidence
 
@@ -84,16 +84,16 @@ Cancelled:     0 / 21 counted check items
 | release APK | `$HOME/.local/share/flutter-stable/bin/flutter build apk --release` | PASS, APK 생성 |
 | 공백 검사 | `git --no-pager diff --check` / `git --no-pager diff --cached --check` | PASS |
 | PDCA JSON 검사 | `python3 -m json.tool docs/.pdca-status.json >/dev/null` | PASS |
-| Android 실행 중 알림 action | `R3CM807B7DR` notification shade `출근하기` + `uiautomator dump` + `logcat -d -t 800` | PASS, 앱 실행 중 `출근 시각 선택` 표시, 후보 선택 없이 뒤로 취소, fatal 없음 |
-| Android 앱 kill 이후 알림 action | `adb -s R3CM807B7DR shell am kill com.workledger.workledger` 후 notification shade `퇴근하기` + `uiautomator dump` + `logcat -d -t 1500` | PASS, `퇴근 시각 선택` 표시, 후보 선택 없이 뒤로 취소, fatal 없음 |
+| Android 실행 중 알림 action | `1.0.4+5` Play 내부 테스트 설치 후 notification shade `출근하기` | PENDING, 후보 UI 없이 즉시 저장되는지 재검증 필요 |
+| Android 앱 kill 이후 알림 action | `1.0.4+5` Play 내부 테스트 설치 후 notification shade `퇴근하기` | PENDING, 후보 UI 없이 즉시 저장되는지 재검증 필요 |
 
 ## 5. Lessons Learned
 
 ### 5.1 What Went Well
 
-- 기존 홈 화면 후보 선택 UX를 알림 진입에도 재사용해 중복 구현을 줄였다.
+- 기존 홈 화면 후보 선택 UX를 앱 내부 컨트롤러 요청에도 재사용해 중복 구현을 줄였다.
 - repository fake의 call count로 선택 전 저장 금지와 선택 후 `At` 저장 1회를 명확히 검증했다.
-- Android 실기기에서 notification action PendingIntent와 알림 본문을 함께 확인해 실제 사용자 흐름을 검증했다.
+- Android 실기기에서 notification action PendingIntent와 알림 본문을 함께 확인하는 검증 절차를 확보했다.
 
 ### 5.2 What Needs Improvement
 

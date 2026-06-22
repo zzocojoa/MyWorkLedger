@@ -32,7 +32,7 @@
 | 8 | `chooseBeforeSave` 정시 후보 저장 | PASS | home widget tests |
 | 9 | `chooseBeforeSave` 직접 입력 후보 저장 | PASS | home widget/domain tests |
 | 10 | `currentTimeOnly` 상시 알림 출근/퇴근 즉시 저장 경계 | PASS | notification action test |
-| 11 | `chooseBeforeSave` 상시 알림 액션 앱 선택 UX 분기 | PASS | notification service/action/widget tests |
+| 11 | `chooseBeforeSave` 상시 알림 액션 즉시 저장 경계 | PASS | notification service/action tests |
 | 12 | 자정 경계 clock 단일 값 | PASS | repository tests |
 | 13 | storage 임시 파일 교체 저장 | PASS | storage tests |
 | 14 | storage 임시 파일 실패 시 기존 파일 보존 | PASS | storage tests |
@@ -41,14 +41,14 @@
 | 17 | 별도 Dart process write/write 및 write/delete 경합 보존 | PASS | storage tests |
 | 18 | same-process isolate write/write 및 write/delete 경합 보존 | PASS | storage tests |
 | 19 | stale `.lock` 복구 후 기존 JSON 보존 및 새 write 성공 | PASS | storage tests |
-| 20 | Android 실기기 상시 알림 출근/퇴근 액션 선택 UX | PASS | `R3CM807B7DR` notification shade 수동 검증 |
-| 21 | cold-start pending 알림 액션 선택 UX 표시 | PASS | home widget tests |
+| 20 | Android 실기기 상시 알림 출근/퇴근 액션 즉시 저장 | PENDING | `1.0.4+5` Play 내부 테스트 설치 후 수동 재검증 필요 |
+| 21 | 앱 내부 pending 컨트롤러 요청 선택 UX 표시 | PASS | home widget tests |
 
 ## Summary
 
-빠른 기록 방식 설정의 핵심 설계 항목은 구현과 테스트에 반영되어 있다. `QuickRecordMode`와 `QuickRecordSettings` 모델, 로컬 설정 저장소, 홈 화면의 `currentTimeOnly` 즉시 저장 흐름, `chooseBeforeSave` 후보 선택 흐름, 상시 알림의 설정 기반 분기, 자정 경계 회귀 테스트가 확인되었다.
+빠른 기록 방식 설정의 핵심 설계 항목은 구현과 테스트에 반영되어 있다. `QuickRecordMode`와 `QuickRecordSettings` 모델, 로컬 설정 저장소, 홈 화면의 `currentTimeOnly` 즉시 저장 흐름, `chooseBeforeSave` 후보 선택 흐름, 상시 알림의 설정 무관 즉시 저장 경계, 자정 경계 회귀 테스트가 확인되었다.
 
-이번 Check에서 병합 차단 요소였던 신규 파일 미포함 위험은 staging 정리 대상이며, `PersistentKeyValueStorage`의 직접 덮어쓰기 위험은 임시 파일 쓰기 후 rename 방식과 실패 시 기존 파일 보존 테스트로 보강되었다. 이후 서로 다른 storage 인스턴스, 별도 Dart process, same-process isolate의 동일 JSON 파일 write/write 및 write/delete 경합도 read-modify-write 전체 구간 직렬화와 exclusive lock file 생성 방식으로 보강되었다. crash 등으로 stale `.lock` 파일이 남은 경우에는 충분히 오래되고 짧은 재확인 동안 변하지 않은 lock만 복구하도록 보강했다. 추가 구현에서는 Android 상시 알림 `출근하기`와 `퇴근하기`가 `currentTimeOnly`에서는 즉시 저장하고, `chooseBeforeSave`에서는 앱을 열어 홈 화면과 같은 시각 선택 UX를 표시하도록 분기했다. `R3CM807B7DR` 실기기에서도 notification shade 액션이 앱을 열고 선택 UX를 표시하며, 선택 전에는 알림 본문이 이전 상태로 유지되고 선택 후에만 본문이 갱신되는 것을 확인했다. 앱 cold-start와 같은 순서로 HomeScreen 생성 전에 pending 알림 action이 먼저 들어온 경우도 첫 frame 이후 pending action을 drain해 출근/퇴근 선택 UX가 표시되도록 보강했다.
+이번 Check에서 병합 차단 요소였던 신규 파일 미포함 위험은 staging 정리 대상이며, `PersistentKeyValueStorage`의 직접 덮어쓰기 위험은 임시 파일 쓰기 후 rename 방식과 실패 시 기존 파일 보존 테스트로 보강되었다. 이후 서로 다른 storage 인스턴스, 별도 Dart process, same-process isolate의 동일 JSON 파일 write/write 및 write/delete 경합도 read-modify-write 전체 구간 직렬화와 exclusive lock file 생성 방식으로 보강되었다. crash 등으로 stale `.lock` 파일이 남은 경우에는 충분히 오래되고 짧은 재확인 동안 변하지 않은 lock만 복구하도록 보강했다. 후속 릴리스 보정에서는 Android 상시 알림 `출근하기`와 `퇴근하기`가 `QuickRecordMode`와 무관하게 `clockIn()`과 `clockOut()`을 호출하도록 정리했다. 앱 내부 컨트롤러 요청은 기존처럼 HomeScreen 첫 frame 이후 pending action을 drain해 출근/퇴근 선택 UX를 표시한다.
 
 ## Implemented Items
 
@@ -60,11 +60,11 @@
 - [x] `chooseBeforeSave`는 현재 시각, 정시 후보, 직접 입력 후보를 표시한다.
 - [x] 후보 선택 저장은 `clockInAt()`과 `clockOutAt()`을 사용해 선택한 시각을 기록한다.
 - [x] 상시 알림 액션은 `currentTimeOnly`에서 기존처럼 `clockIn()`과 `clockOut()`을 호출한다.
-- [x] 상시 알림 액션은 `chooseBeforeSave`에서 앱을 열고 홈 화면과 같은 후보 선택 UX로 이동한다.
-- [x] 알림에서 진입한 선택 UX는 저장 전 `clockIn()`, `clockOut()`, `clockInAt()`, `clockOutAt()` 호출을 발생시키지 않는다.
-- [x] 알림에서 진입한 선택 UX는 선택 완료 후 선택한 시각으로 `clockInAt()` 또는 `clockOutAt()`을 1회 호출하고 알림 본문을 갱신한다.
-- [x] 앱 cold-start 유사 경로에서 HomeScreen 생성 전 pending 알림 action이 있어도 첫 frame 이후 선택 UX가 표시된다.
-- [x] 상시 알림 설정 화면에 알림 액션이 설정에 따라 즉시 저장 또는 앱 선택 UX로 동작한다는 설명을 표시한다.
+- [x] 상시 알림 액션은 `chooseBeforeSave`에서도 기존처럼 `clockIn()`과 `clockOut()`을 호출한다.
+- [x] 알림 액션은 앱 선택 UX를 열지 않고 즉시 저장한다.
+- [x] 앱 내부 컨트롤러 요청은 선택 완료 전 `clockIn()`, `clockOut()`, `clockInAt()`, `clockOutAt()` 호출을 발생시키지 않는다.
+- [x] 앱 내부 컨트롤러 요청은 선택 완료 후 선택한 시각으로 `clockInAt()` 또는 `clockOutAt()`을 1회 호출하고 알림 본문을 갱신한다.
+- [x] 앱 cold-start 유사 경로에서 HomeScreen 생성 전 pending 컨트롤러 요청이 있어도 첫 frame 이후 선택 UX가 표시된다.
 - [x] `clockIn()`과 `clockOut()`은 자정 경계에서 clock 값을 한 번만 읽어 workDate와 저장 시각을 일관되게 사용한다.
 - [x] 빠른 기록 domain, repository, widget, notification action, 기존 화면 회귀 테스트가 추가 또는 보정되었다.
 - [x] `PersistentKeyValueStorage`는 JSON 파일을 직접 덮어쓰지 않고 임시 파일에 먼저 저장한 뒤 교체한다.
@@ -74,7 +74,7 @@
 - [x] 별도 Dart process의 동일 JSON 파일 write/write 및 write/delete 경합에서도 lost update가 발생하지 않는다.
 - [x] same-process isolate의 동일 JSON 파일 write/write 및 write/delete 경합에서도 lost update가 발생하지 않는다.
 - [x] stale `.lock` 파일이 남아도 기존 JSON을 보존하면서 새 mutation이 진행된다.
-- [x] Android 실기기 `R3CM807B7DR`에서 `chooseBeforeSave` 상시 알림 액션이 앱 선택 UX로 들어가는지 최종 수동 검증했다.
+- [ ] Android 실기기 `R3CM807B7DR`에서 `1.0.4+5` 상시 알림 액션이 후보 UI 없이 즉시 저장되는지 최종 수동 검증한다.
 
 ## Missing Items
 
@@ -94,10 +94,10 @@
 | stale lock 복구 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/core/storage/persistent_key_value_storage_test.dart --reporter=compact --name "recovers stale lock file left by a crashed mutation"` | PASS after fix |
 | storage 회귀 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/core/storage/persistent_key_value_storage_test.dart --reporter=compact` | PASS, 17 tests |
 | AC-06 process/isolate storage 검증 | `$HOME/.local/share/flutter-stable/bin/flutter test test/core/storage/persistent_key_value_storage_test.dart --reporter=compact` | PASS, 별도 Dart process와 same-process isolate write/write 및 write/delete 경합 보존 |
-| 알림/홈 선택 UX 타깃 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/core/notifications/workledger_notification_action_test.dart test/core/notifications/workledger_notification_service_test.dart test/features/work_record/presentation/work_record_home_screen_test.dart --reporter=compact` | PASS, 38 tests |
-| cold-start 알림 action 회귀 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/features/work_record/presentation/work_record_home_screen_test.dart --reporter=compact` | PASS, 25 tests, pending notification action을 HomeScreen build 전에 넣어도 출근/퇴근 선택 UX 표시 |
+| 알림 즉시 저장/홈 선택 UX 타깃 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/core/notifications/workledger_notification_action_test.dart test/core/notifications/workledger_notification_service_test.dart test/features/work_record/presentation/work_record_home_screen_test.dart --reporter=compact` | PASS |
+| cold-start controller request 회귀 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/features/work_record/presentation/work_record_home_screen_test.dart --reporter=compact` | PASS, pending controller request를 HomeScreen build 전에 넣어도 출근/퇴근 선택 UX 표시 |
 | 설정 화면 타깃 테스트 | `$HOME/.local/share/flutter-stable/bin/flutter test test/features/settings/presentation/work_settings_screen_test.dart test/widget_test.dart --reporter=compact` | PASS, 21 tests |
-| Android 실기기 알림 액션 | `adb -s R3CM807B7DR shell input tap ...` + `uiautomator dump` + `dumpsys notification --noredact` + `logcat -d -t 1500` | PASS, `chooseBeforeSave` 상태에서 `출근하기`는 `출근 시각 선택`을 열고 선택 전 알림 본문은 저장 전 문구 유지, 선택 후 `출근 03:48`로 갱신. `퇴근하기`는 `퇴근 시각 선택`을 열고 선택 전 본문은 `출근 03:48` 유지, 선택 후 `출근 03:48 · 퇴근 03:49`로 갱신. `FATAL EXCEPTION` 없음 |
+| Android 실기기 알림 액션 | `1.0.4+5` Play 내부 테스트 설치 후 notification shade `출근하기`/`퇴근하기` | PENDING, 후보 UI 없이 즉시 저장되는지 재검증 필요 |
 | 공백 검사 | `git --no-pager diff --check` | PASS |
 | staged 공백 검사 | `git --no-pager diff --cached --check` | PASS |
 | PDCA JSON 검사 | `python3 -m json.tool docs/.pdca-status.json >/dev/null` | PASS |
