@@ -284,26 +284,32 @@ Future<void> _recoverStalePersistentStorageLock({
   required String key,
   required String action,
 }) async {
-  final FileStat firstStat = await _statPersistentStorageLock(
+  final FileStat? firstStat = await _statPersistentStorageLock(
     lockFile: lockFile,
     file: file,
     table: table,
     key: key,
     action: action,
   );
+  if (firstStat == null) {
+    return;
+  }
   if (!_isPersistentStorageLockStale(modifiedAt: firstStat.modified)) {
     return;
   }
 
   await Future<void>.delayed(_persistentStorageStaleLockCheckDelay);
 
-  final FileStat secondStat = await _statPersistentStorageLock(
+  final FileStat? secondStat = await _statPersistentStorageLock(
     lockFile: lockFile,
     file: file,
     table: table,
     key: key,
     action: action,
   );
+  if (secondStat == null) {
+    return;
+  }
   if (!_isPersistentStorageLockStale(modifiedAt: secondStat.modified)) {
     return;
   }
@@ -322,7 +328,7 @@ Future<void> _recoverStalePersistentStorageLock({
   );
 }
 
-Future<FileStat> _statPersistentStorageLock({
+Future<FileStat?> _statPersistentStorageLock({
   required File lockFile,
   required File file,
   required String table,
@@ -333,7 +339,7 @@ Future<FileStat> _statPersistentStorageLock({
     return await lockFile.stat();
   } on FileSystemException catch (error) {
     if (!await lockFile.exists()) {
-      return FileStat.statSync(lockFile.path);
+      return null;
     }
     throw PersistentKeyValueStorageException(
       'action=$action table=$table key=$key path=${file.path} lockPath=${lockFile.path} statError=${error.message}',
