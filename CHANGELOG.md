@@ -5,7 +5,7 @@ All notable changes to WorkLedger are documented in this file.
 ## [1.0.5] - 2026-06-22
 
 ### Fixed
-- Storage lock recovery now ignores lock files that disappear during contention, preventing CI-only concurrent write failures.
+- Local storage saves stay stable when another write finishes and removes its lock at the same time.
 
 ### Release
 - Bumped the Google Play internal testing build to `1.0.5+6`.
