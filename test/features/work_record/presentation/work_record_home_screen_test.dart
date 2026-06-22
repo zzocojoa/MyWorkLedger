@@ -212,6 +212,50 @@ void main() {
     expect(find.text('09:00 - 18:00'), findsOneWidget);
   });
 
+  testWidgets('saves fixed included clock-out reference time in choose mode', (
+    WidgetTester tester,
+  ) async {
+    final DateTime now = DateTime(2026, 6, 12, 18, 45);
+    final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+      initialRecord: _workRecord(
+        clockInAt: DateTime(2026, 6, 12, 9),
+        clockOutAt: null,
+        now: DateTime(2026, 6, 12, 9),
+      ),
+      monthlyRecords: <WorkRecord>[],
+      now: () => now,
+    );
+
+    await tester.pumpWidget(
+      _buildScreen(
+        repository: repository,
+        quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+          settings: QuickRecordSettings(
+            mode: QuickRecordMode.chooseBeforeSave,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ),
+        workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+        compensationReferenceRepository: _FakeCompensationReferenceRepository(
+          setting: _fixedIncludedSetting(),
+        ),
+        now: now,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('퇴근하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('정시 퇴근 20:00'));
+    await tester.pumpAndSettle();
+
+    expect(repository.clockOutCallCount, 0);
+    expect(repository.clockOutAtCallCount, 1);
+    expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 20));
+    expect(find.text('09:00 - 20:00'), findsOneWidget);
+  });
+
   testWidgets('saves selected manual clock-out time in choose mode', (
     WidgetTester tester,
   ) async {
@@ -491,6 +535,63 @@ void main() {
       expect(repository.clockOutAtCallCount, 1);
       expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 18));
       expect(find.text('09:00 - 18:00'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'opens fixed included clock-out candidate from notification action',
+    (WidgetTester tester) async {
+      final DateTime now = DateTime(2026, 6, 12, 18, 45);
+      final WorkLedgerNotificationActionController
+      notificationActionController = WorkLedgerNotificationActionController();
+      final _FakeWorkRecordRepository repository = _FakeWorkRecordRepository(
+        initialRecord: _workRecord(
+          clockInAt: DateTime(2026, 6, 12, 9),
+          clockOutAt: null,
+          now: DateTime(2026, 6, 12, 9),
+        ),
+        monthlyRecords: <WorkRecord>[],
+        now: () => now,
+      );
+
+      await tester.pumpWidget(
+        _buildScreen(
+          repository: repository,
+          quickRecordSettingsRepository: _FakeQuickRecordSettingsRepository(
+            settings: QuickRecordSettings(
+              mode: QuickRecordMode.chooseBeforeSave,
+              createdAt: now,
+              updatedAt: now,
+            ),
+          ),
+          workRuleRepository: _FakeWorkRuleRepository(rule: _workRule()),
+          compensationReferenceRepository: _FakeCompensationReferenceRepository(
+            setting: _fixedIncludedSetting(),
+          ),
+          notificationActionController: notificationActionController,
+          now: now,
+        ),
+      );
+      await tester.pump();
+
+      notificationActionController.request(
+        action: WorkLedgerNotificationAction.clockOut,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('퇴근 시각 선택'), findsOneWidget);
+      expect(find.text('현재 시각 18:45'), findsOneWidget);
+      expect(find.text('정시 퇴근 20:00'), findsOneWidget);
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockOutAtCallCount, 0);
+
+      await tester.tap(find.text('정시 퇴근 20:00'));
+      await tester.pumpAndSettle();
+
+      expect(repository.clockOutCallCount, 0);
+      expect(repository.clockOutAtCallCount, 1);
+      expect(repository.lastClockOutAt, DateTime(2026, 6, 12, 20));
+      expect(find.text('09:00 - 20:00'), findsOneWidget);
     },
   );
 
@@ -1073,6 +1174,7 @@ Widget _buildScreen({
   _FakeLeaveRepository? leaveRepository,
   _FakeWorkRuleRepository? workRuleRepository,
   _FakeQuickRecordSettingsRepository? quickRecordSettingsRepository,
+  _FakeCompensationReferenceRepository? compensationReferenceRepository,
   WorkLedgerNotificationActionController? notificationActionController,
   Future<WorkLedgerNotificationSetupResult> Function()? configureNotifications,
   DateTime Function()? nowProvider,
@@ -1094,7 +1196,8 @@ Widget _buildScreen({
       leaveRepository: resolvedLeaveRepository,
       workRuleRepository: resolvedWorkRuleRepository,
       compensationReferenceRepository:
-          const _FakeCompensationReferenceRepository(),
+          compensationReferenceRepository ??
+          _FakeCompensationReferenceRepository(setting: null),
       pricingIntentRepository: _FakePricingIntentRepository(),
       configureNotifications:
           configureNotifications ??
@@ -1182,6 +1285,18 @@ WorkRule _workRule() {
     nightWorkStartTimeMinutes: 1320,
     breakMinutes: 60,
     workWeekdays: <int>[1, 2, 3, 4, 5],
+    createdAt: DateTime(2026, 6, 12, 19),
+    updatedAt: DateTime(2026, 6, 12, 19),
+  );
+}
+
+CompensationReferenceSetting _fixedIncludedSetting() {
+  return CompensationReferenceSetting(
+    id: 'compensation-reference-1',
+    mode: CompensationReferenceMode.fixedIncluded,
+    fixedIncludedAfterRegularEndMinutes: 120,
+    effectiveFromMonth: DateTime(2000),
+    memo: null,
     createdAt: DateTime(2026, 6, 12, 19),
     updatedAt: DateTime(2026, 6, 12, 19),
   );
@@ -1591,14 +1706,16 @@ final class _FakeWorkRuleRepository implements WorkRuleRepository {
 
 final class _FakeCompensationReferenceRepository
     implements CompensationReferenceRepository {
-  const _FakeCompensationReferenceRepository();
+  const _FakeCompensationReferenceRepository({required this.setting});
+
+  final CompensationReferenceSetting? setting;
 
   @override
   Future<CompensationReferenceSetting?> findApplicableForMonth({
     required int year,
     required int month,
   }) async {
-    return null;
+    return setting;
   }
 
   @override

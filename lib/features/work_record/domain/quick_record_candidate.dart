@@ -1,4 +1,5 @@
 import '../../../core/input/clock_time_input.dart';
+import '../../../core/models/compensation_reference_setting.dart';
 import '../../../core/models/work_rule.dart';
 import 'quick_record_settings.dart';
 
@@ -34,6 +35,7 @@ List<QuickRecordCandidate> buildQuickRecordCandidates({
   required QuickRecordActionType actionType,
   required DateTime currentTime,
   required WorkRule? workRule,
+  required CompensationReferenceSetting? compensationReferenceSetting,
 }) {
   if (mode == QuickRecordMode.currentTimeOnly) {
     return <QuickRecordCandidate>[];
@@ -50,7 +52,10 @@ List<QuickRecordCandidate> buildQuickRecordCandidates({
   if (rule != null) {
     final int minuteOfDay = switch (actionType) {
       QuickRecordActionType.clockIn => rule.regularStartTimeMinutes,
-      QuickRecordActionType.clockOut => rule.regularEndTimeMinutes,
+      QuickRecordActionType.clockOut => _clockOutCandidateMinuteOfDay(
+        workRule: rule,
+        compensationReferenceSetting: compensationReferenceSetting,
+      ),
     };
     final String label = switch (actionType) {
       QuickRecordActionType.clockIn =>
@@ -77,6 +82,28 @@ List<QuickRecordCandidate> buildQuickRecordCandidates({
     ),
   );
   return candidates;
+}
+
+int _clockOutCandidateMinuteOfDay({
+  required WorkRule workRule,
+  required CompensationReferenceSetting? compensationReferenceSetting,
+}) {
+  final CompensationReferenceSetting? setting = compensationReferenceSetting;
+  if (setting == null ||
+      setting.mode != CompensationReferenceMode.fixedIncluded) {
+    return workRule.regularEndTimeMinutes;
+  }
+  final int minuteOfDay =
+      workRule.regularEndTimeMinutes +
+      setting.fixedIncludedAfterRegularEndMinutes;
+  if (minuteOfDay > 1439) {
+    throw ArgumentError.value(
+      minuteOfDay,
+      'minuteOfDay',
+      'must be between 0 and 1439',
+    );
+  }
+  return minuteOfDay;
 }
 
 DateTime parseQuickRecordManualTime({

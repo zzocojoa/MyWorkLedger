@@ -1,7 +1,7 @@
 name: workledger
 description: "내근무장부 WorkLedger Flutter Android MVP"
 publish_to: 'none'
-version: 1.0.2+3
+version: 1.0.3+4
 
 environment:
   sdk: ^3.12.1
