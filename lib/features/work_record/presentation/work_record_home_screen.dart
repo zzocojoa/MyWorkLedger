@@ -234,6 +234,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
       _showError(error.toString());
     } on WorkRuleRepositoryException catch (error) {
       _showError(error.toString());
+    } on CompensationReferenceRepositoryException catch (error) {
+      _showError(error.toString());
     } on QuickRecordManualInputException catch (error) {
       _showError('시각을 저장할 수 없습니다. ${error.toString()}');
     } on WorkLedgerNotificationException catch (error) {
@@ -274,6 +276,11 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
       actionType: actionType,
       currentTime: currentTime,
       workRule: await widget.workRuleRepository.findActive(),
+      compensationReferenceSetting: await widget.compensationReferenceRepository
+          .findApplicableForMonth(
+            year: currentTime.year,
+            month: currentTime.month,
+          ),
     );
     final QuickRecordCandidate? candidate = await _showQuickRecordCandidates(
       actionType: actionType,
@@ -357,6 +364,8 @@ final class _WorkRecordHomeScreenState extends State<WorkRecordHomeScreen>
     } on WorkRecordRepositoryException catch (error) {
       _showError(error.toString());
     } on WorkRuleRepositoryException catch (error) {
+      _showError(error.toString());
+    } on CompensationReferenceRepositoryException catch (error) {
       _showError(error.toString());
     } on QuickRecordManualInputException catch (error) {
       _showError('시각을 저장할 수 없습니다. ${error.toString()}');

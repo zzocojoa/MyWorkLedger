@@ -1,6 +1,6 @@
 # work-record-quick-record-mode - Design Document
 
-> Version: 1.1.1 | Date: 2026-06-21 | Status: Report Complete
+> Version: 1.1.2 | Date: 2026-06-22 | Status: Report Complete
 > Level: Starter | Plan: docs/01-plan/features/work-record-quick-record-mode.plan.md
 
 ---
@@ -30,7 +30,7 @@
 - 설정 화면에 빠른 기록 방식 설정을 추가하는 설계
 - `QuickRecordMode` 도메인 모델과 로컬 저장 설계
 - 홈 화면 출근/퇴근 버튼의 기록 전 후보 선택 UX
-- `WorkRule`의 정시 출근/퇴근 시간을 후보로 읽는 규칙
+- `WorkRule`의 정시 출근/퇴근 시간과 포괄임금 기준 퇴근 후보를 읽는 규칙
 - 상시 알림 액션의 설정 기반 저장 경로
 - 오류 처리, 테스트 계획, 롤백 기준
 
@@ -54,6 +54,7 @@
 | `LocalStorageWorkRecordRepository` | `work_records` 테이블에 `WorkRecord`를 날짜 키로 저장한다 |
 | `WorkRecordHomeScreen` | 오늘 상태를 읽고 primary action에 따라 `clockIn()` 또는 `clockOut()`을 바로 호출한다 |
 | `WorkRuleRepository.findActive()` | 현재 근무 기준인 `WorkRule`을 읽는다 |
+| `CompensationReferenceRepository.findApplicableForMonth()` | 포괄임금 포함 여부와 정시 이후 고정 포함 시간을 읽는다 |
 | `SettingsHomeScreen` / `WorkSettingsScreen` | 근무 기준, 포괄임금 참고 시간 등 근무 설정을 관리한다 |
 | `workledger_notification_action.dart` | 상시 알림 액션에서 `clockIn()` 또는 `clockOut()`을 바로 호출한다 |
 | `workledger_notification_service.dart` | foreground/background 알림 응답을 처리하고 상시 알림 내용을 갱신한다 |
@@ -82,8 +83,10 @@ flowchart TD
   Settings["WorkSettingsScreen"] --> QuickSettingsRepo["QuickRecordSettingsRepository"]
   Home["WorkRecordHomeScreen"] --> QuickSettingsRepo
   Home --> WorkRuleRepo["WorkRuleRepository"]
+  Home --> CompensationRepo["CompensationReferenceRepository"]
   Home --> Candidate["QuickRecordCandidate builder"]
   Candidate --> WorkRule["WorkRule"]
+  Candidate --> Compensation["CompensationReferenceSetting"]
   Home --> WorkRecordRepo["WorkRecordRepository"]
   Notification["상시 알림 액션"] --> QuickSettingsRepo
   Notification --> WorkRecordRepo
@@ -138,7 +141,8 @@ flowchart TD
 | 후보 | 표시 조건 | 저장 시각 |
 |---|---|---|
 | 현재 시각 | `chooseBeforeSave`에서 항상 표시 | 사용자가 버튼을 누른 현재 시각 |
-| 정시 후보 | `WorkRule`이 있을 때 표시 | 출근은 `regularStartTimeMinutes`, 퇴근은 `regularEndTimeMinutes` |
+| 정시 후보 | `WorkRule`이 있을 때 표시 | 출근은 `regularStartTimeMinutes`, 퇴근은 기본적으로 `regularEndTimeMinutes` |
+| 포괄임금 기준 퇴근 후보 | `WorkRule`이 있고 `CompensationReferenceSetting.mode == fixedIncluded`일 때 퇴근 후보에 적용 | `regularEndTimeMinutes + fixedIncludedAfterRegularEndMinutes` |
 | 직접 입력 | `chooseBeforeSave`에서 항상 표시 | 사용자가 입력한 HH:mm 기준 1분 단위 시각 |
 
 정시 후보는 자동 보정이 아니다. 사용자가 후보를 눌렀을 때만 저장한다.
@@ -150,6 +154,9 @@ flowchart TD
 - 현재 시각 후보를 선택해 저장할 때는 사용자가 후보를 확정한 실제 `DateTime` 값을 사용하며, 저장 전에 초/밀리초를 자동 절삭하거나 자동 반올림하지 않는다.
 - 직접 입력은 `HH:mm` 형식을 기준으로 하며 기존 `ClockTimeInputFormatter` 계열 입력 규칙과 맞춘다.
 - `WorkRule`이 없으면 정시 후보를 숨긴다.
+- 포괄임금 시간이 포함된 설정에서는 퇴근 정시 후보의 저장 시각을 일반 정시 퇴근이 아니라 `초과 참고 시작 = 정시 퇴근 + 고정 포함 시간`으로 만든다.
+- 포괄임금 시간이 미포함이거나 설정이 없으면 퇴근 정시 후보는 기존처럼 `regularEndTimeMinutes`를 사용한다.
+- 출근 후보는 포괄임금 설정과 무관하게 `regularStartTimeMinutes`를 사용한다.
 - 유연근무 사용자가 정시 후보와 맞지 않을 수 있으므로 현재 시각과 직접 입력 후보는 항상 남긴다.
 - 후보 생성은 순수 함수로 설계하고 저장소나 위젯 상태를 직접 바꾸지 않는다.
 
@@ -300,6 +307,7 @@ flowchart TD
 | `QuickRecordSettings.fromMap` | 필수 필드, enum 값, ISO-8601 시각 검증 |
 | candidate builder | `currentTimeOnly`에서는 후보 선택 없이 기존 흐름 유지 |
 | candidate builder | `chooseBeforeSave`에서 현재 시각, `WorkRule` 정시 후보, 직접 입력 후보 생성 |
+| candidate builder | 포괄임금 포함이면 퇴근 정시 후보가 `regularEndTimeMinutes + fixedIncludedAfterRegularEndMinutes`를 사용하고, 출근 후보는 변경하지 않음 |
 | manual input parser | `HH:mm`, 00:00, 23:59, 잘못된 hour/minute 검증 |
 
 ### 14.2 Repository Tests
@@ -321,8 +329,10 @@ flowchart TD
 | `WorkRecordHomeScreen` | `chooseBeforeSave`에서 후보 바텀시트 표시 |
 | `WorkRecordHomeScreen` | `chooseBeforeSave`에서 현재 시각 후보 선택 시 바텀시트 표시 후 현재 시각 후보 1회 선택으로 저장 완료 |
 | `WorkRecordHomeScreen` | 정시 후보 선택 시 `clockInAt` 또는 `clockOutAt` 호출 |
+| `WorkRecordHomeScreen` | 포괄임금 포함 퇴근 후보 선택 시 `clockOutAt`에 포괄임금 기준 시각 전달 |
 | `WorkRecordHomeScreen` | 직접 입력 1분 단위 저장 |
 | `WorkRecordHomeScreen` | 알림에서 진입한 `chooseBeforeSave` 요청이 저장 전 같은 후보 바텀시트를 표시 |
+| `WorkRecordHomeScreen` | 알림에서 진입한 포괄임금 포함 퇴근 후보도 홈 화면과 같은 기준 시각 사용 |
 | `NotificationSettingsScreen` | 알림 액션이 설정에 따라 즉시 저장 또는 선택 UX로 동작함을 설명 |
 
 ### 14.4 Regression Tests
