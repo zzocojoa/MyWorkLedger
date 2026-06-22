@@ -2,6 +2,11 @@
 
 All notable changes to WorkLedger are documented in this file.
 
+## [1.0.3] - 2026-06-22
+
+### Fixed
+- Quick clock-out selection now uses the included overtime reference time when fixed included overtime is configured.
+
 ## [1.0.2] - 2026-06-22
 
 ### Release
